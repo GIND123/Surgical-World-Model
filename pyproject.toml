@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "swm"
+version = "0.1.0"
+description = "Embodiment-grounded world models of robot-assisted surgery"
+requires-python = ">=3.12"
+dependencies = [
+    "torch>=2.10",
+    "torchvision",
+    "av",
+    "opencv-python-headless",
+    "numpy",
+    "pandas",
+    "scipy",
+    "scikit-learn",
+    "einops",
+    "timm",
+    "safetensors",
+    "huggingface_hub",
+    "diffusers",
+    "transformers",
+    "lpips",
+    "ultralytics",
+    "pyyaml",
+    "tqdm",
+    "matplotlib",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["legacy"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "BLE", "EXE"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

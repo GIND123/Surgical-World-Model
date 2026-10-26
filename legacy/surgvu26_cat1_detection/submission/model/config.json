@@ -1,0 +1,18 @@
+{
+  "weights": ["det0.pt"],
+  "half": true,
+  "batch": 16,
+  "track": true,
+  "iou_link": 0.30,
+  "alpha": 0.35,
+  "topk": 5,
+  "min_conf": 0.0005,
+  "max_per_frame": 100,
+  "plans": [
+    {"imgsz": 640, "conf": 0.001, "iou": 0.65, "max_det": 30, "scales": [0.8, 1.0, 1.25, 1.5], "flip": true},
+    {"imgsz": 640, "conf": 0.001, "iou": 0.65, "max_det": 30, "scales": [0.8, 1.0, 1.25], "flip": true},
+    {"imgsz": 640, "conf": 0.001, "iou": 0.65, "max_det": 30, "scales": [1.0, 1.25], "flip": true},
+    {"imgsz": 640, "conf": 0.001, "iou": 0.65, "max_det": 30, "scales": [1.0], "flip": true},
+    {"imgsz": 640, "conf": 0.001, "iou": 0.65, "max_det": 30, "scales": [1.0], "flip": false}
+  ]
+}

@@ -1,0 +1,2 @@
+ultralytics==8.3.155
+numpy==1.26.4

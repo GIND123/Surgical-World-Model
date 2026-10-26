@@ -1,0 +1,48 @@
+# Data, model weights and generated outputs never enter Git (see docs/legacy.md for the layout)
+/data/
+/archive/
+/outputs/
+/checkpoints/
+/wandb/
+*.tar.gz
+*.zip
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+*.npy
+*.npz
+*.mp4
+*.avi
+*.h5
+*.hdf5
+*.parquet
+*.pkl
+
+# Python environments, caches and build output
+.venv/
+**/env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+build/
+dist/
+
+# LaTeX build products
+paper/**/*.aux
+paper/**/*.bbl
+paper/**/*.blg
+paper/**/*.log
+paper/**/*.out
+paper/**/*.synctex.gz
+paper/**/*.fdb_latexmk
+paper/**/*.fls
+
+# Credentials and OS files
+.env
+**/.DS_Store
+__MACOSX/
