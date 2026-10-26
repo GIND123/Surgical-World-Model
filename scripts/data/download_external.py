@@ -15,17 +15,18 @@ import json
 import os
 import subprocess
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from swm.paths import EXTERNAL
 
 OPEN_H = "nvidia/PhysicalAI-Robotics-Open-H-Embodiment"     # CC-BY-4.0, LeRobot v2.1
 REGISTRY = {
-    "open_h_suturebot": dict(kind="hf", repo=OPEN_H, pattern="Surgical/jhu/imerse/suturebot/**",
+    "open_h_suturebot": dict(kind="hf", repo=OPEN_H, path="Surgical/jhu/imerse/suturebot",
                              note="dVRK-Si suturing with kinematics; SurgCast benchmark"),
-    "open_h_srth_chole": dict(kind="hf", repo=OPEN_H, pattern="Surgical/jhu/imerse/srth_porcine_chole/**",
+    "open_h_srth_chole": dict(kind="hf", repo=OPEN_H, path="Surgical/jhu/imerse/srth_porcine_chole",
                               note="dVRK ex-vivo porcine cholecystectomy (SRT-H); SurgCast benchmark"),
-    "open_h_crcd": dict(kind="hf", repo=OPEN_H, pattern="Surgical/uic/uic_crcd_lerobot/**",
+    "open_h_crcd": dict(kind="hf", repo=OPEN_H, path="Surgical/uic/uic_crcd_lerobot",
                         note="da Vinci porcine cholecystectomy with kinematics (CRCD)"),
     "sar_rarp50": dict(kind="figshare", articles=[24932529, 24932499],
                        note="50 clinical robot-assisted prostatectomies, gestures + segmentation; CC BY-NC-SA 4.0"),
@@ -33,11 +34,27 @@ REGISTRY = {
 
 
 def hf(name: str, spec: dict) -> None:
-    from huggingface_hub import snapshot_download
-
+    """List only the subset's subtree (pattern-filtered snapshots enumerate the whole 4.5 TB repo first),
+    record a manifest, then fetch the files concurrently; hf_hub_download skips files already present."""
     os.environ.setdefault("HF_HUB_ENABLE_HF_TRANSFER", "1")
-    snapshot_download(spec["repo"], repo_type="dataset", allow_patterns=[spec["pattern"]],
-                      local_dir=EXTERNAL / name, max_workers=16)
+    from huggingface_hub import HfApi, hf_hub_download
+    from huggingface_hub.hf_api import RepoFile
+
+    out = EXTERNAL / name
+    out.mkdir(parents=True, exist_ok=True)
+    files = [f for f in HfApi().list_repo_tree(spec["repo"], path_in_repo=spec["path"], repo_type="dataset",
+                                                recursive=True) if isinstance(f, RepoFile)]
+    (out / "manifest.json").write_text(json.dumps(
+        [dict(path=f.path, size=f.size, sha=f.lfs.sha256 if f.lfs else f.blob_id) for f in files], indent=1))
+    print(f"{len(files)} files, {sum(f.size for f in files) / 1e9:.1f} GB", flush=True)
+
+    def fetch(f: RepoFile) -> None:
+        hf_hub_download(spec["repo"], f.path, repo_type="dataset", local_dir=out)
+
+    with ThreadPoolExecutor(8) as ex:
+        for i, _ in enumerate(ex.map(fetch, files), 1):
+            if i % 200 == 0 or i == len(files):
+                print(f"  {i}/{len(files)}", flush=True)
 
 
 def md5(path: Path) -> str:
