@@ -143,6 +143,43 @@ class GlobalIDM(nn.Module):
         return u, kl                                 # (N, 1, du)
 
 
+class VQ(nn.Module):
+    """Vector quantiser with a straight-through estimator (van den Oord et al., 2017)."""
+
+    def __init__(self, n_codes: int, dim: int, beta: float = 0.25):
+        super().__init__()
+        self.codebook = nn.Embedding(n_codes, dim)
+        nn.init.uniform_(self.codebook.weight, -1 / n_codes, 1 / n_codes)
+        self.beta = beta
+
+    def forward(self, h: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        h = h.float()
+        e = self.codebook.weight.float()
+        d = h.pow(2).sum(-1, keepdim=True) - 2 * h @ e.t() + e.pow(2).sum(-1)
+        idx = d.argmin(-1)
+        q = e[idx]
+        loss = (q - h.detach()).pow(2).mean() + self.beta * (q.detach() - h).pow(2).mean()
+        return h + (q - h).detach(), loss, idx
+
+
+class VQGlobalIDM(nn.Module):
+    """Discrete monolithic latent action (Genie / SurgWM: a small codebook of actions per transition)."""
+
+    def __init__(self, trunk: Trunk, dim: int, heads: int, du: int, n_codes: int = 12):
+        super().__init__()
+        self.trunk = trunk
+        self.query = nn.Parameter(torch.randn(1, 1, dim) * 0.02)
+        self.pool = PooledQuery(dim, heads)
+        self.proj = nn.Sequential(RMSNorm(dim), nn.Linear(dim, du))
+        self.vq = VQ(n_codes, du)
+
+    def forward(self, z_prev, z_next, stochastic: bool = True):
+        feats = self.trunk(z_prev, z_next)
+        h = self.proj(self.pool(self.query.expand(feats.shape[0], -1, -1), feats, None))
+        u, loss, idx = self.vq(h)
+        return u, loss, idx                           # (N, 1, du), scalar, (N, 1)
+
+
 class SlotIDM(nn.Module):
     """K slots from slot attention over the transition features (no arm supervision), one action each."""
 

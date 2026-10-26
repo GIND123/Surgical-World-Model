@@ -2,7 +2,8 @@
 
 action = "none"    no tokens at all (unconditional video prediction)
          "state"   robot-state tokens only (arm id + occupant + hand), no learned action
-         "global"  robot-state tokens + one monolithic latent action per transition (Genie / SurgWM style)
+         "global"  robot-state tokens + one monolithic latent action per transition (continuous)
+         "global_vq" as "global" but a discrete action from a 12-entry codebook (Genie / SurgWM style)
          "slots"   robot-state tokens + K unsupervised slot actions (FLAM style)
          "arms"    robot-state tokens carrying one latent action per instrument arm (EG-SWM)
 camera = True adds the explicit endoscope ego-motion to the per-frame conditioning.
@@ -20,11 +21,11 @@ from dataclasses import asdict, dataclass, field
 import torch
 import torch.nn as nn
 
-from swm.models.actions import ArmIDM, ArmTokens, CameraEncoder, GlobalIDM, SlotIDM, Trunk
+from swm.models.actions import ArmIDM, ArmTokens, CameraEncoder, GlobalIDM, SlotIDM, Trunk, VQGlobalIDM
 from swm.models.dynamics import SIZES, DiTConfig, STDiT
 from swm.models.layers import timestep_embedding
 
-ACTIONS = ("none", "state", "global", "slots", "arms")
+ACTIONS = ("none", "state", "global", "global_vq", "slots", "arms")
 
 
 @dataclass
@@ -36,6 +37,8 @@ class WMConfig:
     du: int = 8                    # per-arm / per-slot action dimension
     dg: int = 24                   # monolithic action dimension (= 3 instrument arms x du)
     n_slots: int = 4
+    n_codes: int = 12              # codebook size of the discrete monolithic action
+    vq_weight: float = 1.0
     kl_weight: float = 1e-3
     idm_dim: int = 256
     idm_depth: int = 2
@@ -66,12 +69,15 @@ class WorldModel(nn.Module):
         self.time = nn.Sequential(nn.Linear(256, d), nn.SiLU(), nn.Linear(d, d))
         self.cam = CameraEncoder(d) if cfg.camera else None
         self.arm_tokens = ArmTokens(d, cfg.du if cfg.action == "arms" else 0) if uses_tokens else None
-        if cfg.action in ("global", "slots", "arms"):
+        if cfg.action in ("global", "global_vq", "slots", "arms"):
             trunk = Trunk(c, cfg.idm_dim, cfg.idm_depth, cfg.idm_heads, h, w)
             if cfg.action == "arms":
                 self.idm = ArmIDM(trunk, cfg.idm_dim, cfg.idm_heads, cfg.du)
             elif cfg.action == "global":
                 self.idm = GlobalIDM(trunk, cfg.idm_dim, cfg.idm_heads, cfg.dg)
+                self.extra_proj, self.extra_role = nn.Linear(cfg.dg, d), nn.Parameter(torch.zeros(1, 1, 1, d))
+            elif cfg.action == "global_vq":
+                self.idm = VQGlobalIDM(trunk, cfg.idm_dim, cfg.idm_heads, cfg.dg, cfg.n_codes)
                 self.extra_proj, self.extra_role = nn.Linear(cfg.dg, d), nn.Parameter(torch.zeros(1, 1, 1, d))
             else:
                 self.idm = SlotIDM(trunk, cfg.idm_dim, cfg.du, k=cfg.n_slots)
@@ -95,6 +101,12 @@ class WorldModel(nn.Module):
             out["kl"] = kl.sum(-1).sum() / n_active
             out["u_arms"] = torch.cat([u.new_zeros(b, 1, *u.shape[1:]), u.view(b, t - 1, *u.shape[1:])], 1)
             out["active"] = active.view(b, t - 1, -1)
+        elif self.cfg.action == "global_vq":
+            u, vq_loss, idx = self.idm(zp, zn, stochastic)
+            out["vq"] = vq_loss
+            out["codes"] = idx.view(b, t - 1)
+            u = u.view(b, t - 1, *u.shape[1:])
+            out["u_extra"] = torch.cat([u.new_zeros(b, 1, *u.shape[2:]), u], 1)
         else:
             u, kl = self.idm(zp, zn, stochastic)
             out["kl"] = kl.sum(-1).mean()
@@ -155,7 +167,13 @@ class WorldModel(nn.Module):
         w = (~is_ctx).float()
         fm = (err * w).sum() / w.sum().clamp_min(1)
         loss = fm + self.cfg.kl_weight * kl_scale * acts["kl"]
-        return loss, {"loss": loss.item(), "fm": fm.item(), "kl": float(acts["kl"])}
+        logs = {"fm": fm.item(), "kl": float(acts["kl"])}
+        if "vq" in acts:
+            loss = loss + self.cfg.vq_weight * acts["vq"]
+            counts = torch.bincount(acts["codes"].flatten(), minlength=self.cfg.n_codes).float()
+            p = counts / counts.sum()
+            logs.update(vq=acts["vq"].item(), code_perplexity=float(torch.exp(-(p * (p + 1e-10).log()).sum())))
+        return loss, {"loss": loss.item(), **logs}
 
     # ------------------------------------------------------------------ inference
     @torch.no_grad()

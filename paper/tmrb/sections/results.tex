@@ -1,0 +1,23 @@
+\section{Results}\label{sec:results}
+\todo{Results are filled in as experiments complete; tables below define the planned layout.}
+
+\begin{table}[t]
+\centering
+\caption{Action-conditioned prediction on held-out SurgVU test cases (2.8\,s horizon, action replay). \todo{numbers}}
+\label{tab:main}
+\begin{tabular}{lccccc}
+\toprule
+Action interface & PSNR$\uparrow$ & SSIM$\uparrow$ & LPIPS$\downarrow$ & FVD$\downarrow$ & $\Delta$PSNR$\uparrow$\\
+\midrule
+Copy last frame & & & & & --\\
+None & & & & & --\\
+State & & & & & --\\
+Monolithic & & & & & \\
+Monolithic-VQ (SurgWM-style) & & & & & \\
+Slots (FLAM-style) & & & & & \\
+\method{} & & & & & \\
+\midrule
+VAE reconstruction & & & & & --\\
+\bottomrule
+\end{tabular}
+\end{table}

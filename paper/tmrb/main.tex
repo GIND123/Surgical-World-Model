@@ -1,0 +1,37 @@
+\documentclass[journal]{IEEEtran}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{siunitx}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+\usepackage{tikz}
+\input{../../docs/diagrams/style.tex}
+\graphicspath{{../../docs/figures/}}
+\newcommand{\todo}[1]{\textcolor{red}{[#1]}}
+\newcommand{\method}{EG-SWM}
+
+\begin{document}
+\title{Embodiment-Grounded Surgical World Models:\\ Learning Arm-Factorized, Camera-Aware Actions from Unlabeled Robotic Video}
+% TODO(authors): author list and affiliations to be provided by the corresponding author.
+\author{Ajo~Babu~George%
+\thanks{\todo{Affiliations, funding and acknowledgements.}}}
+
+\markboth{IEEE Transactions on Medical Robotics and Bionics}{George \MakeLowercase{\textit{et al.}}: Embodiment-Grounded Surgical World Models}
+\maketitle
+
+\input{sections/abstract}
+\input{sections/introduction}
+\input{sections/related}
+\input{sections/data}
+\input{sections/method}
+\input{sections/experiments}
+\input{sections/results}
+\input{sections/discussion}
+
+\bibliographystyle{IEEEtran}
+\bibliography{arxiv,manual}
+\end{document}

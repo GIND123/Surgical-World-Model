@@ -1,0 +1,26 @@
+\section{Experimental Setup}\label{sec:setup}
+\subsection{Datasets and protocol}
+\textbf{SurgVU} (in-vivo, no kinematics). Models are trained on all usable 3.3\,s windows of the 123 training cases and selected on the 12 validation cases; we report results on a fixed set of \todo{2000} windows drawn evenly from the 20 test cases. Two latents (0.5\,s, five frames) are given as context and the model predicts the remaining 2.8\,s.
+
+\textbf{Kinematic grounding and transfer.} To test whether learned actions correspond to robot motion we use datasets with synchronized kinematics: JIGSAWS \cite{jigsaws} (da Vinci, bench-top suturing, knot tying and needle passing) and the SutureBot, SRT-H porcine cholecystectomy and CRCD subsets of Open-H-Embodiment \cite{openh}. SAR-RARP50 \cite{sarrarp} (clinical prostatectomy) tests transfer from porcine laboratory to human surgery.
+
+\subsection{Compared action interfaces}
+All world models share the tokenizer, the dynamics transformer, the data and the training budget, and differ only in how actions enter:
+(i) \emph{none}---unconditional prediction;
+(ii) \emph{state}---robot-state tokens without learned actions;
+(iii) \emph{monolithic}---one continuous latent action per transition with the same total dimension as three arm actions (24), Genie-style \cite{genie};
+(iv) \emph{monolithic-VQ}---one of twelve discrete latent actions, as in SurgWM \cite{surgwm};
+(v) \emph{slots}---four unsupervised factored latent actions obtained by slot attention \cite{slotattn,flam};
+(vi) \method{}---per-arm latent actions; each with and without the explicit endoscope action. We also re-implement SurgWM \cite{surgwm} with its own tokenizer, latent action model and MaskGIT \cite{maskgit} dynamics, and compare with Cosmos-H-Surgical-Simulator \cite{openh} on the kinematic benchmarks.
+
+\subsection{Metrics}
+\textbf{Fidelity:} PSNR, SSIM \cite{ssim} and LPIPS \cite{lpips} per predicted frame against the real frames, and FVD \cite{fvd} with the I3D network of \cite{styleganv}. Copying the last context frame and the VAE reconstruction of the ground truth bound these metrics from below and above.
+\textbf{Controllability:} $\Delta$PSNR, the loss in PSNR when actions are swapped with those of another clip \cite{genie,surgwm}, reported separately for endoscope and arm actions.
+\textbf{Endoscope compliance:} for commanded endoscope motions, the error between the commanded and the realized similarity transform, measured on generated video with the same estimator.
+\textbf{Arm locality:} when only arm $k$'s action is changed, the fraction of the resulting change in the generated frames that falls inside arm $k$'s region.
+\textbf{Embodiment consistency:} on generated frames, an instrument detector re-trained without test cases checks that the instruments on the robot are present and no others appear (precision, recall, hallucination and disappearance rates over the horizon).
+\textbf{Kinematic grounding:} the $R^2$ of ridge regression from frozen latent actions to the per-arm end-effector displacement of the same transition, on held-out trials.
+Means are reported with 95\,\% bootstrap confidence intervals over test cases.
+
+\subsection{Implementation}
+The dynamics transformer of size B has 12 blocks of width 768 (152\,M parameters with the action interface); size S has 8 blocks of width 512 and size L 16 blocks of width 1024. Models are trained with AdamW (learning rate $10^{-4}$, 2k warm-up steps, cosine decay), batch size 32, bfloat16, an exponential moving average of weights (0.9995), $\beta=10^{-3}$, for \todo{100k} steps on one NVIDIA RTX PRO 5000 (48\,GB). Sampling uses 20 Euler steps. The video VAE is Wan2.2's (frozen); among five tokenizers it gave the best reconstruction per latent number on validation clips (34.4\,dB PSNR, 0.019 LPIPS at $224\times320$).

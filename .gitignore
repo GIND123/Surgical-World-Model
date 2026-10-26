@@ -49,3 +49,5 @@ __MACOSX/
 
 # Personal dataset access links (signed-form tokens) -- never commit
 /configs/private/
+paper/**/*.pdf
+!docs/figures/*.pdf
