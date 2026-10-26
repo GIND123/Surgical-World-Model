@@ -5,19 +5,35 @@
 * Weights (public, CC BY-NC-SA 4.0): <https://huggingface.co/GOVINDFROM/surgical-world-model>
 * Research documents: [data audit](docs/01_data_audit.md) · [external data](docs/02_external_data.md) · [literature review](docs/03_literature_review.md) · [research plan](docs/04_research_plan.md) · [legacy](docs/legacy.md)
 
-## Status (updated 2026-10-27)
+## Status (updated 2026-10-27, 05:00 IST)
 
 | Stage | State |
 |---|---|
 | Data audit, literature review, hypotheses | done |
 | Case-level split (123 / 12 / 20 cases) | done — `configs/splits/surgvu_v1.json` |
 | Tokenizer selection | done — Wan2.2 VAE (table below) |
-| 10 fps cache + quality flags + endoscope ego-motion (one decode pass, 837.8 h) | running |
-| External data: JIGSAWS, Open-H SutureBot + CRCD | downloaded |
-| External data: Open-H SRT-H cholecystectomy (114 GB), SAR-RARP50 (34 GB) | downloading |
-| External data: AutoLaparo | server unreachable from this network; auto-retry running |
-| Instrument detection → arm binding, UI readout, latent windows | next |
-| EG-SWM and baselines, experiments E1–E6, manuscript | planned ([plan](docs/04_research_plan.md)) |
+| SurgVU processing: 10 fps cache → Wan2.2 latents → instrument detection → arm binding → conditioning | running as a chained pipeline (cache 35 / 280 parts) |
+| External data downloaded | JIGSAWS, SAR-RARP50, Open-H SutureBot + CRCD; SRT-H downloading |
+| External data prepared into the same representation (latents, camera actions, arm regions, kinematics) | SutureBot running; CRCD and JIGSAWS queued |
+| AutoLaparo | server unreachable from this network; auto-retry running |
+| Model, baselines, training, evaluation code | done: EG-SWM + 6 action interfaces, kinematics-conditioned mode, SurgWM re-implementation |
+| Experiments E1–E6 | pilot queued; controlled comparison next ([plan](docs/04_research_plan.md)) |
+| Manuscript | draft skeleton in `paper/tmrb` (IEEEtran, method and setup written) |
+
+## Experiments and evaluation protocol
+
+| ID | Question | Data | Script |
+|---|---|---|---|
+| E1 | fidelity and controllability of each action interface at equal capacity | SurgVU, 2,000 fixed held-out windows from 20 test cases | `scripts/eval/eval_wm.py`, `scripts/eval/eval_control.py` |
+| E2 | do learned per-arm actions encode real robot motion? | SutureBot, CRCD, JIGSAWS (held-out episodes / surgeons) | `scripts/eval/probe_kinematics.py` |
+| E2b | does the explicit camera action measure real endoscope motion? | CRCD (ECM joints, camera pedal) | `scripts/eval/validate_camera_action.py` |
+| E3 | kinematics-conditioned prediction, data efficiency of unlabeled pre-training | SutureBot, SRT-H, CRCD | `scripts/train/train_wm.py --action kin --init <run>` |
+| E4 | transfer to clinical surgery | SAR-RARP50 | — |
+| E6 | ablations (action structure, camera, grounding, bottleneck, tokenizer, data and model scale) | SurgVU | `scripts/train/train_wm.py` |
+
+Metrics: PSNR / SSIM / LPIPS per predicted frame against **real** frames (not VAE reconstructions), FVD with the StyleGAN-V I3D port, ΔPSNR under swapped actions, endoscope compliance (commanded vs re-estimated motion), per-arm locality of action changes, embodiment consistency (instrument detector on generated frames vs the robot's logged instruments), and linear-probe R² against kinematics. Reference rows: repeat-last-context-frame and VAE reconstruction.
+
+Compared action interfaces, all sharing tokenizer, backbone, data and budget: `none`, `state` (robot state only), `global` (monolithic continuous latent action, Genie-style), `global_vq` (12 discrete actions, SurgWM-style), `slots` (unsupervised factors, FLAM-style), `arms` (**EG-SWM**), each with or without the explicit camera action; plus the full SurgWM re-implementation and, on kinematic benchmarks, Cosmos-H-Surgical-Simulator.
 
 ## Overview
 
@@ -81,12 +97,19 @@ PhysioNet holds no surgical video with robot kinematics, so nothing is taken fro
 ```text
 src/swm/                  package
   data/surgvu.py          robot-log labels on a global case timeline, arm occupancy, tasks
+  data/windows.py         SurgVU latent windows (robot state, arm boxes, camera actions)
+  data/external.py        external datasets with kinematics; data/kinematics.py per-arm motion
+  models/                 ST-DiT dynamics, action interfaces (camera, arm tokens, inverse dynamics), world model
+  baselines/surgwm.py     re-implementation of the Surgical Vision World Model
+  metrics/                PSNR / SSIM / LPIPS, FVD
   data/geometry.py        crops shared by every stage (source -> cache -> endoscope field)
   data/egomotion.py       endoscope ego-motion (LK + RANSAC similarity)
   metrics/image.py        PSNR / SSIM / LPIPS
   hub.py                  Hugging Face upload (token from .env, never printed)
 scripts/data/             audits, splits, downloads, cache builder
-scripts/eval/             tokenizer benchmark (and evaluation suites)
+scripts/train/            world-model and SurgWM training
+scripts/eval/             tokenizer benchmark, E1 fidelity/control, E2 probes, camera-action validation
+scripts/queue/            sequential GPU job queue
 scripts/docs/             sample export, TikZ diagram build
 docs/                     research documents; docs/diagrams/*.tex -> docs/figures/*.{pdf,png}
 configs/splits/           case-level splits
@@ -120,3 +143,4 @@ Raw SurgVU data comes from the organisers (`storage.googleapis.com/isi-surgvu/�
 * Open-H-Embodiment Consortium, "Open-H-Embodiment: A Large-Scale Dataset for Enabling Foundation Models in Medical Robotics," arXiv:2604.21017, 2026.
 * D. Psychogyios et al., "SAR-RARP50: Segmentation of surgical instrumentation and Action Recognition on Robot-Assisted Radical Prostatectomy Challenge," arXiv:2401.00496, 2023.
 * Z. Wang et al., "AutoLaparo: A New Dataset of Integrated Multi-tasks for Image-guided Surgical Automation in Laparoscopic Hysterectomy," MICCAI 2022, arXiv:2208.02049.
+* "Comprehensive Robotic Cholecystectomy Dataset (CRCD): Integrating Kinematics, Pedal Signals, and Endoscopic Videos," ISMR 2024, doi:10.1109/ISMR63436.2024.10585836.
