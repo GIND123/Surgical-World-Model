@@ -35,6 +35,7 @@ def parse() -> argparse.Namespace:
     ap.add_argument("--dg", type=int, default=24)
     ap.add_argument("--kl", type=float, default=1e-3)
     ap.add_argument("--kl-warmup", type=int, default=10_000, help="steps over which the KL weight ramps from 0")
+    ap.add_argument("--arm-pool", choices=["region", "global", "shuffled"], default="region")
     ap.add_argument("--steps", type=int, default=100_000)
     ap.add_argument("--bs", type=int, default=32)
     ap.add_argument("--lr", type=float, default=1e-4)
@@ -114,7 +115,7 @@ def main() -> None:
     run = OUTPUTS / "runs" / args.name
     run.mkdir(parents=True, exist_ok=True)
     cfg = WMConfig(size=args.size, action=args.action, camera=not args.no_camera, du=args.du, dg=args.dg,
-                   kl_weight=args.kl, grad_checkpoint=args.grad_ckpt)
+                   kl_weight=args.kl, grad_checkpoint=args.grad_ckpt, arm_pool=args.arm_pool)
     torch.backends.cudnn.benchmark = True
     (run / "config.json").write_text(json.dumps({"model": cfg.to_dict(), "train": vars(args)}, indent=1))
 

@@ -42,6 +42,7 @@ class WMConfig:
     n_codes: int = 12              # codebook size of the discrete monolithic action
     vq_weight: float = 1.0
     kin_dim: int = 28              # 4 frame transitions x (dpos 3, drot 3, djaw 1) per latent step
+    arm_pool: str = "region"       # ablations: "global" (per-arm query, whole frame), "shuffled" (wrong binding)
     kl_weight: float = 1e-3
     idm_dim: int = 256
     idm_depth: int = 2
@@ -104,7 +105,16 @@ class WorldModel(nn.Module):
         zp, zn = z[:, :-1].flatten(0, 1), z[:, 1:].flatten(0, 1)
         if self.cfg.action == "arms":
             occ = batch["occupant"][:, 1:].flatten(0, 1)
-            region = batch["region"][:, 1:].flatten(0, 1)
+            region = batch["region"][:, 1:]
+            if self.cfg.arm_pool == "global":                 # factorised but not grounded
+                region = region.any(-1, keepdim=True).expand_as(region)
+            elif self.cfg.arm_pool == "shuffled":             # grounded in the wrong arm's region (fixed per window)
+                wid = batch["window"][:, 0] * 100_003 + batch["window"][:, 1]
+                keys = ((wid[:, None] * 7919 + torch.arange(4, device=wid.device)) * 104_729) % 1_000_003
+                perm = keys.argsort(-1)
+                idx = perm[:, None, :, None].expand(-1, region.shape[1], -1, region.shape[-1])
+                region = torch.gather(region, 2, idx)
+            region = region.flatten(0, 1)
             u, kl, active = self.idm(zp, zn, occ, region, stochastic)
             n_active = active.sum().clamp_min(1)
             out["kl"] = kl.sum(-1).sum() / n_active
