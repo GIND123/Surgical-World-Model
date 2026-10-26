@@ -1,45 +1,122 @@
-# Surgical World Model
+# Surgical World Model (EG-SWM)
 
-World models of robot-assisted surgery whose actions are structured like the robot: an explicit endoscope ego-motion action plus one latent action per instrument arm, learned from unlabeled in-vivo da Vinci video and grounded in the robot's own logs. Target venue: *IEEE Transactions on Medical Robotics and Bionics*.
+**Embodiment-grounded world models of robot-assisted surgery.** Given a few endoscope frames and an action, the model predicts the next seconds of surgical video. Its action space mirrors the robot: an explicit **endoscope ego-motion** action plus one latent action per **instrument arm**, learned from unlabeled in-vivo da Vinci video and bound to the arms through the robot's own system logs — no kinematics needed. Target venue: *IEEE Transactions on Medical Robotics and Bionics*; early showcase at NBRCOM-2026 (AIIMS Nagpur).
 
-**Status (2026-10-27):** data audit, external-data survey, literature review and research plan are complete; the data pipeline is next.
+* Weights (public, CC BY-NC-SA 4.0): <https://huggingface.co/GOVINDFROM/surgical-world-model>
+* Research documents: [data audit](docs/01_data_audit.md) · [external data](docs/02_external_data.md) · [literature review](docs/03_literature_review.md) · [research plan](docs/04_research_plan.md) · [legacy](docs/legacy.md)
 
-| Document | Content |
+## Status (updated 2026-10-27)
+
+| Stage | State |
 |---|---|
-| [docs/01_data_audit.md](docs/01_data_audit.md) | the local SurgVU corpus: 155 cases, 837.8 h, robot-log arm occupancy incl. endoscope, tasks, quality, label noise |
-| [docs/02_external_data.md](docs/02_external_data.md) | external datasets (Open-H-Embodiment, SAR-RARP50, gated ones), PhysioNet verdict |
-| [docs/03_literature_review.md](docs/03_literature_review.md) | surgical world models 2024–2026, gap analysis |
-| [docs/04_research_plan.md](docs/04_research_plan.md) | hypotheses, method, experiments, baselines, ablations, metrics, timeline |
-| [docs/legacy.md](docs/legacy.md) | the previous SurgVU detection project and where its files moved |
+| Data audit, literature review, hypotheses | done |
+| Case-level split (123 / 12 / 20 cases) | done — `configs/splits/surgvu_v1.json` |
+| Tokenizer selection | done — Wan2.2 VAE (table below) |
+| 10 fps cache + quality flags + endoscope ego-motion (one decode pass, 837.8 h) | running |
+| External data: JIGSAWS, Open-H SutureBot + CRCD | downloaded |
+| External data: Open-H SRT-H cholecystectomy (114 GB), SAR-RARP50 (34 GB) | downloading |
+| External data: AutoLaparo | server unreachable from this network; auto-retry running |
+| Instrument detection → arm binding, UI readout, latent windows | next |
+| EG-SWM and baselines, experiments E1–E6, manuscript | planned ([plan](docs/04_research_plan.md)) |
 
-## Layout
+## Overview
+
+### Data pipeline
+
+![Data pipeline](docs/figures/pipeline.png)
+
+*One decode pass turns 837.8 h of 720p60 da Vinci video into a 10 fps cache (640×512, visually lossless) and, per frame, quality flags and the endoscope's ego-motion. Robot-side signals — the system logs' arm occupancy (which arm holds the endoscope and which instrument sits on every other arm) and the console overlay burned into the video (driving hand, energy) — bind detected instruments to robot arms. The world model sees only the 224×320 endoscope field, never the overlay, so it cannot read instrument names off the screen.*
+
+### Model
+
+![EG-SWM architecture with a sample input and output](docs/figures/architecture.png)
+
+*Sample input/output from a held-out test case (`case_139`, suturing; frames 0.4 s apart). Until the first model is trained, the output row shows the ground-truth future of that window; it will be replaced by model rollouts on the same window. Frames: SurgVU dataset (Zia et al., 2025), endoscope field only.*
+
+**Tokenizer.** A frozen Wan2.2 video VAE compresses 4 frames into one latent $z_t\in\mathbb{R}^{48\times14\times20}$; a 3.3 s training window (33 frames at 10 fps) becomes 9 latents.
+
+**Actions.** For each latent step the action is $a_t=(c_t,\{u^k_t\}_k)$:
+* $c_t=(\Delta x,\Delta y,\log s,\theta)$ — endoscope ego-motion, *measured* (Lucas–Kanade tracks + RANSAC similarity, instruments rejected as outliers). It enters every transformer sub-layer through AdaLN.
+* $u^k_t$ — a low-dimensional *learned* action for instrument arm $k$, produced during training by an inverse-dynamics head that only sees the latents inside that arm's region $R^k_t$ (instrument detector + tracker, detections bound to arms through the robot log) and is regularised by a KL bottleneck. Each arm becomes a token (action + arm id + instrument + driving hand) that the video tokens cross-attend to.
+
+**Dynamics.** A latent spatio-temporal diffusion transformer (spatial self-attention per frame, causal temporal self-attention, cross-attention to arm tokens, MLP) trained with flow matching and per-frame noise levels (diffusion forcing), so it can roll out autoregressively from any number of context frames.
+
+**Why.** A single latent action (Genie, SurgWM) has to explain camera motion, two or three instruments and tissue response at once; LAOM (ICML 2025) shows such latents collapse under action-correlated distractors unless a little supervision is added. The robot already tells us its embodiment for free — we use it to structure, not just supervise, the action space. Hypotheses H1–H4 and the experiment plan are in [docs/04_research_plan.md](docs/04_research_plan.md).
+
+## Results so far
+
+### Tokenizer selection (64 held-out validation clips × 9 frames, 224×320)
+
+| Tokenizer | Type | Latent numbers / frame | PSNR ↑ | SSIM ↑ | LPIPS ↓ |
+|---|---|---:|---:|---:|---:|
+| FLUX.2 VAE | image, f8, 32 ch | 35,840 | **38.40** | **0.975** | **0.007** |
+| **Wan2.2 VAE (chosen)** | video, f16, ×4 time, 48 ch | **4,480** | 34.44 | 0.947 | 0.019 |
+| Wan2.1 VAE | video, f8, ×4 time, 16 ch | 5,973 | 34.13 | 0.947 | 0.020 |
+| SD-VAE (ft-MSE) | image, f8, 4 ch | 4,480 | 28.85 | 0.829 | 0.057 |
+| DC-AE | image, f32, 32 ch | 2,240 | 26.15 | 0.738 | 0.090 |
+
+Wan2.2 gives the best quality per latent number (8× more compact than FLUX.2 at 34.4 dB, far above the PSNR any predicted frame reaches) and temporally coherent decoding; FLUX.2 is kept as the per-frame tokenizer ablation. Reproduce: `python scripts/eval/tokenizer_bench.py`.
+
+### Data facts that shape the method ([full audit](docs/01_data_audit.md))
+
+* 155 cases, 280 videos, 837.8 h, all decodable; ≈604 h usable (23 % black, 4.5 % out of body / smoke, 1.7 % fluorescence).
+* The system logs record all four arms **including the endoscope**; the camera arm never changes within a case (USM2 in 142 cases, USM3 in 11). Three instruments are mounted 65 % of the time; 5,969 instrument exchanges (7.1 / h).
+* Log times are part-relative (`swm.data.surgvu.timeline` handles offsets); 97 % of same-arm overlaps are stale intervals from missing uninstall events.
+* The console overlay is present on 81 % of usable frames and shows which hand drives which arm and when energy fires.
+
+## Datasets
+
+| Dataset | Role | Access | Local status |
+|---|---|---|---|
+| SurgVU (Intuitive) | training + main benchmark | public | `data/raw/surgvu*` |
+| Open-H-Embodiment: SutureBot, SRT-H porcine cholecystectomy, CRCD | kinematic grounding, kinematics-conditioned benchmarks | CC-BY-4.0 | downloading |
+| JIGSAWS | kinematic grounding (da Vinci) | data-use agreement | downloaded |
+| SAR-RARP50 | clinical (human) transfer | CC BY-NC-SA 4.0 | downloading |
+| AutoLaparo | external test of the camera action (laparoscope motion labels) | request form | pending (server unreachable) |
+
+PhysioNet holds no surgical video with robot kinematics, so nothing is taken from it ([details](docs/02_external_data.md)).
+
+## Repository layout
 
 ```text
-src/swm/            Python package (data loading, models, evaluation)
-scripts/data/       audits, downloads, preprocessing
-configs/            experiment and split configs
-docs/               research documents
-legacy/             previous SurgVU 2026 Cat-1 detection project (reused detector)
-data/               raw and external datasets            (Git-ignored)
-checkpoints/        pretrained and trained weights        (Git-ignored)
-outputs/            runs, logs, audit tables              (Git-ignored)
-archive/            old challenge artefacts               (Git-ignored)
+src/swm/                  package
+  data/surgvu.py          robot-log labels on a global case timeline, arm occupancy, tasks
+  data/geometry.py        crops shared by every stage (source -> cache -> endoscope field)
+  data/egomotion.py       endoscope ego-motion (LK + RANSAC similarity)
+  metrics/image.py        PSNR / SSIM / LPIPS
+  hub.py                  Hugging Face upload (token from .env, never printed)
+scripts/data/             audits, splits, downloads, cache builder
+scripts/eval/             tokenizer benchmark (and evaluation suites)
+scripts/docs/             sample export, TikZ diagram build
+docs/                     research documents; docs/diagrams/*.tex -> docs/figures/*.{pdf,png}
+configs/splits/           case-level splits
+legacy/                   previous SurgVU 2026 Cat-1 detection project (reused detector)
+data/ checkpoints/ outputs/ archive/   Git-ignored
 ```
 
-## Setup
+## Setup and reproduction
 
 ```bash
 uv venv --python 3.12 .venv
 uv pip install --python .venv/bin/python torch torchvision --index-url https://download.pytorch.org/whl/cu130
 uv pip install --python .venv/bin/python -e ".[dev]"
+
+python scripts/data/audit_surgvu.py --workers 20          # video integrity, label tables
+python scripts/data/audit_timeline.py                     # robot configuration on the global timeline
+python scripts/data/audit_frames.py --every 60            # frame quality, console-UI presence
+python scripts/data/make_splits.py                        # case-level split
+python scripts/data/build_surgvu_cache.py --workers 10    # 10 fps cache + quality + ego-motion
+python scripts/data/download_external.py --list           # external datasets
+python scripts/eval/tokenizer_bench.py                    # tokenizer comparison
+scripts/docs/build_diagrams.sh                            # TikZ -> PDF/PNG
 ```
 
-Raw SurgVU data is obtained from the challenge organisers and placed under `data/raw/` (see `docs/legacy.md` for the expected layout). Open external data is fetched with `python scripts/data/download_external.py --list`.
+Raw SurgVU data comes from the organisers (`storage.googleapis.com/isi-surgvu/…`); links for data-use-agreement datasets live in the Git-ignored `configs/private/dataset_links.json`. A `.env` with `hf=<token>` and `HF_USER=<user>` enables weight uploads.
 
-## Reproducing the audit
+## Citation of data
 
-```bash
-.venv/bin/python scripts/data/audit_surgvu.py --workers 20   # video integrity, label tables
-.venv/bin/python scripts/data/audit_timeline.py               # robot configuration on the global timeline
-.venv/bin/python scripts/data/audit_frames.py --every 60      # frame quality, console-UI presence
-```
+* A. Zia et al., "Surgical Visual Understanding (SurgVU) Dataset," arXiv:2501.09209, 2025.
+* Y. Gao et al., "JHU-ISI Gesture and Skill Assessment Working Set (JIGSAWS): A Surgical Activity Dataset for Human Motion Modeling," MICCAI Workshop M2CAI, 2014 — <http://cirl.lcsr.jhu.edu/research/hmm/datasets/jigsaws_release>.
+* Open-H-Embodiment Consortium, "Open-H-Embodiment: A Large-Scale Dataset for Enabling Foundation Models in Medical Robotics," arXiv:2604.21017, 2026.
+* D. Psychogyios et al., "SAR-RARP50: Segmentation of surgical instrumentation and Action Recognition on Robot-Assisted Radical Prostatectomy Challenge," arXiv:2401.00496, 2023.
+* Z. Wang et al., "AutoLaparo: A New Dataset of Integrated Multi-tasks for Image-guided Surgical Automation in Laparoscopic Hysterectomy," MICCAI 2022, arXiv:2208.02049.

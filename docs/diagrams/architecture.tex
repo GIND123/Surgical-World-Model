@@ -1,0 +1,77 @@
+\documentclass[tikz,border=6pt]{standalone}
+\usepackage[scaled]{helvet}
+\renewcommand\familydefault{\sfdefault}
+\usepackage{graphicx}
+\input{style.tex}
+\graphicspath{{../figures/samples/}}
+\newcommand{\frm}[1]{\includegraphics[width=17mm]{#1}}
+\begin{document}
+\begin{tikzpicture}[x=1mm, y=1mm]
+
+% ================= sample input / output (held-out test case, suturing) =================
+\foreach \i in {0,...,3} {
+  \node[inner sep=0, anchor=north west] (c\i) at (\i*18, 0) {\frm{ctx\i.jpg}};
+  \node[inner sep=0, anchor=north west] (f\i) at (124+\i*18, 0) {\frm{fut\i.jpg}};
+}
+\node[note, anchor=south] at (35, 1.5) {\textbf{input}: context frames $x_{1:4}$ (0.4\,s apart) + actions};
+\node[note, anchor=south] at (159, 1.5) {\textbf{output}: predicted frames $\hat x_{5:8}$ (next 1.6\,s)};
+\node[note, anchor=north east, align=right] at (195, -27.5) {shown here: ground-truth future\\ of this held-out window};
+
+% ================= tokenizer =================
+\node[proc, minimum width=71mm, minimum height=7mm, anchor=north west] (enc) at (0, -19)
+  {VAE encoder \ (Wan2.2, frozen) \ $\to\ z_t\in\mathbb{R}^{48\times14\times20}$ per 4 frames};
+\node[proc, minimum width=71mm, minimum height=7mm, anchor=north west] (dec) at (124, -19)
+  {VAE decoder \ (Wan2.2, frozen)};
+\foreach \i in {0,...,3} {
+  \draw[flow] (c\i.south) -- (c\i.south |- enc.north);
+  \draw[flow] (f\i.south |- dec.north) -- (f\i.south);
+}
+
+% ================= dynamics transformer =================
+\node[learn, minimum width=96mm, minimum height=27mm, anchor=north] (dyn) at (97.5, -33) {};
+\node[anchor=north west, font=\sffamily\small\bfseries] at ($(dyn.north west)+(1.5,-0.5)$) {dynamics transformer $\times N$};
+\node[box, draw=cam, fill=cam!8, minimum width=90mm, font=\sffamily\scriptsize, anchor=north] (ada) at (97.5, -39.5)
+  {AdaLN-zero on every sub-layer: camera action $c_t$, noise level $\tau_t$, task/robot context};
+\node[box, font=\sffamily\scriptsize, minimum width=20mm, minimum height=9mm, anchor=north west] (sa) at (51.5, -47) {spatial\\ self-attn};
+\node[box, font=\sffamily\scriptsize, minimum width=20mm, minimum height=9mm, right=3mm of sa] (ta) {causal temporal\\ self-attn};
+\node[box, font=\sffamily\scriptsize, minimum width=20mm, minimum height=9mm, right=3mm of ta, draw=armB, line width=0.8pt] (xa) {cross-attn\\ to arm tokens};
+\node[box, font=\sffamily\scriptsize, minimum width=20mm, minimum height=9mm, right=3mm of xa] (mlp) {MLP};
+\draw[flow] (sa) -- (ta); \draw[flow] (ta) -- (xa); \draw[flow] (xa) -- (mlp);
+\draw[flow] (enc.south) |- (sa.west);
+\draw[flow] (mlp.east) -| ($(dec.south west)+(26,0)$);
+\node[note, anchor=north west, align=left] at (50, -61) {flow matching + diffusion forcing\\ (per-frame noise) $\Rightarrow$ autoregressive rollout};
+
+% ================= camera action (explicit) =================
+\node[box, draw=cam, dashed, font=\sffamily\scriptsize, anchor=north] (ego) at (97.5, -2)
+  {\textbf{ego-motion estimator}\\ LK tracks + RANSAC\\ (no learning)};
+\node[token, fill=cam!20, draw=cam, anchor=north] (ct) at (120, -21.5) {$c_t$};
+\node[note, left=1mm of ct, text=cam] {$(\Delta x,\Delta y,\log s,\theta)$};
+\draw[flow, draw=cam] (ego.south) |- ($(ct.north)+(0,3)$) -- (ct.north);
+\draw[flow, draw=cam] (ct.south) -- (ct.south |- ada.north);
+
+% ================= arm actions (learned, embodiment-bound) =================
+\node[token, fill=armB!25, draw=armB] (u3) at (xa.south |- 0, -72) {$u^3_t$};
+\node[token, fill=armA!25, draw=armA, left=2mm of u3] (u1) {$u^1_t$};
+
+\node[token, fill=armC!25, draw=armC, right=2mm of u3] (u4) {$u^4_t$};
+\node[note, right=2mm of u4, align=left, anchor=west] (tok) {arm token $=\ u^k_t$ + arm id\\ + instrument + driving hand (L/R)};
+\draw[flow, draw=armB] (u3.north) -- (xa.south);
+
+\node[box, draw=armB, dashed, font=\sffamily\scriptsize, align=left, anchor=north] (idm) at (97.5, -80)
+  {\textbf{inverse dynamics} (training only): pool $(z_t, z_{t+1})$ inside arm region $R^k_t$ $\to$
+   $\mu^k,\sigma^k$ $\to$ $u^k_t\!\sim\!\mathcal{N}(\mu^k,\sigma^k)$, KL bottleneck};
+\draw[flow, draw=armB, dashed] (u3.south |- idm.north) -- (u3.south);
+
+\node[box, align=left, font=\sffamily\scriptsize, anchor=north west, inner sep=3pt] (state) at (0, -66) {%
+  \textbf{robot state} $s_t$ (system logs)\\
+  \textcolor{armA}{$\blacksquare$} USM1 needle driver (L)\\
+  \textcolor{cam}{$\blacksquare$} USM2 endoscope\\
+  \textcolor{armB}{$\blacksquare$} USM3 needle driver (R)\\
+  \textcolor{armC}{$\blacksquare$} USM4 Cadiere forceps};
+\draw[flow] (state.east) -- ++(4,0) |- (u1.west);
+
+\node[box, align=left, font=\sffamily\scriptsize, anchor=north east, inner sep=3pt] (det) at (195, -66) {%
+  \textbf{arm regions} $R^k_t$\\ instrument detector + tracker,\\ detections bound to arms\\ through the robot log};
+\draw[flow, dashed] (det.south) |- (idm.east);
+\end{tikzpicture}
+\end{document}

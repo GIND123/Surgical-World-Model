@@ -1,0 +1,25 @@
+% Shared TikZ style for every project diagram (README figures and the manuscript).
+\usepackage{amsmath,amssymb}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc,shapes.geometric,decorations.pathreplacing}
+\definecolor{cam}{HTML}{2563EB}     % endoscope / camera action
+\definecolor{armA}{HTML}{EA580C}    % instrument arm USM1
+\definecolor{armB}{HTML}{16A34A}    % instrument arm USM3
+\definecolor{armC}{HTML}{9333EA}    % instrument arm USM4
+\definecolor{ink}{HTML}{1F2937}
+\definecolor{muted}{HTML}{6B7280}
+\definecolor{panel}{HTML}{F3F4F6}
+\definecolor{model}{HTML}{0F766E}
+\tikzset{
+  >={Stealth[length=2.2mm]},
+  every node/.style={font=\sffamily\small, text=ink},
+  box/.style={draw=ink!60, rounded corners=2pt, fill=white, inner sep=4pt, align=center, line width=0.5pt},
+  data/.style={box, fill=panel},
+  proc/.style={box, fill=model!8, draw=model!70},
+  learn/.style={box, fill=model!20, draw=model, line width=0.8pt},
+  sig/.style={box, font=\sffamily\scriptsize},
+  group/.style={draw=muted!70, dashed, rounded corners=4pt, inner sep=6pt},
+  flow/.style={->, line width=0.7pt, draw=ink!70},
+  note/.style={font=\sffamily\scriptsize, text=muted, align=center},
+  token/.style={draw, rounded corners=1pt, minimum width=5mm, minimum height=4mm, inner sep=1pt,
+                font=\sffamily\scriptsize\bfseries},
+}
