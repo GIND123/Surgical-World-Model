@@ -30,7 +30,11 @@ REGISTRY = {
                         note="da Vinci porcine cholecystectomy with kinematics (CRCD)"),
     "sar_rarp50": dict(kind="figshare", articles=[24932529, 24932499],
                        note="50 clinical robot-assisted prostatectomies, gestures + segmentation; CC BY-NC-SA 4.0"),
+    "jigsaws": dict(kind="private", note="da Vinci video + kinematics + gestures (DUA; cite Gao et al., M2CAI 2014)"),
 }
+# Download links obtained by signing data-use agreements carry personal tokens; they live in a
+# Git-ignored file: {"<dataset>": {"<file name>": "<url>", ...}}
+PRIVATE_LINKS = Path(__file__).resolve().parents[2] / "configs" / "private" / "dataset_links.json"
 
 
 def hf(name: str, spec: dict) -> None:
@@ -83,6 +87,17 @@ def figshare(name: str, spec: dict) -> None:
             print(f"ok {dst.relative_to(EXTERNAL)}", flush=True)
 
 
+def private(name: str, spec: dict) -> None:
+    links = json.loads(PRIVATE_LINKS.read_text())[name]
+    out = EXTERNAL / name
+    out.mkdir(parents=True, exist_ok=True)
+    for fname, url in links.items():
+        dst = out / fname
+        subprocess.run(["curl", "-sSL", "--retry", "8", "--retry-delay", "10", "-C", "-", "-o", str(dst), url],
+                       check=True)
+        print(f"ok {dst.relative_to(EXTERNAL)} {dst.stat().st_size / 1e6:.1f} MB", flush=True)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("names", nargs="*")
@@ -95,7 +110,7 @@ def main() -> None:
     for name in args.names:
         spec = REGISTRY[name]
         print(f"== {name}: {spec['note']}", flush=True)
-        {"hf": hf, "figshare": figshare}[spec["kind"]](name, spec)
+        {"hf": hf, "figshare": figshare, "private": private}[spec["kind"]](name, spec)
         print(f"== done {name}", flush=True)
 
 

@@ -46,3 +46,6 @@ paper/**/*.fls
 .env
 **/.DS_Store
 __MACOSX/
+
+# Personal dataset access links (signed-form tokens) -- never commit
+/configs/private/
