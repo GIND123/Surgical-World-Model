@@ -18,6 +18,7 @@ from pathlib import Path
 import torch
 from torch.utils.data import DataLoader
 
+from swm.data.external import ExternalWindows
 from swm.data.windows import LatentWindows
 from swm.models.actions import region_from_boxes
 from swm.models.world_model import ACTIONS, WMConfig, WorldModel
@@ -42,7 +43,9 @@ def parse() -> argparse.Namespace:
     ap.add_argument("--ema", type=float, default=0.9995)
     ap.add_argument("--grad-ckpt", action="store_true")
     ap.add_argument("--no-compile", action="store_true")
-    ap.add_argument("--train-fraction", type=float, default=1.0, help="fraction of training cases (data scaling)")
+    ap.add_argument("--train-fraction", type=float, default=1.0, help="fraction of training cases/episodes")
+    ap.add_argument("--data", default="surgvu", help="surgvu or a prepared external dataset (suturebot, crcd, ...)")
+    ap.add_argument("--init", help="initialise from outputs/runs/<run>/ckpt_last.pt (EMA weights, non-strict)")
     ap.add_argument("--eval-every", type=int, default=5000)
     ap.add_argument("--save-every", type=int, default=5000)
     ap.add_argument("--workers", type=int, default=6)
@@ -112,22 +115,41 @@ def main() -> None:
     run.mkdir(parents=True, exist_ok=True)
     cfg = WMConfig(size=args.size, action=args.action, camera=not args.no_camera, du=args.du, dg=args.dg,
                    kl_weight=args.kl, grad_checkpoint=args.grad_ckpt)
+    torch.backends.cudnn.benchmark = True
     (run / "config.json").write_text(json.dumps({"model": cfg.to_dict(), "train": vars(args)}, indent=1))
 
-    train_cases = None
-    if args.train_fraction < 1.0:
-        sp = json.loads((Path(__file__).resolve().parents[2] / "configs/splits/surgvu_v1.json").read_text())
-        g = torch.Generator().manual_seed(args.seed)
-        keep = torch.randperm(len(sp["train"]), generator=g)[: max(1, round(args.train_fraction * len(sp["train"])))]
-        train_cases = [sp["train"][i] for i in keep.tolist()]
-    ds = LatentWindows("train", cases=train_cases)
-    val = LatentWindows("val", max_windows=512, seed=0)
+    if args.data == "surgvu":
+        train_cases = None
+        if args.train_fraction < 1.0:
+            sp = json.loads((Path(__file__).resolve().parents[2] / "configs/splits/surgvu_v1.json").read_text())
+            g = torch.Generator().manual_seed(args.seed)
+            n_keep = max(1, round(args.train_fraction * len(sp["train"])))
+            keep = torch.randperm(len(sp["train"]), generator=g)[:n_keep]
+            train_cases = [sp["train"][i] for i in keep.tolist()]
+        ds = LatentWindows("train", cases=train_cases)
+        val = LatentWindows("val", max_windows=512, seed=0)
+    else:
+        ds = ExternalWindows(args.data, "train", fraction=args.train_fraction, seed=args.seed)
+        val = ExternalWindows(args.data, "val")
+        if len(val) == 0:                      # no validation split: monitor on a fixed slice of training data
+            val = ExternalWindows(args.data, "train")
+            val.index = val.index[:: max(1, len(val.index) // 256)][:256]
     loader = DataLoader(ds, batch_size=args.bs, shuffle=True, drop_last=True, num_workers=args.workers,
                         pin_memory=True, persistent_workers=True)
     val_loader = DataLoader(val, batch_size=args.bs, shuffle=False, num_workers=2)
     print(f"train windows {len(ds)} from {len(ds.parts)} parts, val windows {len(val)}", flush=True)
 
     model = WorldModel(cfg).cuda()
+    if args.init:
+        st = torch.load(OUTPUTS / "runs" / args.init / "ckpt_last.pt", map_location="cuda", weights_only=False)
+        src = WorldModel(WMConfig(**{k: (tuple(v) if k == "latent_shape" else v)
+                                     for k, v in st["config"].items()})).cuda()
+        for p, e in zip(src.parameters(), st["ema"], strict=True):
+            p.data.copy_(e)
+        missing, unexpected = model.load_state_dict(src.state_dict(), strict=False)
+        print(f"initialised from {args.init}: missing {sorted({k.split('.')[0] for k in missing})}, "
+              f"unused {sorted({k.split('.')[0] for k in unexpected})}", flush=True)
+        del src
     n_params = sum(p.numel() for p in model.parameters())
     decay, no_decay = [], []
     for name, p in model.named_parameters():

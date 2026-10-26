@@ -50,7 +50,8 @@ def edge_density(gray: np.ndarray) -> float:
     return float(cv2.Canny(gray, 60, 160).mean() / 255)
 
 
-def process_part(case: str, part: dict, offset: float, encoder: str, max_seconds: float | None) -> str:
+def process_part(case: str, part: dict, offset: float, encoder: str, max_seconds: float | None,
+                 hwaccel: bool = False) -> str:
     cv2.setNumThreads(1)          # OpenCV otherwise spawns a pool per worker and oversubscribes the CPU
     stem = f"{case}_p{part['part']:03d}"
     mp4, npz = OUT / "frames10" / f"{stem}.mp4", OUT / "meta10" / f"{stem}.npz"
@@ -68,7 +69,11 @@ def process_part(case: str, part: dict, offset: float, encoder: str, max_seconds
                            "ego", "ego_inlier", "ego_n")}
     tmp = mp4.with_suffix(".tmp.mp4")
     codec, opts = ENCODERS[encoder]
-    with av.open(str(SURGVU24_VIDEOS / part["path"])) as src, av.open(str(tmp), "w") as dst:
+    kw = {}
+    if hwaccel:                           # NVDEC decoding frees the CPU, which is the bottleneck of this pass
+        from av.codec.hwaccel import HWAccel
+        kw["hwaccel"] = HWAccel(device_type="cuda", allow_software_fallback=True)
+    with av.open(str(SURGVU24_VIDEOS / part["path"]), **kw) as src, av.open(str(tmp), "w") as dst:
         vs = src.streams.video[0]
         vs.thread_type, vs.thread_count = "AUTO", 2
         enc = dst.add_stream(codec, rate=int(CACHE_FPS))
@@ -135,6 +140,8 @@ def main() -> None:
     ap.add_argument("--encoder", choices=sorted(ENCODERS), default="nvenc")
     ap.add_argument("--cases", nargs="*", help="restrict to these cases (default: all)")
     ap.add_argument("--max-seconds", type=float, help="benchmarking: stop each part after this many seconds")
+    ap.add_argument("--hwaccel", action="store_true", help="decode on the GPU (NVDEC)")
+    ap.add_argument("--reverse", action="store_true", help="shortest parts first (for a second concurrent run)")
     args = ap.parse_args()
     (OUT / "frames10").mkdir(parents=True, exist_ok=True)
     (OUT / "meta10").mkdir(parents=True, exist_ok=True)
@@ -143,9 +150,10 @@ def main() -> None:
         tl = surgvu.timeline(case)
         for part in surgvu.parts_table()[case]:
             jobs.append((part["duration"], case, part, tl.offsets[part["part"]]))
-    jobs.sort(key=lambda j: -j[0])                     # longest first for load balance
+    jobs.sort(key=lambda j: j[0] if args.reverse else -j[0])   # longest first for load balance
     with ProcessPoolExecutor(args.workers) as ex:
-        futs = [ex.submit(process_part, c, p, o, args.encoder, args.max_seconds) for _, c, p, o in jobs]
+        futs = [ex.submit(process_part, c, p, o, args.encoder, args.max_seconds, args.hwaccel)
+                for _, c, p, o in jobs]
         for i, f in enumerate(as_completed(futs), 1):
             print(f"[{i}/{len(futs)}] {f.result()}", flush=True)
 

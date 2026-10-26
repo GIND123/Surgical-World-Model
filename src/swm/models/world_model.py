@@ -6,6 +6,8 @@ action = "none"    no tokens at all (unconditional video prediction)
          "global_vq" as "global" but a discrete action from a 12-entry codebook (Genie / SurgWM style)
          "slots"   robot-state tokens + K unsupervised slot actions (FLAM style)
          "arms"    robot-state tokens carrying one latent action per instrument arm (EG-SWM)
+         "kin"     as "arms" but each arm's action is mapped from its recorded kinematics by a small adapter
+                   (kinematics-conditioned; initialise from an "arms" model to transfer unlabeled pre-training)
 camera = True adds the explicit endoscope ego-motion to the per-frame conditioning.
 
 Training: rectified flow on normalised VAE latents, x_tau = (1 - tau) x0 + tau eps, target v = eps - x0, with a
@@ -25,7 +27,7 @@ from swm.models.actions import ArmIDM, ArmTokens, CameraEncoder, GlobalIDM, Slot
 from swm.models.dynamics import SIZES, DiTConfig, STDiT
 from swm.models.layers import timestep_embedding
 
-ACTIONS = ("none", "state", "global", "global_vq", "slots", "arms")
+ACTIONS = ("none", "state", "global", "global_vq", "slots", "arms", "kin")
 
 
 @dataclass
@@ -39,6 +41,7 @@ class WMConfig:
     n_slots: int = 4
     n_codes: int = 12              # codebook size of the discrete monolithic action
     vq_weight: float = 1.0
+    kin_dim: int = 28              # 4 frame transitions x (dpos 3, drot 3, djaw 1) per latent step
     kl_weight: float = 1e-3
     idm_dim: int = 256
     idm_depth: int = 2
@@ -68,7 +71,9 @@ class WorldModel(nn.Module):
         d = self.dit.cfg.dim
         self.time = nn.Sequential(nn.Linear(256, d), nn.SiLU(), nn.Linear(d, d))
         self.cam = CameraEncoder(d) if cfg.camera else None
-        self.arm_tokens = ArmTokens(d, cfg.du if cfg.action == "arms" else 0) if uses_tokens else None
+        self.arm_tokens = ArmTokens(d, cfg.du if cfg.action in ("arms", "kin") else 0) if uses_tokens else None
+        if cfg.action == "kin":
+            self.kin_adapter = nn.Sequential(nn.Linear(cfg.kin_dim, 256), nn.SiLU(), nn.Linear(256, cfg.du))
         if cfg.action in ("global", "global_vq", "slots", "arms"):
             trunk = Trunk(c, cfg.idm_dim, cfg.idm_depth, cfg.idm_heads, h, w)
             if cfg.action == "arms":
@@ -90,6 +95,10 @@ class WorldModel(nn.Module):
         """Latent actions for every transition (t-1 -> t), placed at frame t; frame 0 gets zeros."""
         b, t = z.shape[:2]
         out = {"kl": z.new_zeros(())}
+        if self.cfg.action == "kin":
+            active = (batch["occupant"] >= 2) & (batch["kin"].abs().sum(-1) > 0)
+            out["u_arms"] = self.kin_adapter(batch["kin"].to(z.dtype)) * active[..., None].to(z.dtype)
+            return out
         if self.idm is None:
             return out
         zp, zn = z[:, :-1].flatten(0, 1), z[:, 1:].flatten(0, 1)
