@@ -1,0 +1,72 @@
+{
+ "flux2": {
+  "kind": "image",
+  "latent_shape_per_clip": [
+   9,
+   32,
+   28,
+   40
+  ],
+  "psnr": 38.40376281738281,
+  "ssim": 0.9754397869110107,
+  "lpips": 0.006905188784003258,
+  "roundtrip_fps": 35.91154191605907,
+  "latent_numbers_per_frame": 35840.0
+ },
+ "sdvae": {
+  "kind": "image",
+  "latent_shape_per_clip": [
+   9,
+   4,
+   28,
+   40
+  ],
+  "psnr": 28.84577178955078,
+  "ssim": 0.8292562961578369,
+  "lpips": 0.057308658957481384,
+  "roundtrip_fps": 51.152565687725655,
+  "latent_numbers_per_frame": 4480.0
+ },
+ "wan21": {
+  "kind": "video",
+  "latent_shape_per_clip": [
+   16,
+   3,
+   28,
+   40
+  ],
+  "psnr": 34.126251220703125,
+  "ssim": 0.9474126100540161,
+  "lpips": 0.020312203094363213,
+  "roundtrip_fps": 57.95048382718386,
+  "latent_numbers_per_frame": 5973.333333333333
+ },
+ "wan22": {
+  "kind": "video",
+  "latent_shape_per_clip": [
+   48,
+   3,
+   14,
+   20
+  ],
+  "psnr": 34.44294738769531,
+  "ssim": 0.9474371671676636,
+  "lpips": 0.01854528859257698,
+  "roundtrip_fps": 59.70285870862693,
+  "latent_numbers_per_frame": 4480.0
+ },
+ "dcae": {
+  "kind": "image",
+  "latent_shape_per_clip": [
+   9,
+   32,
+   7,
+   10
+  ],
+  "psnr": 26.149484634399414,
+  "ssim": 0.7383676171302795,
+  "lpips": 0.0898505374789238,
+  "roundtrip_fps": 54.5376408556231,
+  "latent_numbers_per_frame": 2240.0
+ }
+}
