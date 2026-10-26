@@ -22,6 +22,7 @@ from scipy.optimize import linear_sum_assignment
 
 from swm.data import surgvu as sv
 from swm.data.geometry import CACHE_H, CACHE_W, FIELD_ROWS
+from swm.data.io import savez, settled
 from swm.paths import PROCESSED
 
 CACHE = PROCESSED / "surgvu"
@@ -123,8 +124,7 @@ def build(stem: str) -> str:
                 camera[w, t] = np.where(ok[:, None], e, 0).ravel()
                 cam_ok[w, t] = ok.all()
     OUT.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(OUT / f"{stem}.npz", occupant=occupant, boxes=boxes, camera=camera, cam_ok=cam_ok,
-                        prior=prior)
+    savez(OUT / f"{stem}.npz", occupant=occupant, boxes=boxes, camera=camera, cam_ok=cam_ok, prior=prior)
     found = np.isfinite(boxes[..., 0]).sum() / max(1, (occupant >= 2).sum())
     return f"{stem}: {n} windows, arm-box coverage {found:.2f}, priors {np.round(prior, 2).tolist()}"
 
@@ -134,7 +134,8 @@ def main() -> None:
     ap.add_argument("--wait", action="store_true")
     args = ap.parse_args()
     while True:
-        todo = [p.stem for p in sorted((CACHE / "detections").glob("*.npz")) if not (OUT / p.name).exists()]
+        todo = [p.stem for p in sorted((CACHE / "detections").glob("*.npz"))
+                if settled(p, 5) and not (OUT / p.name).exists()]
         if not todo:
             if not args.wait or len(list(OUT.glob("*.npz"))) >= 280:
                 break

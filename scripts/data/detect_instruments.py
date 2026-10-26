@@ -20,6 +20,7 @@ import av
 import numpy as np
 
 from swm.data.geometry import UI_BOTTOM_ROWS, UI_TOP_ROWS
+from swm.data.io import savez, settled
 from swm.paths import DETECTOR, PROCESSED
 
 CACHE = PROCESSED / "surgvu"
@@ -61,7 +62,7 @@ def main() -> None:
     model = YOLO(str(DETECTOR))
     while True:
         todo = [p for p in sorted((CACHE / "latents").glob("*.starts.npy"))
-                if not (OUT / p.name.replace(".starts.npy", ".npz")).exists()]
+                if settled(p, 5) and not (OUT / p.name.replace(".starts.npy", ".npz")).exists()]
         if not todo:
             if not args.wait or len(list((CACHE / "latents").glob("*.starts.npy"))) >= 280:
                 break
@@ -89,7 +90,7 @@ def main() -> None:
                         rec["cls"].append(b.cls.cpu().numpy().astype(np.int8))
                 th.join()
             arrs = {k: (np.concatenate(v) if v else np.zeros((0, 4) if k == "box" else 0)) for k, v in rec.items()}
-            np.savez_compressed(OUT / f"{stem}.npz", **arrs)
+            savez(OUT / f"{stem}.npz", **arrs)
             print(f"{time.strftime('%H:%M:%S')} {stem}: {len(starts)} windows, {len(arrs['frame'])} boxes "
                   f"in {time.time() - t0:.0f}s", flush=True)
 

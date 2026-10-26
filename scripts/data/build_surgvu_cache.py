@@ -23,6 +23,7 @@ import numpy as np
 
 from swm.data import egomotion, surgvu
 from swm.data.geometry import CACHE_FPS, CACHE_H, CACHE_W, FIELD_ROWS, SRC_CROP, UI_BOTTOM_ROWS, UI_TOP_ROWS
+from swm.data.io import savez
 from swm.paths import PROCESSED, SURGVU24_VIDEOS
 
 OUT = PROCESSED / "surgvu"
@@ -128,7 +129,7 @@ def process_part(case: str, part: dict, offset: float, encoder: str, max_seconds
     arrs = {k: np.asarray(v, dtype=np.float32) for k, v in rec.items()}
     arrs["t_global"] = arrs["t"].astype(np.float64) + offset
     arrs["ego_n"] = arrs["ego_n"].astype(np.int16)
-    np.savez_compressed(npz, **arrs)
+    savez(npz, **arrs)
     lock.unlink(missing_ok=True)
     n, dt = len(arrs["t"]), time.time() - t0
     return f"done {stem}: {n} frames ({n / CACHE_FPS / 3600:.2f} h) in {dt:.0f}s = {n / CACHE_FPS / dt:.1f}x realtime"

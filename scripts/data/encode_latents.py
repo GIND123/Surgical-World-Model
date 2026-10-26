@@ -28,14 +28,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from build_windows import WIN, usable  # noqa: E402
 
 from swm.data.geometry import FIELD_ROWS, MODEL_H, MODEL_W  # noqa: E402
+from swm.data.io import save_npy, settled, try_load  # noqa: E402
 from swm.paths import CHECKPOINTS, PROCESSED, ROOT  # noqa: E402
 
 CACHE = PROCESSED / "surgvu"
 OUT = CACHE / "latents"
 
 
-def window_starts(npz: Path) -> np.ndarray:
-    ok = usable(np.load(npz))
+def window_starts(npz: Path) -> np.ndarray | None:
+    """None while the cache metadata is still being written."""
+    m = try_load(npz) if settled(npz) else None
+    if m is None:
+        return None
+    ok = usable(m)
     return np.array([s for s in range(0, len(ok) - WIN + 1, WIN) if ok[s:s + WIN].all()], dtype=np.int64)
 
 
@@ -99,10 +104,12 @@ def main() -> None:
             if stem in queued or (OUT / f"{stem}.npy").exists():
                 continue
             starts = window_starts(npz)
+            if starts is None:
+                continue
             queued.add(stem)
             if len(starts) == 0:
-                np.save(OUT / f"{stem}.starts.npy", starts)
-                np.save(OUT / f"{stem}.npy", np.zeros((0, 9, 48, 14, 20), np.float16))
+                save_npy(OUT / f"{stem}.npy", np.zeros((0, 9, 48, 14, 20), np.float16))
+                save_npy(OUT / f"{stem}.starts.npy", starts)
                 continue
             pending[stem] = starts
             results[stem] = np.zeros((len(starts), 9, 48, 14, 20), np.float16)
@@ -115,8 +122,8 @@ def main() -> None:
             continue
         stem, idx, frames = q.get()
         if idx is None:
-            np.save(OUT / f"{stem}.starts.npy", pending.pop(stem))
-            np.save(OUT / f"{stem}.npy", results.pop(stem))
+            save_npy(OUT / f"{stem}.npy", results.pop(stem))           # latents first ...
+            save_npy(OUT / f"{stem}.starts.npy", pending.pop(stem))    # ... the window list marks the part done
             rate = n_win / (time.time() - t0)
             print(f"{time.strftime('%H:%M:%S')} saved {stem} ({len(list(OUT.glob('*.starts.npy')))} parts, "
                   f"{n_win} windows, {rate:.1f} win/s)", flush=True)
