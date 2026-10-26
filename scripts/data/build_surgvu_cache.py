@@ -54,8 +54,13 @@ def process_part(case: str, part: dict, offset: float, encoder: str, max_seconds
     cv2.setNumThreads(1)          # OpenCV otherwise spawns a pool per worker and oversubscribes the CPU
     stem = f"{case}_p{part['part']:03d}"
     mp4, npz = OUT / "frames10" / f"{stem}.mp4", OUT / "meta10" / f"{stem}.npz"
+    lock = npz.with_suffix(".lock")
     if npz.exists():
         return f"skip {stem}"
+    try:                                  # several builder runs can share the work without collisions
+        lock.touch(exist_ok=False)
+    except FileExistsError:
+        return f"locked {stem}"
     t0 = time.time()
     x0, x1, y0, y1 = SRC_CROP
     f0, f1 = FIELD_ROWS
@@ -119,6 +124,7 @@ def process_part(case: str, part: dict, offset: float, encoder: str, max_seconds
     arrs["t_global"] = arrs["t"].astype(np.float64) + offset
     arrs["ego_n"] = arrs["ego_n"].astype(np.int16)
     np.savez_compressed(npz, **arrs)
+    lock.unlink(missing_ok=True)
     n, dt = len(arrs["t"]), time.time() - t0
     return f"done {stem}: {n} frames ({n / CACHE_FPS / 3600:.2f} h) in {dt:.0f}s = {n / CACHE_FPS / dt:.1f}x realtime"
 
