@@ -13,7 +13,9 @@ camera = True adds the explicit endoscope ego-motion to the per-frame conditioni
 Training: rectified flow on normalised VAE latents, x_tau = (1 - tau) x0 + tau eps, target v = eps - x0, with a
 noise level per frame. Mixed schedule: clean (or slightly noised) context + future frames with a shared or
 independent tau, or pure diffusion forcing (independent tau everywhere). Actions for every transition are
-inferred from the clean latents by the inverse-dynamics head and bottlenecked by a KL penalty.
+inferred from the clean latents by the inverse-dynamics head and bottlenecked by a KL penalty; a small forward
+decoder that must predict each transition from the previous latent and the actions (latent-action-model
+objective) keeps them informative.
 """
 
 from __future__ import annotations
@@ -23,7 +25,8 @@ from dataclasses import asdict, dataclass, field
 import torch
 import torch.nn as nn
 
-from swm.models.actions import ArmIDM, ArmTokens, CameraEncoder, GlobalIDM, SlotIDM, Trunk, VQGlobalIDM
+from swm.data.surgvu import ARMS
+from swm.models.actions import ArmIDM, ArmTokens, CameraEncoder, ForwardDecoder, GlobalIDM, SlotIDM, Trunk, VQGlobalIDM
 from swm.models.dynamics import SIZES, DiTConfig, STDiT
 from swm.models.layers import timestep_embedding
 
@@ -44,7 +47,10 @@ class WMConfig:
     kin_dim: int = 28              # 4 frame transitions x (dpos 3, drot 3, djaw 1) per latent step
     arm_pool: str = "region"       # ablations: "global" (per-arm query, whole frame), "shuffled" (wrong binding)
     use_ui: bool = False           # console readout (driving hand, energy) in the arm tokens
-    kl_weight: float = 1e-3
+    kl_weight: float = 1e-4
+    fwd_weight: float = 1.0        # forward-decoder (latent-action-model) loss; 0 = diffusion loss only (ablation)
+    fwd_dim: int = 256
+    fwd_depth: int = 4
     idm_dim: int = 256
     idm_depth: int = 2
     idm_heads: int = 4
@@ -59,6 +65,12 @@ class WMConfig:
 
     def to_dict(self) -> dict:
         return asdict(self)
+
+    @classmethod
+    def from_dict(cls, d: dict) -> WMConfig:
+        d = dict(d, latent_shape=tuple(d["latent_shape"]))
+        d.setdefault("fwd_weight", 0.0)             # checkpoints from before the forward decoder
+        return cls(**d)
 
 
 class WorldModel(nn.Module):
@@ -91,6 +103,11 @@ class WorldModel(nn.Module):
                 self.extra_proj, self.extra_role = nn.Linear(cfg.du, d), nn.Parameter(torch.zeros(1, 1, cfg.n_slots, d))
         else:
             self.idm = None
+        self.fwd = None
+        if self.idm is not None and cfg.fwd_weight > 0:
+            act_ch = {"arms": len(ARMS) * cfg.du, "slots": cfg.n_slots * cfg.du}.get(cfg.action, cfg.dg)
+            self.fwd = ForwardDecoder(c, act_ch, self.cam.net[0].in_features if self.cam else 0,
+                                      cfg.fwd_dim, cfg.fwd_depth)
 
     # ------------------------------------------------------------------ actions
     def infer_actions(self, z: torch.Tensor, batch: dict, stochastic: bool) -> dict:
@@ -115,8 +132,8 @@ class WorldModel(nn.Module):
                 perm = keys.argsort(-1)
                 idx = perm[:, None, :, None].expand(-1, region.shape[1], -1, region.shape[-1])
                 region = torch.gather(region, 2, idx)
-            region = region.flatten(0, 1)
-            u, kl, active = self.idm(zp, zn, occ, region, stochastic)
+            out["region"] = region
+            u, kl, active = self.idm(zp, zn, occ, region.flatten(0, 1), stochastic)
             n_active = active.sum().clamp_min(1)
             out["kl"] = kl.sum(-1).sum() / n_active
             out["u_arms"] = torch.cat([u.new_zeros(b, 1, *u.shape[1:]), u.view(b, t - 1, *u.shape[1:])], 1)
@@ -133,6 +150,23 @@ class WorldModel(nn.Module):
             u = u.view(b, t - 1, *u.shape[1:])
             out["u_extra"] = torch.cat([u.new_zeros(b, 1, *u.shape[2:]), u], 1)
         return out
+
+    def action_map(self, acts: dict, h: int, w: int) -> torch.Tensor:
+        """Learned actions of every transition on the latent grid, (B, T-1, A, H, W): each arm's action inside the
+        region its inverse-dynamics head pooled, monolithic and slot actions everywhere."""
+        if "u_arms" in acts:
+            u, region = acts["u_arms"][:, 1:], acts["region"]                   # (B, T-1, 4, du), (B, T-1, 4, HW)
+            m = region[..., None, :].to(u.dtype) * u[..., None]                 # (B, T-1, 4, du, HW)
+            return m.flatten(2, 3).unflatten(-1, (h, w))
+        u = acts["u_extra"][:, 1:].flatten(2)                                   # (B, T-1, k * d)
+        return u[..., None, None].expand(*u.shape, h, w)
+
+    def forward_loss(self, z: torch.Tensor, batch: dict, acts: dict) -> torch.Tensor:
+        """MSE of the forward decoder's prediction of z_t from z_{t-1}, the camera and the learned actions."""
+        a = self.action_map(acts, *z.shape[-2:]).flatten(0, 1)
+        cam = batch["camera"][:, 1:].flatten(0, 1) if self.cam is not None else None
+        pred = self.fwd(z[:, :-1].flatten(0, 1), a, cam)
+        return (pred.float() - z[:, 1:].flatten(0, 1).float()).pow(2).mean()
 
     def tokens(self, batch: dict, acts: dict, keep: torch.Tensor) -> tuple[torch.Tensor | None, torch.Tensor | None]:
         """keep: (B,) float, 0 drops every action (CFG) but keeps the robot state."""
@@ -192,6 +226,10 @@ class WorldModel(nn.Module):
         fm = (err * w).sum() / w.sum().clamp_min(1)
         loss = fm + self.cfg.kl_weight * kl_scale * acts["kl"]
         logs = {"fm": fm.item(), "kl": float(acts["kl"])}
+        if self.fwd is not None:
+            fwd = self.forward_loss(z, batch, acts)
+            loss = loss + self.cfg.fwd_weight * fwd
+            logs["fwd"] = fwd.item()
         if "vq" in acts:
             loss = loss + self.cfg.vq_weight * acts["vq"]
             counts = torch.bincount(acts["codes"].flatten(), minlength=self.cfg.n_codes).float()

@@ -7,6 +7,7 @@
     GlobalIDM (baseline) one monolithic action per transition (Genie / SurgWM style)
     SlotIDM   (baseline) K unsupervised slots, one action per slot (FLAM style)
   Every head outputs a diagonal Gaussian; the KL to N(0, I) is the information bottleneck.
+* ForwardDecoder - the latent-action-model objective that keeps the learned actions informative.
 """
 
 from __future__ import annotations
@@ -211,6 +212,33 @@ class SlotIDM(nn.Module):
         mu, logvar = self.head(s)
         u, kl = sample_gaussian(mu, logvar, stochastic)
         return u, kl                                  # (N, K, du)
+
+
+class ForwardDecoder(nn.Module):
+    """Latent-action-model objective (Genie / AdaWorld style): a small convolutional decoder with a 9x9-cell
+    receptive field predicts z_t from z_{t-1}, the camera action and the learned actions placed on the latent grid
+    (each arm's action inside its region; monolithic or slot actions everywhere). It cannot model instrument motion
+    without the actions, so they stay informative while the diffusion dynamics learns to use them; trained with
+    the diffusion loss alone, the actions collapse to the prior."""
+
+    def __init__(self, in_ch: int, act_ch: int, cam_ch: int, dim: int = 256, depth: int = 4):
+        super().__init__()
+        self.inp = nn.Conv2d(in_ch + act_ch + cam_ch, dim, 3, padding=1)
+        self.blocks = nn.ModuleList(nn.Sequential(nn.GroupNorm(32, dim), nn.SiLU(), nn.Conv2d(dim, dim, 3, padding=1))
+                                    for _ in range(depth - 1))
+        self.out = nn.Conv2d(dim, in_ch, 1)
+        nn.init.zeros_(self.out.weight)
+        nn.init.zeros_(self.out.bias)
+
+    def forward(self, z_prev: torch.Tensor, act: torch.Tensor, cam: torch.Tensor | None = None) -> torch.Tensor:
+        """z_prev: (N, C, H, W); act: (N, A, H, W); cam: (N, P) or None -> predicted z_next (N, C, H, W)."""
+        x = [z_prev, act.to(z_prev.dtype)]
+        if cam is not None:
+            x.append(cam.to(z_prev.dtype)[..., None, None].expand(-1, -1, *z_prev.shape[-2:]))
+        h = self.inp(torch.cat(x, 1))
+        for blk in self.blocks:
+            h = h + blk(h)
+        return z_prev + self.out(h)
 
 
 def region_from_boxes(boxes: torch.Tensor, height: int, width: int, dilate: int = 1) -> torch.Tensor:

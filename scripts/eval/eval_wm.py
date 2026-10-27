@@ -43,7 +43,7 @@ class EvalWindows(LatentWindows):
 def load_model(run: str, ckpt: str | None) -> tuple[WorldModel, dict]:
     path = OUTPUTS / "runs" / run / (ckpt or "ckpt_last.pt")
     st = torch.load(path, map_location="cuda", weights_only=False)
-    cfg = WMConfig(**{k: (tuple(v) if k == "latent_shape" else v) for k, v in st["config"].items()})
+    cfg = WMConfig.from_dict(st["config"])
     model = WorldModel(cfg).cuda().eval()
     model.load_state_dict(st["model"])
     for p, e in zip(model.parameters(), st["ema"], strict=True):

@@ -33,7 +33,8 @@ def parse() -> argparse.Namespace:
     ap.add_argument("--no-camera", action="store_true")
     ap.add_argument("--du", type=int, default=8)
     ap.add_argument("--dg", type=int, default=24)
-    ap.add_argument("--kl", type=float, default=1e-3)
+    ap.add_argument("--kl", type=float, default=1e-4)
+    ap.add_argument("--fwd", type=float, default=1.0, help="forward-decoder loss weight; 0 = diffusion loss only")
     ap.add_argument("--kl-warmup", type=int, default=10_000, help="steps over which the KL weight ramps from 0")
     ap.add_argument("--arm-pool", choices=["region", "global", "shuffled"], default="region")
     ap.add_argument("--use-ui", action="store_true", help="console readout (hand, energy) in the arm tokens")
@@ -74,7 +75,8 @@ def lr_at(step: int, base: float, warmup: int, total: int) -> float:
 def evaluate(model: WorldModel, loader: DataLoader, n_gen: int = 64) -> dict:
     """Context-mode flow-matching loss (2 clean context latents) with the inferred actions, and with actions taken
     from another window (all / learned only / camera only) -- the gap measures how much the actions explain;
-    plus the latent error of action-replay generation."""
+    the forward decoder's error with own and shuffled actions; plus the latent error of action-replay
+    generation."""
     model.eval()
     gen = torch.Generator(device="cuda").manual_seed(1234)
     sums = {"val_fm": 0.0, "val_fm_shuf_all": 0.0, "val_fm_shuf_learned": 0.0, "val_fm_shuf_camera": 0.0}
@@ -98,6 +100,9 @@ def evaluate(model: WorldModel, loader: DataLoader, n_gen: int = 64) -> dict:
                 tok, mask = model.tokens(bb, a, ones)
                 v = model.dit(x, model.cond(tau, bb, ones), tok, mask)
                 sums[key] += (v.float() - (eps - z)).pow(2).mean(dim=(2, 3, 4))[:, 2:].sum().item()
+            if model.fwd is not None:                    # are the actions informative at all?
+                for key, a in (("val_fwd", acts), ("val_fwd_shuf", shuf)):
+                    sums[key] = sums.get(key, 0.0) + model.forward_loss(z, b, a).item() * bsz * (t - 2)
         n += bsz * (t - 2)
         if n_g < n_gen:
             with torch.autocast("cuda", dtype=torch.bfloat16):
@@ -117,7 +122,7 @@ def main() -> None:
     run = OUTPUTS / "runs" / args.name
     run.mkdir(parents=True, exist_ok=True)
     cfg = WMConfig(size=args.size, action=args.action, camera=not args.no_camera, du=args.du, dg=args.dg,
-                   kl_weight=args.kl, grad_checkpoint=args.grad_ckpt, arm_pool=args.arm_pool,
+                   kl_weight=args.kl, fwd_weight=args.fwd, grad_checkpoint=args.grad_ckpt, arm_pool=args.arm_pool,
                    use_ui=args.use_ui)
     torch.backends.cudnn.benchmark = True
     (run / "config.json").write_text(json.dumps({"model": cfg.to_dict(), "train": vars(args)}, indent=1))
@@ -147,8 +152,7 @@ def main() -> None:
     model = WorldModel(cfg).cuda()
     if args.init:
         st = torch.load(OUTPUTS / "runs" / args.init / "ckpt_last.pt", map_location="cuda", weights_only=False)
-        src = WorldModel(WMConfig(**{k: (tuple(v) if k == "latent_shape" else v)
-                                     for k, v in st["config"].items()})).cuda()
+        src = WorldModel(WMConfig.from_dict(st["config"])).cuda()
         for p, e in zip(src.parameters(), st["ema"], strict=True):
             p.data.copy_(e)
         missing, unexpected = model.load_state_dict(src.state_dict(), strict=False)

@@ -60,7 +60,7 @@ Following MeWM's decomposition: the **dynamics model** is the world model; its a
 * Action structure: none / monolithic / camera only / arms only / camera + arms / + energy.
 * Camera action: explicit (estimated) vs latent; similarity vs homography.
 * Arm grounding sources: robot log only / + detector regions / + UI hand assignment; with injected label noise.
-* Arm action bottleneck: dimension, continuous vs FSQ codebook size, KL weight; idle-arm regulariser on/off.
+* Arm action bottleneck: dimension, continuous vs FSQ codebook size, KL weight; forward-decoder (latent-action-model) objective on/off; idle-arm regulariser on/off.
 * Tokenizer: pretrained image VAE vs video VAE vs VQ-VAE from scratch.
 * Temporal: 2 / 4 / 8 fps; context 1 / 4 frames; diffusion forcing on/off.
 * Scale: 10 / 30 / 100 % of training cases; model S (~60 M, SurgWM-sized) / B (~200 M) / L.

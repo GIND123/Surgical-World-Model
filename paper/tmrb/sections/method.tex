@@ -42,8 +42,13 @@ where $h^k_t$ is the driving hand when the overlay shows it. The noise level and
 \subsection{Training objective}
 We train with rectified flow \cite{rectflow,flowmatching}. Every latent frame has its own noise level $\tau_t\in[0,1]$, $x_t=(1-\tau_t)z_t+\tau_t\epsilon_t$, and the network predicts the velocity $\epsilon_t-z_t$:
 \begin{equation}
-\mathcal{L}=\mathbb{E}\Big[\sum_{t}w_t\big\lVert v_\theta(x,\tau,a,s)_t-(\epsilon_t-z_t)\big\rVert^2\Big]+\beta\sum_{t,k}\mathrm{KL}\big(q(u^k_t)\,\Vert\,\mathcal{N}(0,I)\big).
+\mathcal{L}=\mathbb{E}\Big[\sum_{t}w_t\big\lVert v_\theta(x,\tau,a,s)_t-(\epsilon_t-z_t)\big\rVert^2\Big]+\lambda\,\mathcal{L}_{\mathrm{fwd}}+\beta\sum_{t,k}\mathrm{KL}\big(q(u^k_t)\,\Vert\,\mathcal{N}(0,I)\big).
 \end{equation}
+Trained on the diffusion loss alone, the learned actions collapse to the prior: in a pilot run, seven of the eight action dimensions became inactive and replacing every arm's action with another clip's changed the loss by less than 0.1\,\%, while the explicit endoscope action was used. Presumably the diffusion model explains most of a transition from its context frames and the noisy target, so the few nats an action carries are not worth their KL cost. We therefore add a latent-action-model objective as in \cite{genie,lapa,adaworld}, grounded like the actions themselves: a small convolutional decoder $f$ with a $9\times9$-cell receptive field predicts each latent from its predecessor, the endoscope action and the arm actions placed on their regions,
+\begin{equation}
+\mathcal{L}_{\mathrm{fwd}}=\sum_t\big\lVert f\big(z_{t-1},c_t,\textstyle\sum_k R^k_t\otimes u^k_t\big)-z_t\big\rVert^2,
+\end{equation}
+where $R^k_t\otimes u^k_t$ writes $u^k_t$ into the channels of arm $k$ at the positions of its region. Instrument motion cannot be predicted locally without the actions, which keeps them informative while the diffusion model learns to use them. Baseline action interfaces receive the same decoder, with the monolithic or slot actions broadcast to every position. We use $\lambda=1$ and $\beta=10^{-4}$.
 With probability 0.75 the first one to three latents are context ($\tau=0$, or $\tau\sim\mathcal{U}(0,0.1)$ to tolerate drift) and the remaining frames share one noise level or receive independent ones; otherwise all levels are independent, as in Diffusion Forcing \cite{dforcing}. Noise levels follow a logit-normal distribution \cite{sd3}, $w_t$ excludes context frames, and $\beta$ is ramped up over the first \num{10000} steps. With probability 0.1 all actions are dropped, which enables classifier-free guidance on actions.
 
 \subsection{Inference}
