@@ -61,6 +61,10 @@
   {\textbf{inverse dynamics} (training only): pool $(z_t, z_{t+1})$ inside arm region $R^k_t$ $\to$
    $\mu^k,\sigma^k$ $\to$ $u^k_t\!\sim\!\mathcal{N}(\mu^k,\sigma^k)$, KL bottleneck};
 \draw[flow, draw=armB, dashed] (u3.south |- idm.north) -- (u3.south);
+\node[box, draw=armB, dashed, font=\sffamily\scriptsize, align=left, anchor=north] (fwd) at (97.5, -91.5)
+  {\textbf{forward decoder} (training only): $\hat z_t=f\big(z_{t-1},\,c_t,\,\textstyle\sum_k R^k_t\otimes u^k_t\big)$,
+   loss $\lVert\hat z_t-z_t\rVert^2$ keeps $u^k_t$ informative};
+\draw[flow, draw=armB, dashed] (idm.south) -- (fwd.north);
 
 \node[box, align=left, font=\sffamily\scriptsize, anchor=north west, inner sep=3pt] (state) at (0, -66) {%
   \textbf{robot state} $s_t$ (system logs)\\

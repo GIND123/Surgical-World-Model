@@ -58,6 +58,14 @@ Compared action interfaces, all sharing tokenizer, backbone, data and budget: `n
 
 **Dynamics.** A latent spatio-temporal diffusion transformer (spatial self-attention per frame, causal temporal self-attention, cross-attention to arm tokens, MLP) trained with flow matching and per-frame noise levels (diffusion forcing), so it can roll out autoregressively from any number of context frames.
 
+**Training objective.** Flow matching + λ·forward-decoder loss + β·KL (λ = 1, β = 10⁻⁴ ramped up over 10k steps); actions are dropped with probability 0.1 for classifier-free guidance. The inverse-dynamics head and the forward decoder are used only in training; at inference the actions are inferred from a real clip (*replay*), taken from another clip (*swap*) or set directly.
+
+| Size | width × depth (heads) | parameters | of which transformer / inverse dynamics / forward decoder |
+|---|---|---:|---|
+| S | 512 × 8 (8) | 50.1 M | 45.5 M / 2.0 M / 2.0 M |
+| B | 768 × 12 (12) | 153.7 M | 148.2 M / 2.0 M / 2.0 M |
+| L | 1024 × 16 (16) | 354.8 M | 348.4 M / 2.0 M / 2.0 M |
+
 **Why.** A single latent action (Genie, SurgWM) has to explain camera motion, two or three instruments and tissue response at once; LAOM (ICML 2025) shows such latents collapse under action-correlated distractors unless a little supervision is added. The robot already tells us its embodiment for free — we use it to structure, not just supervise, the action space. Hypotheses H1–H4 and the experiment plan are in [docs/04_research_plan.md](docs/04_research_plan.md).
 
 ## Results so far
@@ -131,9 +139,9 @@ Measured on 11 of 18 CRCD episodes (2,616 windows). **The public LeRobot convers
 | Dataset | Role | Access | Local status |
 |---|---|---|---|
 | SurgVU (Intuitive) | training + main benchmark | public | `data/raw/surgvu*` |
-| Open-H-Embodiment: SutureBot, SRT-H porcine cholecystectomy, CRCD | kinematic grounding, kinematics-conditioned benchmarks | CC-BY-4.0 | downloading |
-| JIGSAWS | kinematic grounding (da Vinci) | data-use agreement | downloaded |
-| SAR-RARP50 | clinical (human) transfer | CC BY-NC-SA 4.0 | downloading |
+| Open-H-Embodiment: SutureBot, SRT-H porcine cholecystectomy, CRCD | kinematic grounding, kinematics-conditioned benchmarks | CC-BY-4.0 | SutureBot, CRCD prepared and sync-checked; SRT-H downloaded (107 GB), prepared after SurgVU encoding |
+| JIGSAWS | kinematic grounding (da Vinci) | data-use agreement | downloaded; prepared after SurgVU encoding |
+| SAR-RARP50 | clinical (human) transfer | CC BY-NC-SA 4.0 | downloaded (32 GB); prepared after SurgVU encoding |
 | AutoLaparo | external test of the camera action (laparoscope motion labels) | request form | pending (server unreachable) |
 
 PhysioNet holds no surgical video with robot kinematics, so nothing is taken from it ([details](docs/02_external_data.md)).
@@ -142,23 +150,36 @@ PhysioNet holds no surgical video with robot kinematics, so nothing is taken fro
 
 ```text
 src/swm/                  package
+  paths.py                canonical data / checkpoint / output locations
   data/surgvu.py          robot-log labels on a global case timeline, arm occupancy, tasks
-  data/windows.py         SurgVU latent windows (robot state, arm boxes, camera actions)
-  data/external.py        external datasets with kinematics; data/kinematics.py per-arm motion
-  models/                 ST-DiT dynamics, action interfaces (camera, arm tokens, inverse dynamics), world model
-  baselines/surgwm.py     re-implementation of the Surgical Vision World Model
-  metrics/                PSNR / SSIM / LPIPS, FVD
   data/geometry.py        crops shared by every stage (source -> cache -> endoscope field)
   data/egomotion.py       endoscope ego-motion (LK + RANSAC similarity)
-  metrics/image.py        PSNR / SSIM / LPIPS
+  data/windows.py         SurgVU latent windows (robot state, arm boxes, camera actions)
+  data/external.py        external datasets with kinematics; data/kinematics.py per-arm motion
+  data/sync.py            video-kinematics lag of the external datasets
+  data/io.py              atomic writes / tolerant reads between pipeline stages
+  models/layers.py        RMSNorm, rotary embeddings, attention, SwiGLU, AdaLN
+  models/dynamics.py      spatio-temporal diffusion transformer (sizes S / B / L)
+  models/actions.py       action interfaces: camera encoder, arm tokens, inverse dynamics (arms, global,
+                          VQ, slots), forward decoder
+  models/world_model.py   world model: action inference, losses, sampling
+  baselines/surgwm.py     re-implementation of the Surgical Vision World Model
+  metrics/                PSNR / SSIM / LPIPS (image.py), FVD (fvd.py)
   hub.py                  Hugging Face upload (token from .env, never printed)
-scripts/data/             audits, splits, downloads, cache builder
+scripts/data/             audits, splits, downloads, 10 fps cache, latents, instrument detection, arm binding,
+                          console readout, external-dataset preparation, sync check
 scripts/train/            world-model and SurgWM training
-scripts/eval/             tokenizer benchmark, E1 fidelity/control, E2 probes, camera-action validation
+scripts/eval/             tokenizer benchmark, evaluation sets, E1 fidelity / control, action-use diagnostics,
+                          E2 probes, camera-action validation, result aggregation
 scripts/queue/            sequential GPU job queue
-scripts/docs/             sample export, TikZ diagram build
-docs/                     research documents; docs/diagrams/*.tex -> docs/figures/*.{pdf,png}
-configs/splits/           case-level splits
+scripts/run_services.sh   long-running pipeline stages as systemd user units
+scripts/docs/             sample export, figures, TikZ diagram build, arXiv BibTeX
+configs/experiments/      one shell script per queued job (see below)
+configs/splits/           case-level split; parts used by the pilots
+configs/stats/            camera-action normalisation
+docs/                     research documents; docs/diagrams/*.tex -> docs/figures/*.{pdf,png}; docs/results/
+paper/tmrb/               IEEE T-MRB manuscript (figures from docs/figures, tables from docs/results)
+tests/                    unit tests
 legacy/                   previous SurgVU 2026 Cat-1 detection project (reused detector)
 data/ checkpoints/ outputs/ archive/   Git-ignored
 ```
@@ -169,18 +190,59 @@ data/ checkpoints/ outputs/ archive/   Git-ignored
 uv venv --python 3.12 .venv
 uv pip install --python .venv/bin/python torch torchvision --index-url https://download.pytorch.org/whl/cu130
 uv pip install --python .venv/bin/python -e ".[dev]"
+```
 
+**Data.** The SurgVU stages poll each other's outputs, so they can run concurrently; `scripts/run_services.sh` starts them (and the GPU queue) as systemd user units that log to `outputs/logs/`.
+
+```bash
 python scripts/data/audit_surgvu.py --workers 20          # video integrity, label tables
 python scripts/data/audit_timeline.py                     # robot configuration on the global timeline
 python scripts/data/audit_frames.py --every 60            # frame quality, console-UI presence
 python scripts/data/make_splits.py                        # case-level split
-python scripts/data/build_surgvu_cache.py --workers 10    # 10 fps cache + quality + ego-motion
+python scripts/data/build_surgvu_cache.py --workers 18    # 10 fps cache + quality + ego-motion
+python scripts/data/encode_latents.py --wait              # Wan2.2 latents of every usable 33-frame window
+python scripts/data/detect_instruments.py --wait          # instrument boxes at the latent-step boundaries
+python scripts/data/build_conditioning.py --wait          # arm binding, arm regions, robot state, camera action
+python scripts/data/ui_readout.py --wait                  # console overlay: driving hand, energy
+python scripts/data/build_windows.py                      # window index, camera-action statistics
+python scripts/eval/build_eval_set.py --split test --per-case 100   # fixed held-out windows + real frames
 python scripts/data/download_external.py --list           # external datasets
+python scripts/data/prepare_lerobot.py --name suturebot --root <dir>   # also prepare_jigsaws.py, prepare_sarrarp.py
+python scripts/data/check_sync.py crcd                    # video-kinematics lag per episode
+```
+
+**Training and evaluation.**
+
+```bash
+python scripts/train/train_wm.py --name S_arms --action arms --size S --steps 60000
+#   --action none|state|global|global_vq|slots|arms|kin, --no-camera, --fwd 0 (no forward decoder), --kl,
+#   --arm-pool region|global|shuffled, --use-ui, --data <external>, --init <run>, --stems <parts.json>, --resume
+python scripts/train/train_surgwm.py --stage tokenizer    # then --stage lam, --stage dynamics
+python scripts/eval/eval_wm.py --run S_arms --fvd         # E1 fidelity against real frames (action replay)
+python scripts/eval/eval_control.py --run S_arms          # E1 camera control, locality, embodiment consistency
+python scripts/eval/diagnose_actions.py --run S_arms      # are the learned actions used? (collapse check)
+python scripts/eval/probe_kinematics.py --data suturebot --runs S_arms S_global --baselines   # E2
+python scripts/eval/validate_camera_action.py --data crcd # E2b
+python scripts/eval/aggregate.py                          # docs/results/*.md, paper/tmrb/tables/*.tex
 python scripts/eval/tokenizer_bench.py                    # tokenizer comparison
 scripts/docs/build_diagrams.sh                            # TikZ -> PDF/PNG
 ```
 
-Raw SurgVU data comes from the organisers (`storage.googleapis.com/isi-surgvu/…`); links for data-use-agreement datasets live in the Git-ignored `configs/private/dataset_links.json`. A `.env` with `hf=<token>` and `HF_USER=<user>` enables weight uploads.
+**Job queue.** Every experiment is a shell script in `configs/experiments/`; copies in `outputs/queue/pending/` are run in name order by `scripts/queue/run_queue.py` (logs in `outputs/queue/logs/`, history in `outputs/queue/history.tsv`).
+
+| Jobs | Content |
+|---|---|
+| 010, 020 | prepare SutureBot and CRCD (done) |
+| 090, 091, 093, 094 | pilots on partial SurgVU (S, 12k steps): diffusion loss only, + forward decoder, monolithic action, no-decoder control at β = 10⁻⁴ |
+| 100 | once all 280 parts are encoded: window index, camera statistics, fixed validation and test windows |
+| 150 | reference rows (repeat last context frame, VAE reconstruction) |
+| 200–280 | E1 at S (60k steps): `arms`, `global`, `global_vq`, `slots`, `state`, `none`; `arms`, `global`, `state` without the camera action |
+| 300–320 | E6 ablations: pooling over the whole frame, no forward decoder, arm regions shuffled across arms, console readout in the arm tokens |
+| 390–392 | prepare JIGSAWS, SAR-RARP50, SRT-H (`swm-external` service, next to training) |
+| 400–450 | E2: zero-shot kinematic probes; action-free adaptation to SutureBot, CRCD, JIGSAWS; probes after adaptation |
+| 500–508 | E3 on SutureBot: kinematics-conditioned prediction from scratch / from `S_arms` / from `S_global`, 10 / 25 / 100 % of the training episodes |
+
+Raw SurgVU data comes from the organisers (`storage.googleapis.com/isi-surgvu/…`); links for data-use-agreement datasets live in the Git-ignored `configs/private/dataset_links.json`. A `.env` with `hf=<token>` and `HF_USER=<user>` enables weight uploads (`swm.hub.push_folder`).
 
 ## Citation of data
 

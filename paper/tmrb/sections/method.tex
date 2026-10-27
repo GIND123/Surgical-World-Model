@@ -2,7 +2,7 @@
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{architecture.pdf}
-\caption{\method{}. Context frames are encoded by a frozen video VAE; a latent spatio-temporal diffusion transformer predicts future latents conditioned on an explicit endoscope ego-motion action (through AdaLN) and on one token per robot arm (through cross-attention) that carries the arm's identity, its logged instrument and a latent action inferred from that arm's instrument region. Sample input and output from a held-out test case.}
+\caption{\method{}. Context frames are encoded by a frozen video VAE; a latent spatio-temporal diffusion transformer predicts future latents conditioned on an explicit endoscope ego-motion action (through AdaLN) and on one token per robot arm (through cross-attention) that carries the arm's identity, its logged instrument and a latent action inferred from that arm's instrument region. In training only, a forward decoder predicts each latent from its predecessor and the actions placed on their regions, which keeps the learned actions informative. Sample input and output from a held-out test case.}
 \label{fig:arch}
 \end{figure*}
 
