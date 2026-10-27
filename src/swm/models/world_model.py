@@ -43,6 +43,7 @@ class WMConfig:
     vq_weight: float = 1.0
     kin_dim: int = 28              # 4 frame transitions x (dpos 3, drot 3, djaw 1) per latent step
     arm_pool: str = "region"       # ablations: "global" (per-arm query, whole frame), "shuffled" (wrong binding)
+    use_ui: bool = False           # console readout (driving hand, energy) in the arm tokens
     kl_weight: float = 1e-3
     idm_dim: int = 256
     idm_depth: int = 2
@@ -139,7 +140,11 @@ class WorldModel(nn.Module):
             return None, None
         k = keep[:, None, None, None]
         u_arms = acts.get("u_arms")
-        tok = self.arm_tokens(batch["occupant"], batch["hand"], None if u_arms is None else u_arms * k)
+        if self.cfg.use_ui:
+            hand, energy = batch["hand"], batch.get("energy")
+        else:
+            hand, energy = torch.zeros_like(batch["occupant"]), None
+        tok = self.arm_tokens(batch["occupant"], hand, None if u_arms is None else u_arms * k, energy)
         mask = batch["occupant"] != 0
         if "u_extra" in acts:
             u = acts["u_extra"]

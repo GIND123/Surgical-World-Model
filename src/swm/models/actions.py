@@ -18,6 +18,7 @@ from swm.data.surgvu import ARMS, OCCUPANTS
 from swm.models.layers import Attention, RMSNorm, SwiGLU, axial_rope_2d
 
 N_HANDS = 3   # 0 unknown / not driven, 1 left, 2 right
+N_ENERGY = 3  # 0 none, 1 cut, 2 coag
 
 
 class CameraEncoder(nn.Module):
@@ -37,11 +38,15 @@ class ArmTokens(nn.Module):
         self.arm = nn.Embedding(len(ARMS), dim)
         self.occ = nn.Embedding(len(OCCUPANTS), dim)
         self.hand = nn.Embedding(N_HANDS, dim)
+        self.energy = nn.Embedding(N_ENERGY, dim)
         self.u = nn.Linear(du, dim) if du else None
 
-    def forward(self, occupant: torch.Tensor, hand: torch.Tensor, u: torch.Tensor | None) -> torch.Tensor:
+    def forward(self, occupant: torch.Tensor, hand: torch.Tensor, u: torch.Tensor | None,
+                energy: torch.Tensor | None = None) -> torch.Tensor:
         arm_ids = torch.arange(len(ARMS), device=occupant.device)
         tok = self.arm(arm_ids)[None, None] + self.occ(occupant) + self.hand(hand)
+        if energy is not None:
+            tok = tok + self.energy(energy)
         if u is not None and self.u is not None:
             tok = tok + self.u(u.to(tok.dtype))
         return tok

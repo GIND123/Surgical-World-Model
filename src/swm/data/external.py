@@ -81,6 +81,7 @@ class ExternalWindows(Dataset):
         z = (np.asarray(self.lat[w], np.float32) - self.mean[None, :, None, None]) / self.std[None, :, None, None]
         cam = normalise_camera(c["camera"][w], self.cam_scale) * c["cam_ok"][w][:, None]
         return dict(z=torch.from_numpy(z), occupant=torch.from_numpy(c["occupant"][w].astype(np.int64)),
-                    hand=torch.zeros(9, 4, dtype=torch.int64), boxes=torch.from_numpy(c["boxes"][w].astype(np.float32)),
+                    hand=torch.zeros(9, 4, dtype=torch.int64), energy=torch.zeros(9, 4, dtype=torch.int64),
+                    boxes=torch.from_numpy(c["boxes"][w].astype(np.float32)),
                     camera=torch.from_numpy(cam.astype(np.float32)), kin=torch.from_numpy(self.kin[w]),
                     kin_net=torch.from_numpy(self.kin_net[w]), window=torch.tensor([0, w]))

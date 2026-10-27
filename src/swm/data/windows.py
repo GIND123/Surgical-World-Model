@@ -43,6 +43,12 @@ class LatentWindows(Dataset):
             c = dict(np.load(cond))
             if len(c["occupant"]) == 0:
                 continue
+            ui = CACHE / "ui" / f"{stem}.npz"
+            if ui.exists():
+                u = np.load(ui)
+                c["hand"], c["energy"] = u["hand"], u["energy"]
+            else:
+                c["hand"] = c["energy"] = np.zeros_like(c["occupant"])
             self.parts.append(dict(stem=stem, cond=c, lat=None))
             index.append(np.stack([np.full(len(c["occupant"]), len(self.parts) - 1), np.arange(len(c["occupant"]))], 1))
         self.index = np.concatenate(index) if index else np.zeros((0, 2), np.int64)
@@ -65,5 +71,7 @@ class LatentWindows(Dataset):
         z = (np.asarray(self._lat(p)[w], np.float32) - self.mean[None, :, None, None]) / self.std[None, :, None, None]
         cam = normalise_camera(c["camera"][w], self.cam_scale) * c["cam_ok"][w][:, None]
         return dict(z=torch.from_numpy(z), occupant=torch.from_numpy(c["occupant"][w].astype(np.int64)),
-                    hand=torch.zeros(9, 4, dtype=torch.int64), boxes=torch.from_numpy(c["boxes"][w].astype(np.float32)),
+                    hand=torch.from_numpy(c["hand"][w].astype(np.int64)),
+                    energy=torch.from_numpy(c["energy"][w].astype(np.int64)),
+                    boxes=torch.from_numpy(c["boxes"][w].astype(np.float32)),
                     camera=torch.from_numpy(cam.astype(np.float32)), window=torch.tensor([pi, w]))
