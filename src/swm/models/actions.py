@@ -3,7 +3,8 @@
 * CameraEncoder  - explicit endoscope ego-motion (4 frame transitions x 4 params per latent step) -> vector.
 * ArmTokens      - one token per robot arm: arm id + occupant (instrument / endoscope) + driving hand + action.
 * Inverse-dynamics heads that turn a latent transition (z_{t-1}, z_t) into latent actions, sharing one trunk:
-    ArmIDM    (ours)     one action per arm, pooled only inside that arm's instrument region
+    ArmIDM    (ours)     one action per arm, pooled only inside that arm's instrument region; optionally a
+                         scene action pooled only outside every arm's region
     GlobalIDM (baseline) one monolithic action per transition (Genie / SurgWM style)
     SlotIDM   (baseline) K unsupervised slots, one action per slot (FLAM style)
   Every head outputs a diagonal Gaussian; the KL to N(0, I) is the information bottleneck.
@@ -108,28 +109,42 @@ class PooledQuery(nn.Module):
         return self.att(q, ctx=feats, mask=m)
 
 
-class ArmIDM(nn.Module):
-    """One latent action per arm, inferred only from the latents inside that arm's region."""
+def outside_regions(region: torch.Tensor, active: torch.Tensor) -> torch.Tensor:
+    """region: (..., 4, H*W); active: (..., 4) -> (..., H*W) positions outside every active arm's region (the
+    whole frame in the rare case that the regions cover it)."""
+    out = ~(region & active[..., None]).any(-2)
+    return out | ~out.any(-1, keepdim=True)
 
-    def __init__(self, trunk: Trunk, dim: int, heads: int, du: int):
+
+class ArmIDM(nn.Module):
+    """One latent action per arm, inferred only from the latents inside that arm's region; optionally one scene
+    action inferred only from the latents outside every arm's region (tissue, unbound instruments)."""
+
+    def __init__(self, trunk: Trunk, dim: int, heads: int, du: int, scene: bool = False):
         super().__init__()
         self.trunk = trunk
         self.arm = nn.Embedding(len(ARMS), dim)
         self.occ = nn.Embedding(len(OCCUPANTS), dim)
+        self.scene = nn.Parameter(torch.randn(1, 1, dim) * 0.02) if scene else None
         self.pool = PooledQuery(dim, heads)
         self.head = GaussianHead(dim, du)
 
     def forward(self, z_prev, z_next, occupant, region, stochastic: bool = True):
         """z_*: (N, C, H, W); occupant: (N, 4); region: (N, 4, H*W) bool. Returns u (N, 4, du), kl (N, 4, du),
-        active (N, 4) -- arms with a visible instrument; inactive arms get u = 0 and no KL."""
+        active (N, 4) -- arms with a visible instrument; inactive arms get u = 0 and no KL -- and, with a scene
+        action, (u, kl) of shape (N, du) for it, else None."""
         feats = self.trunk(z_prev, z_next)
         q = self.arm(torch.arange(len(ARMS), device=feats.device))[None] + self.occ(occupant)
         active = region.any(-1) & (occupant >= 2)
         safe = region | ~active[..., None]          # avoid all-masked rows; their output is discarded
+        if self.scene is not None:
+            q = torch.cat([q, self.scene.expand(len(q), -1, -1)], 1)
+            safe = torch.cat([safe, outside_regions(region, active)[:, None]], 1)
         mu, logvar = self.head(self.pool(q, feats, safe))
         u, kl = sample_gaussian(mu, logvar, stochastic)
         a = active[..., None].to(u.dtype)
-        return u * a, kl * a, active
+        scene = (u[:, len(ARMS)], kl[:, len(ARMS)]) if self.scene is not None else None
+        return u[:, :len(ARMS)] * a, kl[:, :len(ARMS)] * a, active, scene
 
 
 class GlobalIDM(nn.Module):

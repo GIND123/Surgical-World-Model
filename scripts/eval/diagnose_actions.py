@@ -9,6 +9,7 @@
 * sensitivity: relative change of the predicted velocity when the learned actions are scaled by 3.
 * replay: latent error of generated futures (2 context latents, 10 Euler steps, same noise) with the inferred
   actions, with the learned actions of another window and with its camera action.
+* with a scene action (arms + scene), the arm actions and the scene action are also shuffled separately.
 
     python scripts/eval/diagnose_actions.py --run pilot_partial_S_arms --device cpu
 """
@@ -55,11 +56,12 @@ def main() -> None:
     stems = json.loads(open(args.stems).read())["val"] if args.stems else None
     loader = DataLoader(LatentWindows("val", max_windows=args.windows, seed=0, stems=stems), batch_size=args.bs,
                         num_workers=2)
-    keys = ("real", "shuffled", "zero", "camera_shuffled")
+    split = model.cfg.action == "arms" and model.cfg.scene
+    keys = ("real", "shuffled", "zero", "camera_shuffled") + (("arms_shuffled", "scene_shuffled") if split else ())
     err = {k: np.zeros((len(TAUS), 2)) for k in keys}          # (tau, inside / outside region)
     cnt = np.zeros((len(TAUS), 2))
     mus, logvars, kls, n_arms, n_active, area, sens = [], [], [], 0, 0, [], []
-    gen_keys = ("real", "shuffled", "camera_shuffled")
+    gen_keys = ("real", "shuffled", "camera_shuffled") + (("arms_shuffled", "scene_shuffled") if split else ())
     gen_err, gen_cnt, n_gen = {k: np.zeros(2) for k in gen_keys}, np.zeros(2), 0
     for bi, batch in enumerate(loader):
         b = {k: v.to(args.device) for k, v in batch.items()}
@@ -86,6 +88,10 @@ def main() -> None:
         shuf = {k: (v.roll(1, 0) if k.startswith("u_") else v) for k, v in acts.items()}
         zero = {k: (torch.zeros_like(v) if k.startswith("u_") else v) for k, v in acts.items()}
         b_cam = dict(b, camera=b["camera"].roll(1, 0))
+        variants = {"real": (acts, b), "shuffled": (shuf, b), "zero": (zero, b), "camera_shuffled": (acts, b_cam)}
+        if split:
+            variants["arms_shuffled"] = (dict(acts, u_arms=shuf["u_arms"]), b)
+            variants["scene_shuffled"] = (dict(acts, u_extra=shuf["u_extra"]), b)
         ones = torch.ones(bsz, device=z.device)
         for i, tv in enumerate(TAUS):
             tau = torch.full((bsz, t), tv, device=z.device)
@@ -93,8 +99,8 @@ def main() -> None:
             eps = torch.randn_like(z)
             x = (1 - tv) * z + tv * eps
             x[:, :2] = z[:, :2]
-            for key, a, bb in (("real", acts, b), ("shuffled", shuf, b), ("zero", zero, b),
-                               ("camera_shuffled", acts, b_cam)):
+            for key in keys:
+                a, bb = variants[key]
                 tok, mask = model.tokens(bb, a, ones)
                 v = model.dit(x, model.cond(tau, bb, ones), tok, mask)
                 e = (v - (eps - z)).pow(2).mean(2)[:, 2:].flatten(-2)       # (B, T-2, H*W)
@@ -108,7 +114,8 @@ def main() -> None:
             cnt[i, 0] += int(inside.sum())
             cnt[i, 1] += int((~inside).sum())
         if n_gen < args.gen:
-            for key, a, bb in (("real", acts, b), ("shuffled", shuf, b), ("camera_shuffled", acts, b_cam)):
+            for key in gen_keys:
+                a, bb = variants[key]
                 g = torch.Generator(device=z.device).manual_seed(bi)
                 pred = model.generate(bb, n_ctx=2, steps=10, actions=a, generator=g)
                 e = (pred[:, 2:] - z[:, 2:]).pow(2).mean(2).flatten(-2)

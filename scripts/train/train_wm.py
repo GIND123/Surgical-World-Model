@@ -37,6 +37,7 @@ def parse() -> argparse.Namespace:
     ap.add_argument("--fwd", type=float, default=1.0, help="forward-decoder loss weight; 0 = diffusion loss only")
     ap.add_argument("--kl-warmup", type=int, default=10_000, help="steps over which the KL weight ramps from 0")
     ap.add_argument("--arm-pool", choices=["region", "global", "shuffled"], default="region")
+    ap.add_argument("--scene", action="store_true", help="arms: add a scene action pooled outside the arm regions")
     ap.add_argument("--use-ui", action="store_true", help="console readout (hand, energy) in the arm tokens")
     ap.add_argument("--fp8", action="store_true", help="FP8 training of the transformer's linear layers (torchao)")
     ap.add_argument("--steps", type=int, default=100_000)
@@ -124,7 +125,7 @@ def main() -> None:
     run.mkdir(parents=True, exist_ok=True)
     cfg = WMConfig(size=args.size, action=args.action, camera=not args.no_camera, du=args.du, dg=args.dg,
                    kl_weight=args.kl, fwd_weight=args.fwd, grad_checkpoint=args.grad_ckpt, arm_pool=args.arm_pool,
-                   use_ui=args.use_ui)
+                   use_ui=args.use_ui, scene=args.scene)
     torch.backends.cudnn.benchmark = True
     (run / "config.json").write_text(json.dumps({"model": cfg.to_dict(), "train": vars(args)}, indent=1))
 

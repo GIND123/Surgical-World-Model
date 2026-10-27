@@ -5,7 +5,8 @@ action = "none"    no tokens at all (unconditional video prediction)
          "global"  robot-state tokens + one monolithic latent action per transition (continuous)
          "global_vq" as "global" but a discrete action from a 12-entry codebook (Genie / SurgWM style)
          "slots"   robot-state tokens + K unsupervised slot actions (FLAM style)
-         "arms"    robot-state tokens carrying one latent action per instrument arm (EG-SWM)
+         "arms"    robot-state tokens carrying one latent action per instrument arm (EG-SWM); with scene = True
+                   also one scene action inferred outside every arm's region (tissue, unbound instruments)
          "kin"     as "arms" but each arm's action is mapped from its recorded kinematics by a small adapter
                    (kinematics-conditioned; initialise from an "arms" model to transfer unlabeled pre-training)
 camera = True adds the explicit endoscope ego-motion to the per-frame conditioning.
@@ -26,7 +27,17 @@ import torch
 import torch.nn as nn
 
 from swm.data.surgvu import ARMS
-from swm.models.actions import ArmIDM, ArmTokens, CameraEncoder, ForwardDecoder, GlobalIDM, SlotIDM, Trunk, VQGlobalIDM
+from swm.models.actions import (
+    ArmIDM,
+    ArmTokens,
+    CameraEncoder,
+    ForwardDecoder,
+    GlobalIDM,
+    SlotIDM,
+    Trunk,
+    VQGlobalIDM,
+    outside_regions,
+)
 from swm.models.dynamics import SIZES, DiTConfig, STDiT
 from swm.models.layers import timestep_embedding
 
@@ -46,6 +57,7 @@ class WMConfig:
     vq_weight: float = 1.0
     kin_dim: int = 28              # 4 frame transitions x (dpos 3, drot 3, djaw 1) per latent step
     arm_pool: str = "region"       # ablations: "global" (per-arm query, whole frame), "shuffled" (wrong binding)
+    scene: bool = False            # arms: one more action, pooled and written only outside every arm's region
     use_ui: bool = False           # console readout (driving hand, energy) in the arm tokens
     kl_weight: float = 1e-4
     fwd_weight: float = 1.0        # forward-decoder (latent-action-model) loss; 0 = diffusion loss only (ablation)
@@ -91,7 +103,9 @@ class WorldModel(nn.Module):
         if cfg.action in ("global", "global_vq", "slots", "arms"):
             trunk = Trunk(c, cfg.idm_dim, cfg.idm_depth, cfg.idm_heads, h, w)
             if cfg.action == "arms":
-                self.idm = ArmIDM(trunk, cfg.idm_dim, cfg.idm_heads, cfg.du)
+                self.idm = ArmIDM(trunk, cfg.idm_dim, cfg.idm_heads, cfg.du, scene=cfg.scene)
+                if cfg.scene:
+                    self.extra_proj, self.extra_role = nn.Linear(cfg.du, d), nn.Parameter(torch.zeros(1, 1, 1, d))
             elif cfg.action == "global":
                 self.idm = GlobalIDM(trunk, cfg.idm_dim, cfg.idm_heads, cfg.dg)
                 self.extra_proj, self.extra_role = nn.Linear(cfg.dg, d), nn.Parameter(torch.zeros(1, 1, 1, d))
@@ -105,7 +119,7 @@ class WorldModel(nn.Module):
             self.idm = None
         self.fwd = None
         if self.idm is not None and cfg.fwd_weight > 0:
-            act_ch = {"arms": len(ARMS) * cfg.du, "slots": cfg.n_slots * cfg.du}.get(cfg.action, cfg.dg)
+            act_ch = {"arms": (len(ARMS) + cfg.scene) * cfg.du, "slots": cfg.n_slots * cfg.du}.get(cfg.action, cfg.dg)
             self.fwd = ForwardDecoder(c, act_ch, self.cam.net[0].in_features if self.cam else 0,
                                       cfg.fwd_dim, cfg.fwd_depth)
 
@@ -133,11 +147,15 @@ class WorldModel(nn.Module):
                 idx = perm[:, None, :, None].expand(-1, region.shape[1], -1, region.shape[-1])
                 region = torch.gather(region, 2, idx)
             out["region"] = region
-            u, kl, active = self.idm(zp, zn, occ, region.flatten(0, 1), stochastic)
+            u, kl, active, scene = self.idm(zp, zn, occ, region.flatten(0, 1), stochastic)
             n_active = active.sum().clamp_min(1)
             out["kl"] = kl.sum(-1).sum() / n_active
             out["u_arms"] = torch.cat([u.new_zeros(b, 1, *u.shape[1:]), u.view(b, t - 1, *u.shape[1:])], 1)
             out["active"] = active.view(b, t - 1, -1)
+            if scene is not None:                             # per-transition KL, added to the per-arm KL
+                us, kls = scene
+                out["kl"] = out["kl"] + kls.sum(-1).mean()
+                out["u_extra"] = torch.cat([us.new_zeros(b, 1, us.shape[-1]), us.view(b, t - 1, -1)], 1)
         elif self.cfg.action == "global_vq":
             u, vq_loss, idx = self.idm(zp, zn, stochastic)
             out["vq"] = vq_loss
@@ -153,11 +171,15 @@ class WorldModel(nn.Module):
 
     def action_map(self, acts: dict, h: int, w: int) -> torch.Tensor:
         """Learned actions of every transition on the latent grid, (B, T-1, A, H, W): each arm's action inside the
-        region its inverse-dynamics head pooled, monolithic and slot actions everywhere."""
+        region its inverse-dynamics head pooled (the scene action outside all of them), monolithic and slot actions
+        everywhere."""
         if "u_arms" in acts:
             u, region = acts["u_arms"][:, 1:], acts["region"]                   # (B, T-1, 4, du), (B, T-1, 4, HW)
-            m = region[..., None, :].to(u.dtype) * u[..., None]                 # (B, T-1, 4, du, HW)
-            return m.flatten(2, 3).unflatten(-1, (h, w))
+            m = (region[..., None, :].to(u.dtype) * u[..., None]).flatten(2, 3)  # (B, T-1, 4 * du, HW)
+            if "u_extra" in acts:
+                out = outside_regions(region, acts["active"]).to(u.dtype)       # (B, T-1, HW)
+                m = torch.cat([m, out[:, :, None] * acts["u_extra"][:, 1:, :, None]], 2)
+            return m.unflatten(-1, (h, w))
         u = acts["u_extra"][:, 1:].flatten(2)                                   # (B, T-1, k * d)
         return u[..., None, None].expand(*u.shape, h, w)
 
@@ -225,7 +247,7 @@ class WorldModel(nn.Module):
         w = (~is_ctx).float()
         fm = (err * w).sum() / w.sum().clamp_min(1)
         loss = fm + self.cfg.kl_weight * kl_scale * acts["kl"]
-        logs = {"fm": fm.item(), "kl": float(acts["kl"])}
+        logs = {"fm": fm.item(), "kl": acts["kl"].item()}
         if self.fwd is not None:
             fwd = self.forward_loss(z, batch, acts)
             loss = loss + self.cfg.fwd_weight * fwd
