@@ -24,7 +24,7 @@ for svc in "${@:-cache encode detect cond ui queue download}"; do
       cond)     start swm-cond     $PY scripts/data/build_conditioning.py --wait ;;
       ui)       start swm-ui       $PY scripts/data/ui_readout.py --wait ;;
       queue)    start swm-queue    -p OOMPolicy=continue -p MemoryMax=72G $PY scripts/queue/run_queue.py ;;
-      download) start swm-download $PY scripts/data/download_external.py open_h_srth_chole ;;
+      download) start swm-download -p Restart=on-failure -p RestartSec=120 $PY scripts/data/download_external.py open_h_srth_chole ;;
     esac
   done
 done

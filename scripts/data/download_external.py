@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import subprocess
+import time
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -37,6 +38,14 @@ REGISTRY = {
 PRIVATE_LINKS = Path(__file__).resolve().parents[2] / "configs" / "private" / "dataset_links.json"
 
 
+def hub_token() -> str | None:
+    try:
+        from swm import hub
+        return hub.token()
+    except (FileNotFoundError, KeyError):
+        return None
+
+
 def hf(name: str, spec: dict) -> None:
     """List only the subset's subtree (pattern-filtered snapshots enumerate the whole 4.5 TB repo first),
     record a manifest, then fetch the files concurrently; hf_hub_download skips files already present."""
@@ -46,14 +55,26 @@ def hf(name: str, spec: dict) -> None:
 
     out = EXTERNAL / name
     out.mkdir(parents=True, exist_ok=True)
-    files = [f for f in HfApi().list_repo_tree(spec["repo"], path_in_repo=spec["path"], repo_type="dataset",
-                                                recursive=True) if isinstance(f, RepoFile)]
+    api = HfApi(token=hub_token())
+    files = [f for f in api.list_repo_tree(spec["repo"], path_in_repo=spec["path"], repo_type="dataset", recursive=True)
+             if isinstance(f, RepoFile)]
     (out / "manifest.json").write_text(json.dumps(
         [dict(path=f.path, size=f.size, sha=f.lfs.sha256 if f.lfs else f.blob_id) for f in files], indent=1))
     print(f"{len(files)} files, {sum(f.size for f in files) / 1e9:.1f} GB", flush=True)
 
+    from swm import hub
+    token = hub.token()                        # authenticated requests get higher Hub rate limits
+
     def fetch(f: RepoFile) -> None:
-        hf_hub_download(spec["repo"], f.path, repo_type="dataset", local_dir=out)
+        for attempt in range(8):               # transient Hub/network errors must not end a 100 GB download
+            try:
+                hf_hub_download(spec["repo"], f.path, repo_type="dataset", local_dir=out, token=token)
+                return
+            except Exception as ex:  # noqa: BLE001
+                if attempt == 7:
+                    raise
+                print(f"retry {attempt + 1} {f.path}: {type(ex).__name__}", flush=True)
+                time.sleep(min(300, 10 * 2 ** attempt))
 
     with ThreadPoolExecutor(8) as ex:
         for i, _ in enumerate(ex.map(fetch, files), 1):
