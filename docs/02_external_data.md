@@ -32,8 +32,8 @@ Outputs: `data/processed/<name>/sync.json` and `signals_synced.npz` (lag-correct
 
 | Dataset | Access | Value | Priority |
 |---|---|---|---|
-| **JIGSAWS** (JHU CIRL) | request form + DUA | The classic da Vinci video + kinematics benchmark (suturing, knot tying, needle passing); reviewers often expect it. Overlaps in purpose with SutureBot. | Medium |
-| **AutoLaparo** (CUHK, MICCAI 2022) | request form | Has a *laparoscope-motion prediction* subset (labelled camera moves) — a direct external test of our explicit camera-action branch. | Medium |
+| **JIGSAWS** (JHU CIRL) | request form + DUA | The classic da Vinci video + kinematics benchmark (suturing, knot tying, needle passing); reviewers often expect it. Overlaps in purpose with SutureBot. **Downloaded**; prepared once SurgVU encoding ends. | Medium |
+| **AutoLaparo** (CUHK, MICCAI 2022) | request form | Has a *laparoscope-motion prediction* subset (labelled camera moves) — a direct external test of our explicit camera-action branch. **Received 2026-10-27** (Google Drive links from the authors, kept in the Git-ignored `configs/private/dataset_links.json`): Task 2 downloaded with `gdown` into `data/external/autolaparo/task2_laparoscope_motion/` (300 clips, 10 s, 25 fps, 1080p, 3.8 GB, labels and phases) and used for E2b. Task 1 (21 full videos, phase labels) and Task 3 (1,800 segmentation frames sampled from the Task 2 clips) answer no question of this study and are not downloaded. Non-commercial use; cite arXiv:2208.02049. | Medium |
 | **Cholec80 / CholecT50** (CAMMA) | request form | Only if we also want to compare with laparoscopic video-generation papers (Endora, HieraSurg, Surg-UniWorld). Not robotic. | Low |
 
 ## C. Pretrained models (open weights, downloaded on demand into `checkpoints/`)
