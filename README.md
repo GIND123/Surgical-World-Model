@@ -74,8 +74,13 @@ Wan2.2 gives the best quality per latent number (8× more compact than FLUX.2 at
 
 ### Data facts that shape the method ([full audit](docs/01_data_audit.md))
 
+![Embodiment signals of one case](docs/figures/embodiment_timeline.png)
+
+*One training case on one time axis: (a) which arm holds the endoscope and which instrument sits on every other arm, from the system log alone; (b) annotated tasks; (c) endoscope motion measured from the video. The endoscope changes ports and instruments are exchanged throughout.*
+
+
 * 155 cases, 280 videos, 837.8 h, all decodable; ≈604 h usable (23 % black, 4.5 % out of body / smoke, 1.7 % fluorescence).
-* The system logs record all four arms **including the endoscope**; the camera arm never changes within a case (USM2 in 142 cases, USM3 in 11). Three instruments are mounted 65 % of the time; 5,969 instrument exchanges (7.1 / h).
+* The system logs record all four arms **including the endoscope**; the endoscope moves between ports during most cases (211 port changes in 104 of 155 cases; USM2 holds it most of the time in 142 cases). Three instruments are mounted 65 % of the time; 5,969 instrument exchanges (7.1 / h).
 * Log times are part-relative (`swm.data.surgvu.timeline` handles offsets); 97 % of same-arm overlaps are stale intervals from missing uninstall events.
 * The console overlay is present on 81 % of usable frames and shows which hand drives which arm and when energy fires.
 

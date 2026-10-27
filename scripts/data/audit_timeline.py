@@ -3,10 +3,10 @@
 
 from __future__ import annotations
 
+import itertools
 import json
 from collections import Counter
 
-import numpy as np
 import pandas as pd
 
 from swm.data import surgvu as sv
@@ -41,10 +41,14 @@ def main() -> None:
         for name, i in sv.OCC_INDEX.items():
             if i >= 2:
                 inst_s[name] += int((occ == i).sum())
-        # an exchange = an arm's instrument identity changes between two non-empty states
-        cam_arm = np.where(n_cam == 1, cam.argmax(1), -1)
-        moves = int(((cam_arm[1:] != cam_arm[:-1]) & (cam_arm[1:] >= 0) & (cam_arm[:-1] >= 0)).sum())
+        # camera arm over time, skipping seconds with no (or two) logged endoscopes; a port change is a new arm
+        # holding the camera for > 60 s after another did (changes usually pass through a gap with no camera)
+        arms = cam[n_cam == 1].argmax(1)
+        runs = [(int(a), len(list(g))) for a, g in itertools.groupby(arms)]
+        runs = [r for r in runs if r[1] > 60]
+        moves = sum(1 for (a, _), (b, _) in zip(runs[:-1], runs[1:], strict=True) if a != b)
         cam_moves += moves
+        # an exchange = an arm's instrument identity changes between two non-empty states
         ex_case = 0
         for a in range(4):
             seq = occ[:, a]
