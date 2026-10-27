@@ -25,6 +25,9 @@ for svc in "${@:-cache encode detect cond ui queue download}"; do
       ui)       start swm-ui       $PY scripts/data/ui_readout.py --wait ;;
       queue)    start swm-queue    -p OOMPolicy=continue -p MemoryMax=72G $PY scripts/queue/run_queue.py ;;
       download) start swm-download -p Restart=on-failure -p RestartSec=120 $PY scripts/data/download_external.py open_h_srth_chole ;;
+      # external datasets (390-392) next to training: they need ~10 GB of GPU memory, free once SurgVU encoding ends
+      external) start swm-external bash -c 'until [ "$(ls data/processed/surgvu/latents/*.starts.npy | wc -l)" -ge 280 ]; do
+                  sleep 300; done; rc=0; for j in configs/experiments/39[0-9]_*.sh; do echo "### $j"; bash "$j" || { echo "### FAILED $j"; rc=1; }; done; exit $rc' ;;
     esac
   done
 done

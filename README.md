@@ -5,14 +5,14 @@
 * Weights (public, CC BY-NC-SA 4.0): <https://huggingface.co/GOVINDFROM/surgical-world-model>
 * Research documents: [data audit](docs/01_data_audit.md) · [external data](docs/02_external_data.md) · [literature review](docs/03_literature_review.md) · [research plan](docs/04_research_plan.md) · [legacy](docs/legacy.md)
 
-## Status (updated 2026-10-27, 18:50 IST)
+## Status (updated 2026-10-27, 18:10 IST)
 
 | Stage | State |
 |---|---|
 | Data audit, literature review, hypotheses, case-level split, tokenizer choice | done |
 | Model, 7 action interfaces, kinematics-conditioned mode, SurgWM re-implementation, evaluation suite, result aggregation | done |
 | SurgVU processing (10 fps cache → Wan2.2 latents → detection → arm binding → console readout) | running as systemd user services (`scripts/run_services.sh`); 10 fps cache done (280/280 parts), latents 44 %, detection/arm binding following |
-| External preparation (SutureBot → CRCD → JIGSAWS → SAR-RARP50) | SutureBot and CRCD done and sync-checked; JIGSAWS, SAR-RARP50 queued |
+| External preparation (SutureBot → CRCD → JIGSAWS → SAR-RARP50) | SutureBot and CRCD done and sync-checked; JIGSAWS, SAR-RARP50 and SRT-H (14,836 episodes) run next to training (`swm-external`) once SurgVU encoding ends |
 | Camera-action validation on CRCD (E2b) | done — see results below |
 | Open-H SRT-H download | done (preparation queued); AutoLaparo server unreachable from this network |
 | Pilot (S, partial data) | first pilot (diffusion loss only, finishing): learned arm actions collapse → forward-decoder objective added; arms and global pilots with it queued next |
