@@ -21,6 +21,7 @@ import diffusers
 import numpy as np
 import torch
 
+from swm.data.external import ExternalWindows
 from swm.data.windows import CACHE, LatentWindows, latent_stats
 from swm.metrics.fvd import I3DFeatures, frechet
 from swm.metrics.image import LPIPS, psnr, ssim
@@ -56,6 +57,7 @@ def main() -> None:
     ap.add_argument("--ckpt")
     ap.add_argument("--reference", action="store_true")
     ap.add_argument("--split", default="test")
+    ap.add_argument("--data", default="surgvu", help="surgvu or a prepared external dataset (test split)")
     ap.add_argument("--n-ctx", type=int, default=2)
     ap.add_argument("--steps", type=int, default=20)
     ap.add_argument("--cfg", type=float, default=1.0)
@@ -65,8 +67,12 @@ def main() -> None:
     ap.add_argument("--tag", default="replay")
     args = ap.parse_args()
     torch.manual_seed(0)
-    ds = EvalWindows(args.split)
-    real_all = np.load(CACHE / f"eval_frames_{args.split}.npy", mmap_mode="r")
+    if args.data == "surgvu":
+        ds = EvalWindows(args.split)
+        real_all = np.load(CACHE / f"eval_frames_{args.split}.npy", mmap_mode="r")
+    else:                       # external: test windows in file order, real frames saved by the preparer
+        ds = ExternalWindows(args.data, "test")
+        real_all = np.load(CACHE.parent / args.data / "eval_frames.npy", mmap_mode="r")
     n = min(len(ds), args.limit or len(ds))
     vae = diffusers.AutoencoderKLWan.from_pretrained(CHECKPOINTS / "vae/wan22/vae", torch_dtype=torch.bfloat16)
     vae = vae.cuda().eval()
@@ -116,8 +122,8 @@ def main() -> None:
             feats["real"].append(i3d(real * 255))
         if s // args.bs % 25 == 0:
             print(f"{s + len(items)}/{n} windows, {time.time() - t0:.0f}s", flush=True)
-    summary = dict(meta, split=args.split, n_windows=n, n_ctx=args.n_ctx, steps=args.steps, cfg=args.cfg,
-                   first_pred_frame=first)
+    summary = dict(meta, data=args.data, split=args.split, n_windows=n, n_ctx=args.n_ctx, steps=args.steps,
+                   cfg=args.cfg, first_pred_frame=first)
     arrays = {}
     for k in names:
         for m in ("psnr", "ssim", "lpips"):
@@ -130,6 +136,8 @@ def main() -> None:
     if not args.reference:
         summary["delta_psnr"] = summary["pred_psnr"] - summary["pred_shuffled_psnr"]
     out = OUTPUTS / "eval" / ("reference" if args.reference else args.run)
+    if args.data != "surgvu":
+        out = out / args.data
     out.mkdir(parents=True, exist_ok=True)
     tag = "reference" if args.reference else args.tag
     (out / f"{tag}.json").write_text(json.dumps(summary, indent=1))
