@@ -76,13 +76,14 @@ Wan2.2 gives the best quality per latent number (8× more compact than FLUX.2 at
 
 ### Pilot — learned actions collapse under the diffusion loss alone (S, 12k steps, partial SurgVU)
 
-The first pilot trained EG-SWM with the flow-matching loss and the KL bottleneck only. The arm actions carried information early (KL 1.4 nats/arm at step 1.5k) and then collapsed to the prior as the KL weight ramped up. At step 6k (`scripts/eval/diagnose_actions.py`, 64 validation windows):
+The first pilot trained EG-SWM with the flow-matching loss and the KL bottleneck only. The arm actions carried information early (KL 1.4 nats/arm at step 1.5k) and then collapsed to the prior as the KL weight ramped up (`scripts/eval/diagnose_actions.py` on validation windows: 64 at step 6k, 256 at 12k):
 
-| | value |
-|---|---:|
-| active action dimensions (Var E[u\|x] > 0.01) | 1 / 8 |
-| loss change when every arm's action is taken from another window | +0.03 to +0.07 % |
-| loss change when the endoscope action is taken from another window | +0.1 to +4.1 % (grows with noise level) |
+| | step 6k | step 12k |
+|---|---:|---:|
+| active action dimensions (Var E[u\|x] > 0.01) | 1 / 8 | 0 / 8 |
+| KL per arm (nats) | 0.32 | 0.004 |
+| loss change when every arm's action is taken from another window | +0.03 to +0.09 % | ≤ +0.002 % |
+| loss change when the endoscope action is taken from another window | +0.1 to +4.1 % | +0.1 to +14 % |
 
 The explicit camera action is used; the learned arm actions are not. The fix is a latent-action-model objective (forward decoder, above) and a weaker bottleneck (β 10⁻³ → 10⁻⁴), applied identically to every learned-action baseline; `S_arms_nofwd` keeps the old objective as an ablation. Pilots with the new objective (arms and monolithic) run before the controlled comparisons.
 
