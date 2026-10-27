@@ -7,6 +7,8 @@
   outside the instrument regions. A model that uses the arm actions loses accuracy inside the regions when they
   are shuffled.
 * sensitivity: relative change of the predicted velocity when the learned actions are scaled by 3.
+* replay: latent error of generated futures (2 context latents, 10 Euler steps, same noise) with the inferred
+  actions, with the learned actions of another window and with its camera action.
 
     python scripts/eval/diagnose_actions.py --run pilot_partial_S_arms --device cpu
 """
@@ -45,6 +47,7 @@ def main() -> None:
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--windows", type=int, default=128)
     ap.add_argument("--bs", type=int, default=16)
+    ap.add_argument("--gen", type=int, default=128, help="windows used for the replay-generation error")
     args = ap.parse_args()
     torch.manual_seed(0)
     model, step = load(args.run, args.ckpt, args.device)
@@ -53,7 +56,9 @@ def main() -> None:
     err = {k: np.zeros((len(TAUS), 2)) for k in keys}          # (tau, inside / outside region)
     cnt = np.zeros((len(TAUS), 2))
     mus, logvars, kls, n_arms, n_active, area, sens = [], [], [], 0, 0, [], []
-    for batch in loader:
+    gen_keys = ("real", "shuffled", "camera_shuffled")
+    gen_err, gen_cnt, n_gen = {k: np.zeros(2) for k in gen_keys}, np.zeros(2), 0
+    for bi, batch in enumerate(loader):
         b = {k: v.to(args.device) for k, v in batch.items()}
         h, w = model.cfg.latent_shape[1:]
         b["region"] = region_from_boxes(b["boxes"], h, w, dilate=1)
@@ -99,7 +104,20 @@ def main() -> None:
                     sens.append(float((v3 - v).norm() / v.norm()))
             cnt[i, 0] += int(inside.sum())
             cnt[i, 1] += int((~inside).sum())
-    out = {"run": args.run, "step": step, "windows": len(loader.dataset), "taus": TAUS}
+        if n_gen < args.gen:
+            for key, a, bb in (("real", acts, b), ("shuffled", shuf, b), ("camera_shuffled", acts, b_cam)):
+                g = torch.Generator(device=z.device).manual_seed(bi)
+                pred = model.generate(bb, n_ctx=2, steps=10, actions=a, generator=g)
+                e = (pred[:, 2:] - z[:, 2:]).pow(2).mean(2).flatten(-2)
+                gen_err[key] += [float(e[inside].sum()), float(e[~inside].sum())]
+            gen_cnt += [int(inside.sum()), int((~inside).sum())]
+            n_gen += bsz
+    out = {"run": args.run, "step": step, "windows": len(loader.dataset), "val_parts": len(loader.dataset.parts),
+           "taus": TAUS}
+    out["replay"] = {k: {"inside": float(v[0] / gen_cnt[0]), "outside": float(v[1] / gen_cnt[1]),
+                         "all": float(v.sum() / gen_cnt.sum())} for k, v in gen_err.items()}
+    out["replay_gap_pct"] = {k: round(100 * (out["replay"][k]["all"] / out["replay"]["real"]["all"] - 1), 3)
+                             for k in gen_keys[1:]}
     if mus:
         mu, lv, kl = torch.cat(mus), torch.cat(logvars), torch.cat(kls)
         out["posterior"] = dict(active_arm_fraction=n_active / max(n_arms, 1),
