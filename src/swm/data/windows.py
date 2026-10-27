@@ -41,7 +41,10 @@ def camera_input(cam: np.ndarray, scale: np.ndarray, valid: np.ndarray | None = 
 
 
 class LatentWindows(Dataset):
-    def __init__(self, split: str, cases: list[str] | None = None, max_windows: int | None = None, seed: int = 0):
+    def __init__(self, split: str, cases: list[str] | None = None, max_windows: int | None = None, seed: int = 0,
+                 stems: list[str] | None = None):
+        """``stems`` restricts the parts (e.g. case_012_p002) so that runs started at different times of the
+        encoding see the same data."""
         sp = json.loads((ROOT / "configs" / "splits" / "surgvu_v1.json").read_text())
         allowed = set(cases if cases is not None else sp[split])
         self.mean, self.std = latent_stats()
@@ -49,7 +52,7 @@ class LatentWindows(Dataset):
         self.parts, index = [], []
         for cond in sorted((CACHE / "conditioning").glob("*.npz")):
             stem = cond.stem
-            if stem.rsplit("_p", 1)[0] not in allowed:
+            if stem.rsplit("_p", 1)[0] not in allowed or (stems is not None and stem not in stems):
                 continue
             c = dict(np.load(cond))
             if len(c["occupant"]) == 0:

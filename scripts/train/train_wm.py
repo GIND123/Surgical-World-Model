@@ -49,6 +49,7 @@ def parse() -> argparse.Namespace:
     ap.add_argument("--no-compile", action="store_true")
     ap.add_argument("--train-fraction", type=float, default=1.0, help="fraction of training cases/episodes")
     ap.add_argument("--data", default="surgvu", help="surgvu or a prepared external dataset (suturebot, crcd, ...)")
+    ap.add_argument("--stems", help="JSON {train: [...], val: [...]} of SurgVU parts; default all encoded parts")
     ap.add_argument("--init", help="initialise from outputs/runs/<run>/ckpt_last.pt (EMA weights, non-strict)")
     ap.add_argument("--eval-every", type=int, default=5000)
     ap.add_argument("--save-every", type=int, default=5000)
@@ -135,8 +136,11 @@ def main() -> None:
             n_keep = max(1, round(args.train_fraction * len(sp["train"])))
             keep = torch.randperm(len(sp["train"]), generator=g)[:n_keep]
             train_cases = [sp["train"][i] for i in keep.tolist()]
-        ds = LatentWindows("train", cases=train_cases)
-        val = LatentWindows("val", max_windows=512, seed=0)
+        stems = json.loads(Path(args.stems).read_text()) if args.stems else {}
+        ds = LatentWindows("train", cases=train_cases, stems=stems.get("train"))
+        val = LatentWindows("val", max_windows=512, seed=0, stems=stems.get("val"))
+        (run / "parts.json").write_text(json.dumps({"train": [p["stem"] for p in ds.parts],
+                                                    "val": [p["stem"] for p in val.parts]}, indent=1))
     else:
         kin = args.action == "kin"             # kinematics conditioning needs verified video-kinematics sync
         ds = ExternalWindows(args.data, "train", fraction=args.train_fraction, seed=args.seed, synced_only=kin)
@@ -203,7 +207,7 @@ def main() -> None:
             p.data.copy_(e)
             e.copy_(tmp)
 
-    log = (run / "log.jsonl").open("a")
+    log = (run / "log.jsonl").open("a" if args.resume else "w")
     print(f"{args.name}: {n_params / 1e6:.1f}M params, action={cfg.action}, camera={cfg.camera}", flush=True)
     model.train()
     t0, seen = time.time(), 0

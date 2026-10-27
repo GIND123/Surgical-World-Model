@@ -48,10 +48,13 @@ def main() -> None:
     ap.add_argument("--windows", type=int, default=128)
     ap.add_argument("--bs", type=int, default=16)
     ap.add_argument("--gen", type=int, default=128, help="windows used for the replay-generation error")
+    ap.add_argument("--stems", help="JSON with a 'val' list of parts, so that runs are compared on the same windows")
     args = ap.parse_args()
     torch.manual_seed(0)
     model, step = load(args.run, args.ckpt, args.device)
-    loader = DataLoader(LatentWindows("val", max_windows=args.windows, seed=0), batch_size=args.bs, num_workers=2)
+    stems = json.loads(open(args.stems).read())["val"] if args.stems else None
+    loader = DataLoader(LatentWindows("val", max_windows=args.windows, seed=0, stems=stems), batch_size=args.bs,
+                        num_workers=2)
     keys = ("real", "shuffled", "zero", "camera_shuffled")
     err = {k: np.zeros((len(TAUS), 2)) for k in keys}          # (tau, inside / outside region)
     cnt = np.zeros((len(TAUS), 2))
@@ -113,7 +116,7 @@ def main() -> None:
             gen_cnt += [int(inside.sum()), int((~inside).sum())]
             n_gen += bsz
     out = {"run": args.run, "step": step, "windows": len(loader.dataset), "val_parts": len(loader.dataset.parts),
-           "taus": TAUS}
+           "val_stems": [p["stem"] for p in loader.dataset.parts], "taus": TAUS}
     out["replay"] = {k: {"inside": float(v[0] / gen_cnt[0]), "outside": float(v[1] / gen_cnt[1]),
                          "all": float(v.sum() / gen_cnt.sum())} for k, v in gen_err.items()}
     out["replay_gap_pct"] = {k: round(100 * (out["replay"][k]["all"] / out["replay"]["real"]["all"] - 1), 3)
