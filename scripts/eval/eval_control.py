@@ -150,8 +150,9 @@ def main() -> None:
                                                 change=float(dm.mean())))
         # ---- embodiment consistency
         for i in range(bsz):
-            gen_dets = det.predict(to_detector_canvas(base_px[i][first:]), imgsz=640, conf=0.3, verbose=False)
-            real_dets = det.predict(to_detector_canvas(real[i][first:]), imgsz=640, conf=0.3, verbose=False)
+            kw = dict(imgsz=640, conf=0.3, quantize=16, verbose=False)                   # FP16 inference
+            gen_dets = det.predict(to_detector_canvas(base_px[i][first:]), **kw)
+            real_dets = det.predict(to_detector_canvas(real[i][first:]), **kw)
             mounted = {int(o) - 2 for o in b["occupant"][i, -1].tolist() if 2 <= o < 16}
             for g, r in zip(gen_dets, real_dets, strict=True):
                 gc = {int(c) for c in g.boxes.cls.tolist()}

@@ -81,7 +81,7 @@ def main() -> None:
                 for item in iter(q.get, None):
                     idx, imgs = item
                     res = model.predict(imgs, imgsz=args.imgsz, conf=0.1, iou=0.65, agnostic_nms=True, max_det=10,
-                                        verbose=False, batch=args.batch)
+                                        quantize=16, verbose=False, batch=args.batch)     # FP16 inference
                     for i, r in zip(idx, res, strict=True):
                         b = r.boxes
                         rec["frame"].append(np.full(len(b), i, np.int32))

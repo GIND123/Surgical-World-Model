@@ -140,7 +140,7 @@ def main() -> None:
     loader = DataLoader(ds, batch_size=args.bs, shuffle=True, drop_last=True, num_workers=args.workers,
                         pin_memory=True, persistent_workers=True)
     val_loader = DataLoader(val, batch_size=args.bs, shuffle=False, num_workers=2)
-    print(f"train windows {len(ds)} from {len(ds.parts)} parts, val windows {len(val)}", flush=True)
+    print(f"train windows {len(ds)}, val windows {len(val)}", flush=True)
 
     model = WorldModel(cfg).cuda()
     if args.init:

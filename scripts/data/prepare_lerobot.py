@@ -134,7 +134,8 @@ def build(name: str, results, split_of: dict) -> None:
         boxes_at = {}
         for i in range(0, len(bidx), 32):
             ims = [cv2.cvtColor(frames[j], cv2.COLOR_RGB2BGR) for j in bidx[i:i + 32]]
-            for j, r in zip(bidx[i:i + 32], det.predict(ims, imgsz=640, conf=0.25, verbose=False), strict=True):
+            res = det.predict(ims, imgsz=640, conf=0.25, quantize=16, verbose=False)     # FP16 inference
+            for j, r in zip(bidx[i:i + 32], res, strict=True):
                 b = r.boxes.xyxy.cpu().numpy()[np.argsort(-r.boxes.conf.cpu().numpy())][:2]
                 b = b / np.array([2 * MODEL_W, 2 * MODEL_H, 2 * MODEL_W, 2 * MODEL_H])
                 boxes_at[j] = b[np.argsort(b[:, 0] + b[:, 2])]          # left to right
