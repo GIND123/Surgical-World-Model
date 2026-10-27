@@ -18,6 +18,7 @@ for svc in "${@:-cache encode detect cond ui queue download}"; do
   for s in $svc; do
     case $s in
       cache)    start swm-cache    $PY scripts/data/build_surgvu_cache.py --workers 18 --encoder nvenc ;;
+      cachegpu) start swm-cache-gpu $PY scripts/data/build_surgvu_cache.py --workers 4 --encoder nvenc --nvdec --reverse ;;
       encode)   start swm-encode   $PY scripts/data/encode_latents.py --decoders 4 --batch 8 --wait ;;
       detect)   start swm-detect   $PY scripts/data/detect_instruments.py --wait ;;
       cond)     start swm-cond     $PY scripts/data/build_conditioning.py --wait ;;

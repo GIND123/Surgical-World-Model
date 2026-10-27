@@ -51,8 +51,87 @@ def edge_density(gray: np.ndarray) -> float:
     return float(cv2.Canny(gray, 60, 160).mean() / 255)
 
 
+def cpu_frames(path: str, max_seconds: float | None, hwaccel: bool = False):
+    """Yield (t, Y 512x640, U 256x320, V 256x320) uint8 planes at 10 fps, decoded and resized on the CPU."""
+    x0, x1, y0, y1 = SRC_CROP
+    kw = {}
+    if hwaccel:
+        from av.codec.hwaccel import HWAccel
+        kw["hwaccel"] = HWAccel(device_type="cuda", allow_software_fallback=True)
+    with av.open(path, **kw) as src:
+        vs = src.streams.video[0]
+        vs.thread_type, vs.thread_count = "AUTO", 2
+        next_t = 0.0
+        for frame in src.decode(vs):
+            t = float(frame.time)
+            if max_seconds is not None and t > max_seconds:
+                break
+            if t + 1e-4 < next_t:
+                continue
+            next_t = (np.floor(t * CACHE_FPS + 1e-4) + 1) / CACHE_FPS
+            y, u, v = planes(frame)
+            yield (t, cv2.resize(y[y0:y1, x0:x1], (CACHE_W, CACHE_H), interpolation=cv2.INTER_AREA),
+                   cv2.resize(u[y0 // 2:y1 // 2, x0 // 2:x1 // 2], (CACHE_W // 2, CACHE_H // 2),
+                              interpolation=cv2.INTER_AREA),
+                   cv2.resize(v[y0 // 2:y1 // 2, x0 // 2:x1 // 2], (CACHE_W // 2, CACHE_H // 2),
+                              interpolation=cv2.INTER_AREA))
+
+
+def area_matrix(n_in: int, n_out: int) -> np.ndarray:
+    """Weights of OpenCV's INTER_AREA downscale along one axis: output i averages input [i*s, (i+1)*s), s = n_in/n_out,
+    counting partially covered pixels by their overlap. X_out = A_rows @ X @ A_cols.T reproduces cv2.resize."""
+    s = n_in / n_out
+    a = np.zeros((n_out, n_in), np.float64)
+    for i in range(n_out):
+        lo, hi = i * s, (i + 1) * s
+        for j in range(int(np.floor(lo)), min(n_in, int(np.ceil(hi)))):
+            a[i, j] = (min(hi, j + 1) - max(lo, j)) / s
+    return a
+
+
+def nvdec_frames(path: str, max_seconds: float | None, fps: float):
+    """Same as cpu_frames, but decoded by NVDEC straight into GPU memory and cropped / area-resized with CUDA;
+    only the small 10 fps planes are copied back to the host (keeps the CPU free for the other workers)."""
+    import PyNvVideoCodec as nvc
+    import torch
+
+    x0, x1, y0, y1 = SRC_CROP
+    step = int(round(fps / CACHE_FPS))
+    dec = nvc.ThreadedDecoder(path, buffer_size=120, gpu_id=0, use_device_memory=True,
+                              output_color_type=nvc.OutputColorType.NATIVE)
+    dev = "cuda"
+    ry, cy = (torch.tensor(area_matrix(*d), device=dev, dtype=torch.float32)
+              for d in ((y1 - y0, CACHE_H), (x1 - x0, CACHE_W)))
+    ruv, cuv = (torch.tensor(area_matrix(*d), device=dev, dtype=torch.float32)
+                for d in (((y1 - y0) // 2, CACHE_H // 2), ((x1 - x0) // 2, CACHE_W // 2)))
+    i = 0
+    while True:
+        batch = dec.get_batch_frames(120)
+        if not batch:
+            break
+        keep = []
+        for f in batch:
+            if i % step == 0:
+                keep.append((i, torch.from_dlpack(f).clone()))       # NV12: 720 luma rows, 360 interleaved UV
+            i += 1
+        if keep:
+            nv = torch.stack([k[1] for k in keep])
+            h = nv.shape[1] * 2 // 3
+            yy = nv[:, y0:y1, x0:x1].float()
+            uv = nv[:, h + y0 // 2:h + y1 // 2, x0:x1].float()
+            uv = uv.view(len(keep), uv.shape[1], uv.shape[2] // 2, 2).permute(0, 3, 1, 2)
+            yc = ry @ yy @ cy.T                                       # exact INTER_AREA, on the GPU
+            uvc = ruv @ uv @ cuv.T
+            yc = yc.round().clamp(0, 255).to(torch.uint8).cpu().numpy()
+            uvc = uvc.round().clamp(0, 255).to(torch.uint8).cpu().numpy()
+            for j, (idx, _) in enumerate(keep):
+                yield idx / fps, yc[j], uvc[j, 0], uvc[j, 1]
+        if max_seconds is not None and i / fps > max_seconds:
+            break
+
+
 def process_part(case: str, part: dict, offset: float, encoder: str, max_seconds: float | None,
-                 hwaccel: bool = False) -> str:
+                 hwaccel: bool = False, nvdec: bool = False) -> str:
     cv2.setNumThreads(1)          # OpenCV otherwise spawns a pool per worker and oversubscribes the CPU
     stem = f"{case}_p{part['part']:03d}"
     mp4, npz = OUT / "frames10" / f"{stem}.mp4", OUT / "meta10" / f"{stem}.npz"
@@ -64,36 +143,19 @@ def process_part(case: str, part: dict, offset: float, encoder: str, max_seconds
     except FileExistsError:
         return f"locked {stem}"
     t0 = time.time()
-    x0, x1, y0, y1 = SRC_CROP
     f0, f1 = FIELD_ROWS
     rec = {k: [] for k in ("t", "luma", "sat", "sharp", "green", "red", "top_y", "top_e", "bot_y", "bot_e",
                            "ego", "ego_inlier", "ego_n")}
     tmp = mp4.with_suffix(".tmp.mp4")
     codec, opts = ENCODERS[encoder]
-    kw = {}
-    if hwaccel:                           # NVDEC decoding frees the CPU, which is the bottleneck of this pass
-        from av.codec.hwaccel import HWAccel
-        kw["hwaccel"] = HWAccel(device_type="cuda", allow_software_fallback=True)
-    with av.open(str(SURGVU24_VIDEOS / part["path"]), **kw) as src, av.open(str(tmp), "w") as dst:
-        vs = src.streams.video[0]
-        vs.thread_type, vs.thread_count = "AUTO", 2
+    path = str(SURGVU24_VIDEOS / part["path"])
+    source = nvdec_frames(path, max_seconds, part["fps"]) if nvdec else cpu_frames(path, max_seconds, hwaccel)
+    with av.open(str(tmp), "w") as dst:
         enc = dst.add_stream(codec, rate=int(CACHE_FPS))
         enc.width, enc.height, enc.pix_fmt = CACHE_W, CACHE_H, "yuv420p"
         enc.options = opts
-        next_t, prev_gray = 0.0, None
-        for frame in src.decode(vs):
-            t = float(frame.time)
-            if max_seconds is not None and t > max_seconds:
-                break
-            if t + 1e-4 < next_t:
-                continue
-            next_t = (np.floor(t * CACHE_FPS + 1e-4) + 1) / CACHE_FPS
-            y, u, v = planes(frame)
-            yc = cv2.resize(y[y0:y1, x0:x1], (CACHE_W, CACHE_H), interpolation=cv2.INTER_AREA)
-            uc = cv2.resize(u[y0 // 2:y1 // 2, x0 // 2:x1 // 2], (CACHE_W // 2, CACHE_H // 2),
-                            interpolation=cv2.INTER_AREA)
-            vc = cv2.resize(v[y0 // 2:y1 // 2, x0 // 2:x1 // 2], (CACHE_W // 2, CACHE_H // 2),
-                            interpolation=cv2.INTER_AREA)
+        prev_gray = None
+        for t, yc, uc, vc in source:
             for pkt in enc.encode(av.VideoFrame.from_ndarray(i420(yc, uc, vc), format="yuv420p")):
                 dst.mux(pkt)
             # endoscope field at 224x320 (luma for tracking, RGB for colour statistics)
@@ -141,7 +203,8 @@ def main() -> None:
     ap.add_argument("--encoder", choices=sorted(ENCODERS), default="nvenc")
     ap.add_argument("--cases", nargs="*", help="restrict to these cases (default: all)")
     ap.add_argument("--max-seconds", type=float, help="benchmarking: stop each part after this many seconds")
-    ap.add_argument("--hwaccel", action="store_true", help="decode on the GPU (NVDEC)")
+    ap.add_argument("--hwaccel", action="store_true", help="NVDEC through FFmpeg (frames copied to the host)")
+    ap.add_argument("--nvdec", action="store_true", help="NVDEC into GPU memory, crop/resize with CUDA")
     ap.add_argument("--reverse", action="store_true", help="shortest parts first (for a second concurrent run)")
     args = ap.parse_args()
     (OUT / "frames10").mkdir(parents=True, exist_ok=True)
@@ -153,7 +216,7 @@ def main() -> None:
             jobs.append((part["duration"], case, part, tl.offsets[part["part"]]))
     jobs.sort(key=lambda j: j[0] if args.reverse else -j[0])   # longest first for load balance
     with ProcessPoolExecutor(args.workers) as ex:
-        futs = [ex.submit(process_part, c, p, o, args.encoder, args.max_seconds, args.hwaccel)
+        futs = [ex.submit(process_part, c, p, o, args.encoder, args.max_seconds, args.hwaccel, args.nvdec)
                 for _, c, p, o in jobs]
         for i, f in enumerate(as_completed(futs), 1):
             print(f"[{i}/{len(futs)}] {f.result()}", flush=True)
