@@ -17,6 +17,17 @@ The core model is trained on our own SurgVU holdings (~604 usable hours, `docs/0
 
 Open-H-Embodiment (HF `nvidia/PhysicalAI-Robotics-Open-H-Embodiment`, LeRobot v2.1, 4.54 TB in total, ~770 h across 9 embodiments) has further subsets we can pull later if an experiment needs them: `jhu/imerse/wound_closure` (53 GB), `srt_needle_pickup_handover` (9.9 GB), `srt_tissue_lift` (3.4 GB), `hamlyn` (24 GB, dVRK skills), `ubc` (2.9 GB, JIGSAWS-style tasks on dVRK), `cmr_surgical/*` (2.8 TB, Versius procedures with kinematics).
 
+### Video–kinematics synchronisation (checked, not assumed)
+
+LeRobot conversions pair video frame *i* with kinematics row *i*. `scripts/data/check_sync.py` measures the actual lag per episode by cross-correlating a video motion signal that does not use our ego-motion estimator (mean change of the Wan2.2 latents) with total arm motion, over the whole episode and per 2-minute chunk. An episode counts as synced when ≥ 70 % of its chunk lags agree within 0.5 s with each other and with the global lag; constant lags of ≥ 0.4 s are then corrected; episodes shorter than one chunk are pooled.
+
+| Dataset | Result |
+|---|---|
+| CRCD (18 episodes) | 8 in sync (lag 0.1–0.3 s, below one latent step); 3 offset by a constant +1.2 s (episodes 12–14, which also lack pedal data) → shifted; episode 6 drifts linearly (0.6 s/min); episodes 0, 7–11 never lock → excluded. 2,616 of 3,809 windows usable. |
+| SutureBot (1,452 short episodes) | pooled lag +0.1 s, r = 0.53; 89 % of episodes peak within 0.5 s → all in sync. |
+
+Outputs: `data/processed/<name>/sync.json` and `signals_synced.npz` (lag-corrected signals + per-window `synced` flag), read by `swm.data.external.ExternalWindows(synced_only=True)`.
+
 ## B. Optional — need *your* signature (form / data-use agreement)
 
 | Dataset | Access | Value | Priority |
