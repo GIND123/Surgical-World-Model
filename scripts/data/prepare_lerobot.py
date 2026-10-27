@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import multiprocessing as mp
+from collections import deque
 
 import av
 import cv2
@@ -90,6 +91,19 @@ def episode_job(args) -> dict:
         tools.append(sv.OCC_INDEX.get(TOOL_MAP.get(name, ""), sv.OCC_INDEX[sv.UNKNOWN]))
     starts = list(range(0, n - WIN + 1, stride))
     return dict(ep=ep["episode_index"], frames=frames, sig=sig, ego=ego, inl=inl, tools=tools, starts=starts)
+
+
+def bounded_imap(pool, fn, jobs, ahead: int):
+    """Ordered pool.imap with at most ``ahead`` results in flight: decoded episodes are large, and an
+    unbounded imap lets the workers outrun the GPU consumer until memory runs out."""
+    it = iter(jobs)
+    pending = deque(pool.apply_async(fn, (j,)) for _, j in zip(range(ahead), it, strict=False))
+    while pending:
+        res = pending.popleft().get()
+        nxt = next(it, None)
+        if nxt is not None:
+            pending.append(pool.apply_async(fn, (nxt,)))
+        yield res
 
 
 def build(name: str, results, split_of: dict) -> None:
@@ -190,7 +204,7 @@ def main() -> None:
         split_of = {int(e): ("test" if i < n_test else "train") for i, e in enumerate(order)}
     jobs = [(root, info, e, cam, args.stride) for e in eps]
     with mp.get_context("spawn").Pool(args.workers) as pool:
-        build(args.name, pool.imap(episode_job, jobs), split_of)
+        build(args.name, bounded_imap(pool, episode_job, jobs, args.workers + 1), split_of)
 
 
 if __name__ == "__main__":

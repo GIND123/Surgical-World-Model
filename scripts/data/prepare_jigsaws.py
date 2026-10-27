@@ -23,7 +23,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from prepare_lerobot import WIN, build, crop_resize  # noqa: E402
+from prepare_lerobot import WIN, bounded_imap, build, crop_resize  # noqa: E402
 
 from swm.data import egomotion  # noqa: E402
 from swm.data import surgvu as sv  # noqa: E402
@@ -81,7 +81,7 @@ def main() -> None:
     (out / "episodes.tsv").write_text("".join(f"{i}\t{t}\t{tr}\t{split_of[i]}\n" for i, (t, tr) in enumerate(trials)))
     jobs = [(i, t, tr, args.stride) for i, (t, tr) in enumerate(trials)]
     with mp.get_context("spawn").Pool(args.workers) as pool:
-        build("jigsaws", pool.imap(job, jobs), split_of)
+        build("jigsaws", bounded_imap(pool, job, jobs, args.workers + 1), split_of)
 
 
 if __name__ == "__main__":

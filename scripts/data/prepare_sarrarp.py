@@ -22,7 +22,7 @@ import cv2
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from prepare_lerobot import WIN, build, crop_resize  # noqa: E402
+from prepare_lerobot import WIN, bounded_imap, build, crop_resize  # noqa: E402
 
 from swm.data import egomotion  # noqa: E402
 from swm.data import surgvu as sv  # noqa: E402
@@ -86,7 +86,7 @@ def main() -> None:
     (out / "episodes.tsv").write_text("".join(f"{i}\t{z.stem}\t{s}\n" for i, (z, s) in enumerate(zips)))
     jobs = [(i, str(z), args.stride) for i, (z, _) in enumerate(zips)]
     with mp.get_context("spawn").Pool(args.workers) as pool:
-        build("sar_rarp50", pool.imap(job, jobs), split_of)
+        build("sar_rarp50", bounded_imap(pool, job, jobs, args.workers + 1), split_of)
 
 
 if __name__ == "__main__":
