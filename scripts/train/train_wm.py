@@ -133,10 +133,11 @@ def main() -> None:
         ds = LatentWindows("train", cases=train_cases)
         val = LatentWindows("val", max_windows=512, seed=0)
     else:
-        ds = ExternalWindows(args.data, "train", fraction=args.train_fraction, seed=args.seed)
-        val = ExternalWindows(args.data, "val")
+        kin = args.action == "kin"             # kinematics conditioning needs verified video-kinematics sync
+        ds = ExternalWindows(args.data, "train", fraction=args.train_fraction, seed=args.seed, synced_only=kin)
+        val = ExternalWindows(args.data, "val", synced_only=kin)
         if len(val) == 0:                      # no validation split: monitor on a fixed slice of training data
-            val = ExternalWindows(args.data, "train")
+            val = ExternalWindows(args.data, "train", synced_only=kin)
             val.index = val.index[:: max(1, len(val.index) // 256)][:256]
     loader = DataLoader(ds, batch_size=args.bs, shuffle=True, drop_last=True, num_workers=args.workers,
                         pin_memory=True, persistent_workers=True)

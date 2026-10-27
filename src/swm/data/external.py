@@ -3,6 +3,8 @@
 Same item format as swm.data.windows.LatentWindows plus ``kin`` (9, 4, 28): for each latent step and arm slot the
 four frame transitions of (dpos, drot, djaw), normalised with training-split statistics (zeros for slots without
 a PSM), and ``kin_net`` (9, 4, 7): the net motion over the step (targets of the grounding probes).
+Kinematics come from signals_synced.npz when scripts/data/check_sync.py has run (lag-corrected, with a per-window
+``synced`` flag); ``synced_only`` keeps only windows whose video and kinematics are verified to be in sync.
 """
 
 from __future__ import annotations
@@ -13,7 +15,7 @@ import torch
 from torch.utils.data import Dataset
 
 from swm.data.kinematics import arm_motion, per_latent_step
-from swm.data.windows import camera_scale, latent_stats, normalise_camera
+from swm.data.windows import camera_input, camera_scale, latent_stats
 from swm.paths import PROCESSED
 
 SLOTS = {"psm1": 0, "psm2": 2}
@@ -39,18 +41,24 @@ def calibrate_sides(cond: dict, net: dict, train: np.ndarray) -> bool:
 
 
 class ExternalWindows(Dataset):
-    def __init__(self, name: str, split: str, dataset_layout: str | None = None, fraction: float = 1.0, seed: int = 0):
+    def __init__(self, name: str, split: str, dataset_layout: str | None = None, fraction: float = 1.0, seed: int = 0,
+                 synced_only: bool = False):
         root = PROCESSED / name
         self.lat = np.load(root / "latents.npy", mmap_mode="r")
         self.rows = pd.read_csv(root / "windows.csv")
         cond = dict(np.load(root / "conditioning.npz"))
-        sig = dict(np.load(root / "signals.npz"))
+        if (root / "signals_synced.npz").exists():
+            sig = dict(np.load(root / "signals_synced.npz"))
+            self.synced = sig.pop("synced")
+        else:
+            sig = dict(np.load(root / "signals.npz"))
+            self.synced = np.ones(len(self.rows), bool)
         layout = dataset_layout or name
         cat, net = {}, {}
         for arm in SLOTS:
             c, n_ = per_latent_step(arm_motion(sig, layout, arm))
             cat[arm], net[arm] = c, n_
-        train = (self.rows["split"] == "train").to_numpy()
+        train = (self.rows["split"] == "train").to_numpy() & self.synced
         self.swapped = calibrate_sides(cond, net, train)
         if self.swapped:
             b = cond["boxes"].copy()
@@ -64,7 +72,7 @@ class ExternalWindows(Dataset):
         self.cond = cond
         self.mean, self.std = latent_stats()
         self.cam_scale = camera_scale()
-        idx = np.flatnonzero((self.rows["split"] == split).to_numpy())
+        idx = np.flatnonzero((self.rows["split"] == split).to_numpy() & (self.synced | (not synced_only)))
         if fraction < 1.0:                       # data-efficiency curves: subsample whole episodes
             eps = self.rows.loc[idx, "episode"].unique()
             rng = np.random.default_rng(seed)
@@ -79,7 +87,7 @@ class ExternalWindows(Dataset):
         w = int(self.index[i])
         c = self.cond
         z = (np.asarray(self.lat[w], np.float32) - self.mean[None, :, None, None]) / self.std[None, :, None, None]
-        cam = normalise_camera(c["camera"][w], self.cam_scale) * c["cam_ok"][w][:, None]
+        cam = camera_input(c["camera"][w], self.cam_scale)
         return dict(z=torch.from_numpy(z), occupant=torch.from_numpy(c["occupant"][w].astype(np.int64)),
                     hand=torch.zeros(9, 4, dtype=torch.int64), energy=torch.zeros(9, 4, dtype=torch.int64),
                     boxes=torch.from_numpy(c["boxes"][w].astype(np.float32)),

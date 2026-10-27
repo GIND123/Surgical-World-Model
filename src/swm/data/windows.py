@@ -29,6 +29,17 @@ def normalise_camera(cam: np.ndarray, scale: np.ndarray) -> np.ndarray:
     return np.sign(cam) * np.log1p(np.abs(cam) / scale)
 
 
+def camera_input(cam: np.ndarray, scale: np.ndarray, valid: np.ndarray | None = None) -> np.ndarray:
+    """(9, 16) raw ego-motion -> (9, 20): normalised parameters of the 4 transitions of each latent step followed by
+    one validity flag per transition, so that "not estimated" is not confused with "endoscope still".
+    The conditioning builders store unreliable transitions as exact zeros, which defines ``valid`` by default.
+    A step used to be zeroed when any of its transitions failed (37 % of CRCD steps); on CRCD this lowered the
+    detection of real endoscope motion from AUC 0.84 to 0.63."""
+    if valid is None:
+        valid = (cam.reshape(len(cam), 4, 4) != 0).any(-1)
+    return np.concatenate([normalise_camera(cam, scale), valid.astype(np.float32)], -1)
+
+
 class LatentWindows(Dataset):
     def __init__(self, split: str, cases: list[str] | None = None, max_windows: int | None = None, seed: int = 0):
         sp = json.loads((ROOT / "configs" / "splits" / "surgvu_v1.json").read_text())
@@ -69,7 +80,7 @@ class LatentWindows(Dataset):
         p = self.parts[pi]
         c = p["cond"]
         z = (np.asarray(self._lat(p)[w], np.float32) - self.mean[None, :, None, None]) / self.std[None, :, None, None]
-        cam = normalise_camera(c["camera"][w], self.cam_scale) * c["cam_ok"][w][:, None]
+        cam = camera_input(c["camera"][w], self.cam_scale)
         return dict(z=torch.from_numpy(z), occupant=torch.from_numpy(c["occupant"][w].astype(np.int64)),
                     hand=torch.from_numpy(c["hand"][w].astype(np.int64)),
                     energy=torch.from_numpy(c["energy"][w].astype(np.int64)),

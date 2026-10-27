@@ -22,11 +22,11 @@ N_ENERGY = 3  # 0 none, 1 cut, 2 coag
 
 
 class CameraEncoder(nn.Module):
-    def __init__(self, dim: int, n_params: int = 16):
+    def __init__(self, dim: int, n_params: int = 20):           # 4 transitions x (dx, dy, log s, angle) + 4 valid
         super().__init__()
         self.net = nn.Sequential(nn.Linear(n_params, dim), nn.SiLU(), nn.Linear(dim, dim))
 
-    def forward(self, cam: torch.Tensor) -> torch.Tensor:          # (B, T, 16) -> (B, T, D)
+    def forward(self, cam: torch.Tensor) -> torch.Tensor:          # (B, T, 20) -> (B, T, D)
         return self.net(cam)
 
 

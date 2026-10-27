@@ -4,7 +4,8 @@
 For every latent step of every window, features come from a frozen model (posterior-mean latent actions) or
 from model-free baselines; targets are the net PSM1/PSM2 motion over the step (dpos 3, drot 3, djaw 1).
 Ridge regression (alpha chosen by cross-validation on training episodes) is fitted on the training split and
-R^2 is reported on held-out test episodes, per arm and per target group.
+R^2 is reported on held-out test episodes, per arm and per target group. Only windows whose video and kinematics
+are verified to be in sync are used (scripts/data/check_sync.py).
 
     python scripts/eval/probe_kinematics.py --data suturebot --runs eg_swm_B mono_B slots_B --baselines
 """
@@ -90,7 +91,7 @@ def main() -> None:
     ap.add_argument("--runs", nargs="*", default=[])
     ap.add_argument("--baselines", action="store_true")
     args = ap.parse_args()
-    tr, te = ExternalWindows(args.data, "train"), ExternalWindows(args.data, "test")
+    tr, te = (ExternalWindows(args.data, s, synced_only=True) for s in ("train", "test"))
     targets = {s: {arm: d.kin_net[d.index][:, 1:, slot].reshape(-1, 7) for arm, slot in SLOTS.items()}
                for s, d in (("train", tr), ("test", te))}
     sources = {r: (lambda r=r, d=None: None) for r in args.runs}

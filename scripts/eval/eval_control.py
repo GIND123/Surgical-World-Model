@@ -28,7 +28,7 @@ from eval_wm import EvalWindows, load_model  # noqa: E402
 
 from swm.data import egomotion  # noqa: E402
 from swm.data.geometry import CACHE_H, CACHE_W, FIELD_ROWS  # noqa: E402
-from swm.data.windows import CACHE, camera_scale, latent_stats, normalise_camera  # noqa: E402
+from swm.data.windows import CACHE, camera_input, camera_scale, latent_stats  # noqa: E402
 from swm.models.actions import region_from_boxes  # noqa: E402
 from swm.paths import CHECKPOINTS, DETECTOR, OUTPUTS  # noqa: E402
 
@@ -104,7 +104,9 @@ def main() -> None:
                 raw = np.zeros((9, 16), np.float32)
                 cmd = np.array([sx * mag[0], sy * mag[1], sz * mag[2], 0.0], np.float32)
                 raw[1:] = np.tile(cmd, 4)
-                cam = torch.from_numpy(normalise_camera(raw, camera_scale())).cuda()
+                valid = np.zeros((9, 4), bool)
+                valid[1:] = True                                    # a commanded still camera is valid, not unknown
+                cam = torch.from_numpy(camera_input(raw, camera_scale(), valid)).cuda()
                 bc = dict(b, camera=cam[None].expand(bsz, -1, -1).clone())
                 bc["camera"][:, :args.n_ctx] = b["camera"][:, :args.n_ctx]
                 with torch.autocast("cuda", dtype=torch.bfloat16):
