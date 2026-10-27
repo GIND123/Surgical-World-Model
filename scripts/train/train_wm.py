@@ -37,6 +37,7 @@ def parse() -> argparse.Namespace:
     ap.add_argument("--kl-warmup", type=int, default=10_000, help="steps over which the KL weight ramps from 0")
     ap.add_argument("--arm-pool", choices=["region", "global", "shuffled"], default="region")
     ap.add_argument("--use-ui", action="store_true", help="console readout (hand, energy) in the arm tokens")
+    ap.add_argument("--fp8", action="store_true", help="FP8 training of the transformer's linear layers (torchao)")
     ap.add_argument("--steps", type=int, default=100_000)
     ap.add_argument("--bs", type=int, default=32)
     ap.add_argument("--lr", type=float, default=1e-4)
@@ -170,6 +171,16 @@ def main() -> None:
             e.copy_(s)
         step = st["step"]
         print(f"resumed at step {step}", flush=True)
+    if args.fp8:                               # dynamic-scaled FP8 matmuls on Blackwell tensor cores
+        from torchao.float8 import convert_to_float8_training
+
+        def big_linear(mod, fqn):
+            # token-heavy layers only: per-frame modulation and cross-attention keys over the few arm tokens
+            # have row counts (B*T, B*T*5) that FP8 weight-gradient matmuls cannot take
+            return (isinstance(mod, torch.nn.Linear) and "mod" not in fqn and "cross.kv" not in fqn
+                    and mod.in_features % 16 == 0 and mod.out_features % 16 == 0
+                    and min(mod.in_features, mod.out_features) >= 256)
+        convert_to_float8_training(model.dit, module_filter_fn=big_linear)
     if not args.no_compile:
         model.dit.compile()
         if model.idm is not None:
