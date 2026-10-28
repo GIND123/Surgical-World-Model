@@ -9,12 +9,15 @@
     SlotIDM   (baseline) K unsupervised slots, one action per slot (FLAM style)
   Every head outputs a diagonal Gaussian; the KL to N(0, I) is the information bottleneck.
 * ForwardDecoder - the latent-action-model objective that keeps the learned actions informative.
+* stabilise      - aligns z_{t-1} with z_t by the measured endoscope motion, so that the learned actions are
+                   inferred from camera-stabilised latents and cannot duplicate the explicit endoscope action.
 """
 
 from __future__ import annotations
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from swm.data.surgvu import ARMS, OCCUPANTS
 from swm.models.layers import Attention, RMSNorm, SwiGLU, axial_rope_2d
@@ -254,6 +257,24 @@ class ForwardDecoder(nn.Module):
         for blk in self.blocks:
             h = h + blk(h)
         return z_prev + self.out(h)
+
+
+def stabilise(z_prev: torch.Tensor, cam: torch.Tensor, scale: torch.Tensor) -> torch.Tensor:
+    """Warp z_{t-1} onto z_t by the endoscope motion of the step. z_prev: (N, C, H, W); cam: (N, 20) camera input
+    (signed-log parameters of the 4 frame transitions, then 4 validity flags); scale: (16,) its per-parameter scale.
+    Each transition is the similarity prev -> next (dx / W, dy / H of the image centre, log scale, angle); the four
+    are composed additively (small motions), and unreliable transitions are zero, i.e. not compensated."""
+    n = cam[:, :16].float().view(-1, 4, 4)
+    raw = torch.sign(n) * scale.view(4, 4) * torch.expm1(n.abs())
+    dx, dy, log_s, angle = raw.sum(1)[..., None, None].unbind(1)                     # (N, 1, 1) each
+    h, w = z_prev.shape[-2:]
+    ys = (torch.arange(h, device=cam.device) + 0.5 - h / 2)[None, :, None]           # cell units from the centre
+    xs = (torch.arange(w, device=cam.device) + 0.5 - w / 2)[None, None, :]
+    qx, qy = xs - dx * w, ys - dy * h                                                # undo the translation
+    inv, c, s = torch.exp(-log_s), torch.cos(angle), torch.sin(angle)
+    px, py = inv * (c * qx + s * qy), inv * (c * qy - s * qx)                        # then the rotation and scale
+    grid = torch.stack([px / (w / 2), py / (h / 2)], -1)
+    return F.grid_sample(z_prev, grid.to(z_prev.dtype), mode="bilinear", padding_mode="border", align_corners=False)
 
 
 def region_from_boxes(boxes: torch.Tensor, height: int, width: int, dilate: int = 1) -> torch.Tensor:

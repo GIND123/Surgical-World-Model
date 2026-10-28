@@ -80,7 +80,7 @@ def main() -> None:
             region = b["region"][:, 1:]
             area.append(region[act].float().mean(-1).cpu())
             occ = b["occupant"][:, 1:].flatten(0, 1)
-            feats = model.idm.trunk(z[:, :-1].flatten(0, 1), z[:, 1:].flatten(0, 1))
+            feats = model.idm.trunk(*model.idm_pair(z, b))
             q = model.idm.arm(torch.arange(4, device=z.device))[None] + model.idm.occ(occ)
             safe = region.flatten(0, 1) | ~act.flatten(0, 1)[..., None]
             mu, lv = model.idm.head(model.idm.pool(q, feats, safe))

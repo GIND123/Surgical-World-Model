@@ -9,7 +9,8 @@ action = "none"    no tokens at all (unconditional video prediction)
                    also one scene action inferred outside every arm's region (tissue, unbound instruments)
          "kin"     as "arms" but each arm's action is mapped from its recorded kinematics by a small adapter
                    (kinematics-conditioned; initialise from an "arms" model to transfer unlabeled pre-training)
-camera = True adds the explicit endoscope ego-motion to the per-frame conditioning.
+camera = True adds the explicit endoscope ego-motion to the per-frame conditioning; stabilise = True infers the
+learned actions from latents aligned by that motion, so that they cannot duplicate it.
 
 Training: rectified flow on normalised VAE latents, x_tau = (1 - tau) x0 + tau eps, target v = eps - x0, with a
 noise level per frame. Mixed schedule: clean (or slightly noised) context + future frames with a shared or
@@ -27,6 +28,7 @@ import torch
 import torch.nn as nn
 
 from swm.data.surgvu import ARMS
+from swm.data.windows import camera_scale
 from swm.models.actions import (
     ArmIDM,
     ArmTokens,
@@ -37,6 +39,7 @@ from swm.models.actions import (
     Trunk,
     VQGlobalIDM,
     outside_regions,
+    stabilise,
 )
 from swm.models.dynamics import SIZES, DiTConfig, STDiT
 from swm.models.layers import timestep_embedding
@@ -58,6 +61,7 @@ class WMConfig:
     kin_dim: int = 28              # 4 frame transitions x (dpos 3, drot 3, djaw 1) per latent step
     arm_pool: str = "region"       # ablations: "global" (per-arm query, whole frame), "shuffled" (wrong binding)
     scene: bool = False            # arms: one more action, pooled and written only outside every arm's region
+    stabilise: bool = False        # learned actions from camera-stabilised latents (needs the camera action)
     use_ui: bool = False           # console readout (driving hand, energy) in the arm tokens
     kl_weight: float = 1e-4
     fwd_weight: float = 1.0        # forward-decoder (latent-action-model) loss; 0 = diffusion loss only (ablation)
@@ -91,6 +95,7 @@ class WorldModel(nn.Module):
     def __init__(self, cfg: WMConfig):
         super().__init__()
         assert cfg.action in ACTIONS, cfg.action
+        assert cfg.camera or not cfg.stabilise, "stabilising the learned actions needs the camera action"
         self.cfg = cfg
         c, h, w = cfg.latent_shape
         uses_tokens = cfg.action != "none"
@@ -119,6 +124,8 @@ class WorldModel(nn.Module):
                 self.extra_proj, self.extra_role = nn.Linear(cfg.du, d), nn.Parameter(torch.zeros(1, 1, cfg.n_slots, d))
         else:
             self.idm = None
+        if cfg.stabilise:
+            self.register_buffer("cam_scale", torch.from_numpy(camera_scale()), persistent=False)
         self.fwd = None
         if self.idm is not None and cfg.fwd_weight > 0:
             act_ch = {"arms": (len(ARMS) + cfg.scene) * cfg.du, "slots": cfg.n_slots * cfg.du}.get(cfg.action, cfg.dg)
@@ -126,6 +133,13 @@ class WorldModel(nn.Module):
                                       cfg.fwd_dim, cfg.fwd_depth)
 
     # ------------------------------------------------------------------ actions
+    def idm_pair(self, z: torch.Tensor, batch: dict) -> tuple[torch.Tensor, torch.Tensor]:
+        """(z_{t-1}, z_t) of every transition, flattened, as the inverse-dynamics head sees them."""
+        zp, zn = z[:, :-1].flatten(0, 1), z[:, 1:].flatten(0, 1)
+        if self.cfg.stabilise:
+            zp = stabilise(zp, batch["camera"][:, 1:].flatten(0, 1), self.cam_scale)
+        return zp, zn
+
     def infer_actions(self, z: torch.Tensor, batch: dict, stochastic: bool) -> dict:
         """Latent actions for every transition (t-1 -> t), placed at frame t; frame 0 gets zeros."""
         b, t = z.shape[:2]
@@ -136,7 +150,7 @@ class WorldModel(nn.Module):
             return out
         if self.idm is None:
             return out
-        zp, zn = z[:, :-1].flatten(0, 1), z[:, 1:].flatten(0, 1)
+        zp, zn = self.idm_pair(z, batch)
         if self.cfg.action == "arms":
             occ = batch["occupant"][:, 1:].flatten(0, 1)
             region = batch["region"][:, 1:]
