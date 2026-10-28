@@ -72,7 +72,7 @@ def main() -> None:
     ap.add_argument("--split", default="test")
     ap.add_argument("--limit", type=int, default=300)
     ap.add_argument("--bs", type=int, default=8)
-    ap.add_argument("--steps", type=int, default=20)
+    ap.add_argument("--steps", type=int, default=50, help="Euler steps (20 drifts at long horizons)")
     ap.add_argument("--n-ctx", type=int, default=2)
     ap.add_argument("--magnitude", type=float, default=0.99, help="quantile of real camera motion to command")
     args = ap.parse_args()
