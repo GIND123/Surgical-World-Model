@@ -21,6 +21,8 @@ ROWS = [  # run, label, action interface, camera
     ("S_slots", "Slots + camera (FLAM-style)", "slots", True),
     ("S_arms_nocam", "EG-SWM, no camera action", "arms", False),
     ("S_arms", "EG-SWM", "arms", True),
+    ("S_arms_scene", "EG-SWM + scene action", "arms", True),
+    ("S_arms_nofwd", "EG-SWM, diffusion loss only", "arms", True),
     ("S_arms_poolglobal", "EG-SWM, arm actions not grounded", "arms", True),
     ("S_arms_shuffled", "EG-SWM, wrong arm binding", "arms", True),
     ("S_arms_ui", "EG-SWM + console readout", "arms", True),

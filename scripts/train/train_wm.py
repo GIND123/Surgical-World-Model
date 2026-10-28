@@ -39,7 +39,7 @@ def parse() -> argparse.Namespace:
     ap.add_argument("--arm-pool", choices=["region", "global", "shuffled"], default="region")
     ap.add_argument("--scene", action="store_true", help="arms: add a scene action pooled outside the arm regions")
     ap.add_argument("--stabilise", action="store_true", help="infer learned actions from camera-stabilised latents")
-    ap.add_argument("--p-drop-learned", type=float, default=0.2,
+    ap.add_argument("--p-drop-learned", type=float, default=0.0,
                     help="probability of dropping only the learned actions (camera kept) in training")
     ap.add_argument("--use-ui", action="store_true", help="console readout (hand, energy) in the arm tokens")
     ap.add_argument("--fp8", action="store_true", help="FP8 training of the transformer's linear layers (torchao)")

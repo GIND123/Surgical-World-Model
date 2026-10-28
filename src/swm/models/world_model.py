@@ -71,7 +71,7 @@ class WMConfig:
     idm_depth: int = 2
     idm_heads: int = 4
     p_drop_actions: float = 0.1    # classifier-free guidance on actions (camera + learned actions)
-    p_drop_learned: float = 0.2    # learned actions only, camera kept: the camera action must work without them
+    p_drop_learned: float = 0.0    # learned actions only, camera kept (pilot 096: partial help, -8 % replay)
     p_context: float = 0.75        # clean-context training mode, otherwise pure diffusion forcing
     max_context: int = 3           # latent frames of context in context mode
     p_shared_tau: float = 0.5      # future frames share one tau (vs independent) in context mode
