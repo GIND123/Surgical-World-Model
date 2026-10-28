@@ -12,7 +12,7 @@
 | Data audit, literature review, hypotheses, case-level split, tokenizer choice | done |
 | Model, 7 action interfaces, kinematics-conditioned mode, SurgWM re-implementation, evaluation suite, result aggregation | done |
 | SurgVU processing (10 fps cache → Wan2.2 latents → detection → arm binding → console readout) | running as systemd user services (`scripts/run_services.sh`); 10 fps cache done (280/280 parts), latents done (280/280); detection/arm binding 233/280 (≈ 5 min per part, finishes ≈ 16:00) |
-| External preparation (SutureBot → CRCD → JIGSAWS → SAR-RARP50) | SutureBot and CRCD done and sync-checked; JIGSAWS, SAR-RARP50 and SRT-H (14,836 episodes) run next to training (`swm-external`) once SurgVU encoding ends |
+| External preparation (SutureBot → CRCD → JIGSAWS → SAR-RARP50) | SutureBot, CRCD and JIGSAWS done and sync-checked (JIGSAWS: 103 trials with video, 5,763 windows, 86 episodes pass the sync check); SAR-RARP50 done (4,901 windows); SRT-H (14,836 episodes) preparing next to training (`swm-external`) |
 | Camera-action validation (E2b) | done on CRCD (endoscope-arm kinematics) and AutoLaparo (surgeon-labelled laparoscope moves) — see results below |
 | External downloads | SRT-H done (preparation queued); AutoLaparo Task 2 received from the authors (300 clips, 3.8 GB) and used for E2b |
 | Pilot (S, partial data) | diffusion loss only: learned arm actions collapse; the forward-decoder objective (not the weaker bottleneck) makes them used, and action replay is 12 % more accurate. The monolithic action replays 17 % better still, almost all outside the instrument regions; a scene action (`095`) closes the gap but weakens the endoscope action; neither learned-only dropout (`096`) nor camera-stabilised inference (`097`) restores it; arms + scene runs as a full variant (`205`) |
@@ -190,8 +190,8 @@ The mean motion of moving clips peaks at 5.3 s, 2.2× its level before the onset
 |---|---|---|---|
 | SurgVU (Intuitive) | training + main benchmark | public | `data/raw/surgvu*` |
 | Open-H-Embodiment: SutureBot, SRT-H porcine cholecystectomy, CRCD | kinematic grounding, kinematics-conditioned benchmarks | CC-BY-4.0 | SutureBot, CRCD prepared and sync-checked; SRT-H downloaded (107 GB), prepared after SurgVU encoding |
-| JIGSAWS | kinematic grounding (da Vinci) | data-use agreement | downloaded; prepared after SurgVU encoding |
-| SAR-RARP50 | clinical (human) transfer | CC BY-NC-SA 4.0 | downloaded (32 GB); prepared after SurgVU encoding |
+| JIGSAWS | kinematic grounding (da Vinci) | data-use agreement | prepared: 103 of 120 trials (17 have kinematics but no video), 5,763 windows; 86/103 episodes pass the video–kinematics sync check |
+| SAR-RARP50 | clinical (human) transfer | CC BY-NC-SA 4.0 | prepared: 4,901 windows |
 | AutoLaparo | external test of the camera action (laparoscope motion labels) | request form | Task 2 downloaded (300 clips, 3.8 GB); Tasks 1 and 3 not needed |
 
 PhysioNet holds no surgical video with robot kinematics, so nothing is taken from it ([details](docs/02_external_data.md)).
