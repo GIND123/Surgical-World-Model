@@ -67,6 +67,7 @@ class WMConfig:
     idm_depth: int = 2
     idm_heads: int = 4
     p_drop_actions: float = 0.1    # classifier-free guidance on actions (camera + learned actions)
+    p_drop_learned: float = 0.2    # learned actions only, camera kept: the camera action must work without them
     p_context: float = 0.75        # clean-context training mode, otherwise pure diffusion forcing
     max_context: int = 3           # latent frames of context in context mode
     p_shared_tau: float = 0.5      # future frames share one tau (vs independent) in context mode
@@ -82,6 +83,7 @@ class WMConfig:
     def from_dict(cls, d: dict) -> WMConfig:
         d = dict(d, latent_shape=tuple(d["latent_shape"]))
         d.setdefault("fwd_weight", 0.0)             # checkpoints from before the forward decoder
+        d.setdefault("p_drop_learned", 0.0)         # ... and before learned-only dropout
         return cls(**d)
 
 
@@ -241,7 +243,8 @@ class WorldModel(nn.Module):
         x = (1 - tt) * z + tt * eps
         acts = self.infer_actions(z, batch, stochastic=True)
         keep = (torch.rand(b, device=z.device) >= self.cfg.p_drop_actions).float()
-        tok, mask = self.tokens(batch, acts, keep)
+        keep_learned = keep * (torch.rand(b, device=z.device) >= self.cfg.p_drop_learned).float()
+        tok, mask = self.tokens(batch, acts, keep_learned)
         v = self.dit(x, self.cond(tau, batch, keep), tok, mask)
         err = (v.float() - (eps - z).float()).pow(2).mean(dim=(2, 3, 4))           # (B, T)
         w = (~is_ctx).float()

@@ -10,6 +10,8 @@
 * replay: latent error of generated futures (2 context latents, 10 Euler steps, same noise) with the inferred
   actions, with the learned actions of another window and with its camera action.
 * with a scene action (arms + scene), the arm actions and the scene action are also shuffled separately.
+* camera control: the same with every learned action set to zero (as when the endoscope motion is commanded),
+  with the window's own and with another window's camera action; the gap is relative to the former.
 
     python scripts/eval/diagnose_actions.py --run pilot_partial_S_arms --device cpu
 """
@@ -57,11 +59,13 @@ def main() -> None:
     loader = DataLoader(LatentWindows("val", max_windows=args.windows, seed=0, stems=stems), batch_size=args.bs,
                         num_workers=2)
     split = model.cfg.action == "arms" and model.cfg.scene
-    keys = ("real", "shuffled", "zero", "camera_shuffled") + (("arms_shuffled", "scene_shuffled") if split else ())
+    keys = ("real", "shuffled", "zero", "camera_shuffled", "zero_camera_shuffled") + (
+        ("arms_shuffled", "scene_shuffled") if split else ())
     err = {k: np.zeros((len(TAUS), 2)) for k in keys}          # (tau, inside / outside region)
     cnt = np.zeros((len(TAUS), 2))
     mus, logvars, kls, n_arms, n_active, area, sens = [], [], [], 0, 0, [], []
-    gen_keys = ("real", "shuffled", "camera_shuffled") + (("arms_shuffled", "scene_shuffled") if split else ())
+    gen_keys = ("real", "shuffled", "camera_shuffled", "zero", "zero_camera_shuffled") + (
+        ("arms_shuffled", "scene_shuffled") if split else ())
     gen_err, gen_cnt, n_gen = {k: np.zeros(2) for k in gen_keys}, np.zeros(2), 0
     for bi, batch in enumerate(loader):
         b = {k: v.to(args.device) for k, v in batch.items()}
@@ -88,7 +92,8 @@ def main() -> None:
         shuf = {k: (v.roll(1, 0) if k.startswith("u_") else v) for k, v in acts.items()}
         zero = {k: (torch.zeros_like(v) if k.startswith("u_") else v) for k, v in acts.items()}
         b_cam = dict(b, camera=b["camera"].roll(1, 0))
-        variants = {"real": (acts, b), "shuffled": (shuf, b), "zero": (zero, b), "camera_shuffled": (acts, b_cam)}
+        variants = {"real": (acts, b), "shuffled": (shuf, b), "zero": (zero, b), "camera_shuffled": (acts, b_cam),
+                    "zero_camera_shuffled": (zero, b_cam)}
         if split:
             variants["arms_shuffled"] = (dict(acts, u_arms=shuf["u_arms"]), b)
             variants["scene_shuffled"] = (dict(acts, u_extra=shuf["u_extra"]), b)
@@ -128,6 +133,8 @@ def main() -> None:
                          "all": float(v.sum() / gen_cnt.sum())} for k, v in gen_err.items()}
     out["replay_gap_pct"] = {k: round(100 * (out["replay"][k]["all"] / out["replay"]["real"]["all"] - 1), 3)
                              for k in gen_keys[1:]}
+    out["replay_gap_pct"]["zero_camera_shuffled"] = round(
+        100 * (out["replay"]["zero_camera_shuffled"]["all"] / out["replay"]["zero"]["all"] - 1), 3)
     if mus:
         mu, lv, kl = torch.cat(mus), torch.cat(logvars), torch.cat(kls)
         out["posterior"] = dict(active_arm_fraction=n_active / max(n_arms, 1),
@@ -140,8 +147,9 @@ def main() -> None:
         out[f"fm_{key}"] = {"inside": (err[key][:, 0] / cnt[:, 0]).round(5).tolist(),
                             "outside": (err[key][:, 1] / cnt[:, 1]).round(5).tolist()}
     for key in keys[1:]:
-        out[f"gap_{key}_inside_pct"] = (100 * (err[key][:, 0] / err["real"][:, 0] - 1)).round(3).tolist()
-        out[f"gap_{key}_outside_pct"] = (100 * (err[key][:, 1] / err["real"][:, 1] - 1)).round(3).tolist()
+        ref = err["zero" if key == "zero_camera_shuffled" else "real"]
+        out[f"gap_{key}_inside_pct"] = (100 * (err[key][:, 0] / ref[:, 0] - 1)).round(3).tolist()
+        out[f"gap_{key}_outside_pct"] = (100 * (err[key][:, 1] / ref[:, 1] - 1)).round(3).tolist()
     dst = OUTPUTS / "eval" / "action_use"
     dst.mkdir(parents=True, exist_ok=True)
     (dst / f"{args.run}_{step}.json").write_text(json.dumps(out, indent=1))
