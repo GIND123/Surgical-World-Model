@@ -1,6 +1,11 @@
 \section{Results}\label{sec:results}
 \todo{Results are filled in as experiments complete; tables below define the planned layout.}
 
+\subsection{Each action controls what it should}
+We first examine \method{} at size S (60k steps). On 512 validation windows, futures generated from the actions inferred from the real clip have a latent error of 0.335. Replacing every arm's action with that of another window raises the error by 33\,\% (49\,\% inside the arm regions, 29\,\% outside); replacing the endoscope action raises it by 27\,\% (12\,\% inside, 30\,\% outside). The flow-matching loss at a high noise level ($\tau=0.9$) separates the two more sharply: another window's arm actions raise it by 68\,\% inside the arm regions and 33\,\% outside, and another window's endoscope action by 14\,\% inside and 46\,\% outside. With the arm actions zeroed, replacing the endoscope action still raises the error by 19\,\%, so the learned actions have not absorbed the endoscope motion. All eight dimensions of the arm action are active (KL 15.3\,nats per arm).
+
+\todo{Numbers below from 3 of 20 test cases; re-run on windows spread over all cases pending.} On the test cases, commanded endoscope motions are realised in the commanded direction for all six commands (pan, tilt and zoom, both ways) in every window, at a median 46--85\,\% of the commanded magnitude. Replacing one arm's action changes the generated video mainly where that arm's instrument is: its region receives 19\,\% of the change while covering 10\,\% of the frame (median ratio 1.93). On generated frames, the instrument detector recovers the instruments of the real future with precision 0.92 and recall 0.73; 7.7\,\% of the generated instruments are not mounted according to the robot log, against 3.7\,\% when the detector is applied to the real frames and 3.9\,\% on their VAE reconstructions.
+
 \begin{table}[t]
 \centering
 \caption{Action-conditioned prediction on held-out SurgVU test cases (2.8\,s horizon, action replay). \todo{numbers}}

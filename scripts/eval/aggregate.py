@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Collect evaluation outputs into result tables for the README (Markdown) and the manuscript (LaTeX).
 
-Reads outputs/eval/<run>/{replay,control}.json and outputs/eval/reference/reference.json; writes
+Reads outputs/eval/<run>/{replay,control}.json and outputs/eval/reference/{reference,control}.json; writes
 docs/results/e1_main.md, docs/results/e1_main.json and paper/tmrb/tables/e1_main.tex. Missing runs are skipped.
 """
 
@@ -30,7 +30,7 @@ ROWS = [  # run, label, action interface, camera
 COLS = [  # key, header, format, higher-is-better
     ("pred_psnr", "PSNR", "{:.2f}", True), ("pred_ssim", "SSIM", "{:.3f}", True),
     ("pred_lpips", "LPIPS", "{:.3f}", False), ("pred_fvd", "FVD", "{:.0f}", False),
-    ("delta_psnr", "ΔPSNR", "{:.2f}", True), ("cam_sign_acc_mean", "Cam. acc.", "{:.2f}", True),
+    ("delta_psnr", "ΔPSNR", "{:.2f}", True), ("cam_gain_mean", "Cam. gain", "{:.2f}", True),
     ("locality_ratio_median", "Locality", "{:.2f}", True), ("ecs_precision", "ECS-P", "{:.3f}", True),
     ("ecs_recall", "ECS-R", "{:.3f}", True), ("ecs_hallucination_rate", "Halluc.", "{:.3f}", False),
 ]
@@ -42,6 +42,9 @@ def load(run: str) -> dict:
         p = OUTPUTS / "eval" / run / f"{name}.json"
         if p.exists():
             out.update(json.loads(p.read_text()))
+    gains = [v for k, v in out.items() if k.startswith("cam_") and k.endswith("_gain")]
+    if gains:  # sign accuracy saturates at 1.0, so the table reports how much of the commanded motion is realised
+        out["cam_gain_mean"] = sum(gains) / len(gains)
     return out
 
 
@@ -50,9 +53,14 @@ def main() -> None:
     ref = OUTPUTS / "eval" / "reference" / "reference.json"
     if ref.exists():
         r = json.loads(ref.read_text())
+        ecs = {k: v for k, v in load("reference").items() if k.startswith("ecs_")}   # eval_control.py --reference
         for prefix, label in (("copy_last", "Copy last context frame"), ("recon", "VAE reconstruction (ceiling)")):
             table.append(dict(run=prefix, label=label, **{k.replace(prefix, "pred"): v for k, v in r.items()
-                                                          if k.startswith(prefix) and not k.endswith("by_frame")}))
+                                                          if k.startswith(prefix) and not k.endswith("by_frame")},
+                              **(ecs if prefix == "recon" else {})))
+        if "ecs_real_hallucination_rate" in ecs:
+            table.append(dict(run="real", label="Real frames (detector floor)",
+                              ecs_hallucination_rate=ecs["ecs_real_hallucination_rate"]))
     for run, label, action, cam in ROWS:
         d = load(run)
         if d:
@@ -69,7 +77,7 @@ def main() -> None:
     out_md.write_text("\n".join(lines) + "\n")
     tex = ROOT / "paper" / "tmrb" / "tables" / "e1_main.tex"
     tex.parent.mkdir(parents=True, exist_ok=True)
-    keep = COLS[:5] + COLS[6:8]
+    keep = COLS[:8]
     rows_tex = []
     for row in table:
         cells = [fmt.format(row[k]) if isinstance(row.get(k), (int, float)) else "--" for k, _, fmt, _ in keep]

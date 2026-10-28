@@ -40,6 +40,13 @@ class EvalWindows(LatentWindows):
         self.index = np.array([[pos[o["stem"]], o["window"]] for o in order], np.int64)
 
 
+def spread(n_total: int, limit: int | None) -> np.ndarray:
+    """Indices of `limit` windows spread evenly over an evaluation set ordered by case (all without a limit), so
+    that a limited evaluation still covers every test case."""
+    n = min(n_total, limit or n_total)
+    return np.arange(n) * n_total // n
+
+
 def load_model(run: str, ckpt: str | None) -> tuple[WorldModel, dict]:
     path = OUTPUTS / "runs" / run / (ckpt or "ckpt_last.pt")
     st = torch.load(path, map_location="cuda", weights_only=False)
@@ -73,7 +80,8 @@ def main() -> None:
     else:                       # external: test windows in file order, real frames saved by the preparer
         ds = ExternalWindows(args.data, "test")
         real_all = np.load(CACHE.parent / args.data / "eval_frames.npy", mmap_mode="r")
-    n = min(len(ds), args.limit or len(ds))
+    idx = spread(len(ds), args.limit)
+    n = len(idx)
     vae = diffusers.AutoencoderKLWan.from_pretrained(CHECKPOINTS / "vae/wan22/vae", torch_dtype=torch.bfloat16)
     vae = vae.cuda().eval()
     mean, std = (torch.from_numpy(a).cuda()[None, None, :, None, None] for a in latent_stats())
@@ -87,10 +95,10 @@ def main() -> None:
     gen = torch.Generator(device="cuda").manual_seed(0)
     t0 = time.time()
     for s in range(0, n, args.bs):
-        items = [ds[i] for i in range(s, min(n, s + args.bs))]
+        items = [ds[i] for i in idx[s:s + args.bs]]
         b = {k: torch.stack([it[k] for it in items]).cuda() for k in items[0]}
         b["region"] = region_from_boxes(b["boxes"], 14, 20, dilate=1)
-        real = torch.from_numpy(np.ascontiguousarray(real_all[s:s + len(items)])).cuda().float() / 255  # B T H W 3
+        real = torch.from_numpy(np.ascontiguousarray(real_all[idx[s:s + args.bs]])).cuda().float() / 255  # B T H W 3
         outs = {}
         with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16):
             if args.reference:
@@ -124,7 +132,7 @@ def main() -> None:
             print(f"{s + len(items)}/{n} windows, {time.time() - t0:.0f}s", flush=True)
     summary = dict(meta, data=args.data, split=args.split, n_windows=n, n_ctx=args.n_ctx, steps=args.steps,
                    cfg=args.cfg, first_pred_frame=first)
-    arrays = {}
+    arrays = {"window": idx}                                       # positions in the fixed window list
     for k in names:
         for m in ("psnr", "ssim", "lpips"):
             x = torch.cat(per[k][m]).numpy()                       # (N, horizon)

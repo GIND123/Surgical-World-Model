@@ -7,9 +7,11 @@ locality the action of one arm (or the monolithic action / one slot) is replaced
          of the resulting pixel change inside the arm's region, divided by the region's area share
 ecs      the instrument detector on generated vs real future frames: class-set precision/recall per frame,
          hallucinations (classes not mounted per the robot log) and disappearances; only windows whose log records
-         the endoscope arm and no unknown instrument (about 10 % of the test windows have no usable log)
+         the endoscope arm and no unknown instrument (about 10 % of the test windows have no usable log). The
+         detector's own rate of unmounted classes on the real frames is recorded alongside as the floor
 
     python scripts/eval/eval_control.py --run eg_swm_S --limit 300
+    python scripts/eval/eval_control.py --reference      # ECS of the VAE reconstruction (tokenizer ceiling)
 """
 
 from __future__ import annotations
@@ -25,7 +27,7 @@ import numpy as np
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from eval_wm import EvalWindows, load_model  # noqa: E402
+from eval_wm import EvalWindows, load_model, spread  # noqa: E402
 
 from swm.data import egomotion  # noqa: E402
 from swm.data.geometry import CACHE_H, CACHE_W, FIELD_ROWS  # noqa: E402
@@ -65,7 +67,8 @@ def to_detector_canvas(frames: np.ndarray) -> list[np.ndarray]:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--run", required=True)
+    ap.add_argument("--run")
+    ap.add_argument("--reference", action="store_true", help="ECS of the VAE reconstruction instead of a model")
     ap.add_argument("--split", default="test")
     ap.add_argument("--limit", type=int, default=300)
     ap.add_argument("--bs", type=int, default=8)
@@ -73,8 +76,10 @@ def main() -> None:
     ap.add_argument("--n-ctx", type=int, default=2)
     ap.add_argument("--magnitude", type=float, default=0.99, help="quantile of real camera motion to command")
     args = ap.parse_args()
-    model, meta = load_model(args.run, None)
-    cfg = model.cfg
+    assert args.reference != bool(args.run), "give --run or --reference"
+    model, meta = (None, {}) if args.reference else load_model(args.run, None)
+    cfg = None if args.reference else model.cfg
+    run = "reference" if args.reference else args.run
     ds = EvalWindows(args.split)
     real_all = np.load(CACHE / f"eval_frames_{args.split}.npy", mmap_mode="r")
     vae = diffusers.AutoencoderKLWan.from_pretrained(CHECKPOINTS / "vae/wan22/vae", torch_dtype=torch.bfloat16)
@@ -88,19 +93,23 @@ def main() -> None:
     first = 4 * (args.n_ctx - 1) + 1
     gen = torch.Generator(device="cuda").manual_seed(0)
     res = {"camera": {k: [] for k in COMMANDS}, "locality": [], "ecs": []}
-    n = min(len(ds), args.limit)
+    idx = spread(len(ds), args.limit)
+    n = len(idx)
     for s in range(0, n, args.bs):
-        items = [ds[i] for i in range(s, min(n, s + args.bs))]
+        items = [ds[i] for i in idx[s:s + args.bs]]
         b = {k: torch.stack([it[k] for it in items]).cuda() for k in items[0]}
         b["region"] = region_from_boxes(b["boxes"], 14, 20, dilate=1)
         bsz = len(items)
-        real = np.asarray(real_all[s:s + bsz], np.float32) / 255
-        with torch.autocast("cuda", dtype=torch.bfloat16):
-            acts = model.infer_actions(b["z"], b, stochastic=False)
-            base = model.generate(b, args.n_ctx, args.steps, actions=acts, generator=gen)
-        base_px = decode(vae, base, mean, std).cpu().numpy()
+        real = np.asarray(real_all[idx[s:s + bsz]], np.float32) / 255
+        if args.reference:                                      # no actions -> no camera or locality tests
+            acts, base_px = {}, decode(vae, b["z"], mean, std).cpu().numpy()
+        else:
+            with torch.autocast("cuda", dtype=torch.bfloat16):
+                acts = model.infer_actions(b["z"], b, stochastic=False)
+                base = model.generate(b, args.n_ctx, args.steps, actions=acts, generator=gen)
+            base_px = decode(vae, base, mean, std).cpu().numpy()
         # ---- camera compliance (only models with an explicit camera action)
-        if cfg.camera:
+        if cfg is not None and cfg.camera:
             zero = {k: (torch.zeros_like(v) if k.startswith("u_") else v) for k, v in acts.items()}
             for name, (sx, sy, sz) in COMMANDS.items():
                 raw = np.zeros((9, 16), np.float32)
@@ -166,10 +175,10 @@ def main() -> None:
                 gc = {int(c) for c in g.boxes.cls.tolist()}
                 rc = {int(c) for c in r.boxes.cls.tolist()}
                 res["ecs"].append(dict(tp=len(gc & rc), gen=len(gc), real=len(rc), halluc=len(gc - mounted),
-                                       missing=len(rc - gc)))
+                                       missing=len(rc - gc), real_halluc=len(rc - mounted)))
         print(f"{s + bsz}/{n}", flush=True)
-    summary = dict(meta, run=args.run, n_windows=n)
-    if cfg.camera:
+    summary = dict(meta, run=run, n_windows=n)
+    if cfg is not None and cfg.camera:
         for name, rows in res["camera"].items():
             c = np.array([r["commanded"] for r in rows])
             r = np.array([r["realised"] for r in rows])
@@ -187,8 +196,9 @@ def main() -> None:
     tp, ng, nr = sum(x["tp"] for x in e), sum(x["gen"] for x in e), sum(x["real"] for x in e)
     summary.update(ecs_windows=res.get("ecs_windows", 0), ecs_precision=tp / max(ng, 1), ecs_recall=tp / max(nr, 1),
                    ecs_hallucination_rate=sum(x["halluc"] for x in e) / max(ng, 1),
-                   ecs_missing_rate=sum(x["missing"] for x in e) / max(nr, 1))
-    out = OUTPUTS / "eval" / args.run
+                   ecs_missing_rate=sum(x["missing"] for x in e) / max(nr, 1),
+                   ecs_real_hallucination_rate=sum(x["real_halluc"] for x in e) / max(nr, 1))
+    out = OUTPUTS / "eval" / run
     out.mkdir(parents=True, exist_ok=True)
     (out / "control.json").write_text(json.dumps(summary, indent=1))
     print(json.dumps(summary, indent=1))
