@@ -6,7 +6,8 @@ camera   commanded endoscope motions (pan/tilt/zoom, arm actions zeroed); the re
 locality the action of one arm (or the monolithic action / one slot) is replaced by another window's; the share
          of the resulting pixel change inside the arm's region, divided by the region's area share
 ecs      the instrument detector on generated vs real future frames: class-set precision/recall per frame,
-         hallucinations (classes not mounted per the robot log) and disappearances
+         hallucinations (classes not mounted per the robot log) and disappearances; only windows whose log records
+         the endoscope arm and no unknown instrument (about 10 % of the test windows have no usable log)
 
     python scripts/eval/eval_control.py --run eg_swm_S --limit 300
 """
@@ -28,6 +29,7 @@ from eval_wm import EvalWindows, load_model  # noqa: E402
 
 from swm.data import egomotion  # noqa: E402
 from swm.data.geometry import CACHE_H, CACHE_W, FIELD_ROWS  # noqa: E402
+from swm.data.surgvu import CAMERA, DETECTOR_CLASSES, OCC_INDEX, UNKNOWN  # noqa: E402
 from swm.data.windows import CACHE, camera_input, camera_scale, latent_stats  # noqa: E402
 from swm.models.actions import region_from_boxes  # noqa: E402
 from swm.paths import CHECKPOINTS, DETECTOR, OUTPUTS  # noqa: E402
@@ -152,10 +154,14 @@ def main() -> None:
                                                 change=float(dm.mean())))
         # ---- embodiment consistency
         for i in range(bsz):
+            occ = b["occupant"][i, -1].tolist()
+            if OCC_INDEX[CAMERA] not in occ or OCC_INDEX[UNKNOWN] in occ:
+                continue                                              # no usable robot log for this window
             kw = dict(imgsz=640, conf=0.3, quantize=16, verbose=False)                   # FP16 inference
             gen_dets = det.predict(to_detector_canvas(base_px[i][first:]), **kw)
             real_dets = det.predict(to_detector_canvas(real[i][first:]), **kw)
-            mounted = {int(o) - 2 for o in b["occupant"][i, -1].tolist() if 2 <= o < 16}
+            mounted = {o - 2 for o in occ if 2 <= o < 2 + len(DETECTOR_CLASSES)}      # detector class indices
+            res["ecs_windows"] = res.get("ecs_windows", 0) + 1
             for g, r in zip(gen_dets, real_dets, strict=True):
                 gc = {int(c) for c in g.boxes.cls.tolist()}
                 rc = {int(c) for c in r.boxes.cls.tolist()}
@@ -179,7 +185,7 @@ def main() -> None:
         summary["locality_area_mean"] = float(np.mean([x["area"] for x in loc]))
     e = res["ecs"]
     tp, ng, nr = sum(x["tp"] for x in e), sum(x["gen"] for x in e), sum(x["real"] for x in e)
-    summary.update(ecs_precision=tp / max(ng, 1), ecs_recall=tp / max(nr, 1),
+    summary.update(ecs_windows=res.get("ecs_windows", 0), ecs_precision=tp / max(ng, 1), ecs_recall=tp / max(nr, 1),
                    ecs_hallucination_rate=sum(x["halluc"] for x in e) / max(ng, 1),
                    ecs_missing_rate=sum(x["missing"] for x in e) / max(nr, 1))
     out = OUTPUTS / "eval" / args.run

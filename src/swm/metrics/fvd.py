@@ -19,7 +19,7 @@ class I3DFeatures:
     @torch.no_grad()
     def __call__(self, video: torch.Tensor) -> np.ndarray:
         """video: (B, T, H, W, 3) uint8 or float in [0, 255] -> (B, 400) logits-layer features."""
-        x = video.to(self.device).float().permute(0, 4, 1, 2, 3)       # B 3 T H W, values in [0, 255]
+        x = video.to(self.device).float().permute(0, 4, 1, 2, 3).contiguous()   # B 3 T H W, in [0, 255]
         f = self.net(x, rescale=True, resize=True, return_features=True)
         return f.cpu().numpy().astype(np.float64)
 
@@ -27,5 +27,5 @@ class I3DFeatures:
 def frechet(a: np.ndarray, b: np.ndarray) -> float:
     mu_a, mu_b = a.mean(0), b.mean(0)
     ca, cb = np.cov(a, rowvar=False), np.cov(b, rowvar=False)
-    covmean, _ = scipy.linalg.sqrtm(ca @ cb, disp=False)
+    covmean = scipy.linalg.sqrtm(ca @ cb)
     return float(((mu_a - mu_b) ** 2).sum() + np.trace(ca + cb - 2 * covmean.real))
