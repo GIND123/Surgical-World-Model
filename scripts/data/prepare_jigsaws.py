@@ -71,9 +71,10 @@ def main() -> None:
     ap.add_argument("--workers", type=int, default=6)
     args = ap.parse_args()
     trials = []
-    for task in TASKS:
-        root = EXTERNAL / "jigsaws" / f"{task}_x" / task / "kinematics" / "AllGestures"
-        trials += [(task, p.stem) for p in sorted(root.glob("*.txt"))]
+    for task in TASKS:                    # 17 of the 120 trials have kinematics but no video; they are skipped
+        root = EXTERNAL / "jigsaws" / f"{task}_x" / task
+        trials += [(task, p.stem) for p in sorted((root / "kinematics" / "AllGestures").glob("*.txt"))
+                   if (root / "video" / f"{p.stem}_capture1.avi").exists()]
     user = [trial.split("_")[-1][0] for _, trial in trials]                 # e.g. Suturing_B001 -> B
     split_of = {i: ("test" if u in TEST_USERS else "train") for i, u in enumerate(user)}
     out = PROCESSED / "jigsaws"
