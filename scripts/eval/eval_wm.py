@@ -133,6 +133,8 @@ def main() -> None:
     summary = dict(meta, data=args.data, split=args.split, n_windows=n, n_ctx=args.n_ctx, steps=args.steps,
                    cfg=args.cfg, first_pred_frame=first)
     arrays = {"window": idx}                                       # positions in the fixed window list
+    if args.data == "surgvu":                                      # for confidence intervals over test cases
+        arrays["case"] = np.array([ds.parts[ds.index[i, 0]]["stem"].rsplit("_p", 1)[0] for i in idx])
     for k in names:
         for m in ("psnr", "ssim", "lpips"):
             x = torch.cat(per[k][m]).numpy()                       # (N, horizon)

@@ -1,0 +1,21 @@
+{
+ "train": {
+  "windows": 519554,
+  "no_signal": 2315
+ },
+ "val": {
+  "windows": 48891,
+  "no_signal": 27
+ },
+ "test": {
+  "windows": 85640,
+  "no_signal": 3168
+ },
+ "parts_over_10pct": {
+  "case_019_p001": 1.0,
+  "case_099_p001": 0.853,
+  "case_126_p001": 0.776,
+  "case_140_p001": 0.724,
+  "case_140_p002": 0.1
+ }
+}
