@@ -54,6 +54,7 @@ def parse() -> argparse.Namespace:
     ap.add_argument("--train-fraction", type=float, default=1.0, help="fraction of training cases/episodes")
     ap.add_argument("--data", default="surgvu", help="surgvu or a prepared external dataset (suturebot, crcd, ...)")
     ap.add_argument("--stems", help="JSON {train: [...], val: [...]} of SurgVU parts; default all encoded parts")
+    ap.add_argument("--drop-no-signal", action="store_true", help="leave out colour-bar windows (off for size S)")
     ap.add_argument("--init", help="initialise from outputs/runs/<run>/ckpt_last.pt (EMA weights, non-strict)")
     ap.add_argument("--eval-every", type=int, default=5000)
     ap.add_argument("--save-every", type=int, default=5000)
@@ -142,8 +143,8 @@ def main() -> None:
             keep = torch.randperm(len(sp["train"]), generator=g)[:n_keep]
             train_cases = [sp["train"][i] for i in keep.tolist()]
         stems = json.loads(Path(args.stems).read_text()) if args.stems else {}
-        ds = LatentWindows("train", cases=train_cases, stems=stems.get("train"))
-        val = LatentWindows("val", max_windows=512, seed=0, stems=stems.get("val"))
+        ds = LatentWindows("train", cases=train_cases, stems=stems.get("train"), drop_no_signal=args.drop_no_signal)
+        val = LatentWindows("val", max_windows=512, seed=0, stems=stems.get("val"), drop_no_signal=args.drop_no_signal)
         (run / "parts.json").write_text(json.dumps({"train": [p["stem"] for p in ds.parts],
                                                     "val": [p["stem"] for p in val.parts]}, indent=1))
     else:

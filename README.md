@@ -317,7 +317,7 @@ python scripts/data/check_sync.py crcd                    # video-kinematics lag
 ```bash
 python scripts/train/train_wm.py --name S_arms --action arms --size S --steps 60000
 #   --action none|state|global|global_vq|slots|arms|kin, --no-camera, --fwd 0 (no forward decoder), --kl,
-#   --arm-pool region|global|shuffled, --use-ui, --data <external>, --init <run>, --stems <parts.json>, --resume
+#   --arm-pool region|global|shuffled, --use-ui, --data <external>, --init <run>, --stems <parts.json>, --drop-no-signal (from size B), --resume
 python scripts/train/train_surgwm.py --stage tokenizer    # then --stage lam, --stage dynamics
 python scripts/eval/eval_wm.py --run S_arms --fvd         # E1 fidelity against real frames (action replay)
 python scripts/eval/eval_control.py --run S_arms          # E1 camera control, locality, embodiment consistency

@@ -42,14 +42,16 @@ def camera_input(cam: np.ndarray, scale: np.ndarray, valid: np.ndarray | None = 
 
 class LatentWindows(Dataset):
     def __init__(self, split: str, cases: list[str] | None = None, max_windows: int | None = None, seed: int = 0,
-                 stems: list[str] | None = None):
+                 stems: list[str] | None = None, drop_no_signal: bool = False):
         """``stems`` restricts the parts (e.g. case_012_p002) so that runs started at different times of the
-        encoding see the same data."""
+        encoding see the same data. ``drop_no_signal`` leaves out windows showing the recorder's colour bars
+        (scripts/data/flag_no_signal.py); the S-size interface comparison keeps them (0.44 % of training)."""
         sp = json.loads((ROOT / "configs" / "splits" / "surgvu_v1.json").read_text())
         allowed = set(cases if cases is not None else sp[split])
         self.mean, self.std = latent_stats()
         self.cam_scale = camera_scale()
         self.parts, index = [], []
+        no_signal = np.load(CACHE / "no_signal.npz") if drop_no_signal else None
         for cond in sorted((CACHE / "conditioning").glob("*.npz")):
             stem = cond.stem
             if stem.rsplit("_p", 1)[0] not in allowed or (stems is not None and stem not in stems):
@@ -64,7 +66,10 @@ class LatentWindows(Dataset):
             else:
                 c["hand"] = c["energy"] = np.zeros_like(c["occupant"])
             self.parts.append(dict(stem=stem, cond=c, lat=None))
-            index.append(np.stack([np.full(len(c["occupant"]), len(self.parts) - 1), np.arange(len(c["occupant"]))], 1))
+            w = np.arange(len(c["occupant"]))
+            if drop_no_signal:
+                w = w[~no_signal[stem]]
+            index.append(np.stack([np.full(len(w), len(self.parts) - 1), w], 1))
         self.index = np.concatenate(index) if index else np.zeros((0, 2), np.int64)
         if max_windows is not None and len(self.index) > max_windows:
             rng = np.random.default_rng(seed)
