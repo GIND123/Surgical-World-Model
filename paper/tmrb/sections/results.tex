@@ -4,25 +4,17 @@
 \subsection{Each action controls what it should}
 We first examine \method{} at size S (60k steps). On 512 validation windows, futures generated from the actions inferred from the real clip have a latent error of 0.335. Replacing every arm's action with that of another window raises the error by 33\,\% (49\,\% inside the arm regions, 29\,\% outside); replacing the endoscope action raises it by 27\,\% (12\,\% inside, 30\,\% outside). The flow-matching loss at a high noise level ($\tau=0.9$) separates the two more sharply: another window's arm actions raise it by 68\,\% inside the arm regions and 33\,\% outside, and another window's endoscope action by 14\,\% inside and 46\,\% outside. With the arm actions zeroed, replacing the endoscope action still raises the error by 19\,\%, so the learned actions have not absorbed the endoscope motion. All eight dimensions of the arm action are active (KL 15.3\,nats per arm).
 
-\todo{Numbers below from 3 of 20 test cases; re-run on windows spread over all cases pending.} On the test cases, commanded endoscope motions are realised in the commanded direction for all six commands (pan, tilt and zoom, both ways) in every window, at a median 46--85\,\% of the commanded magnitude. Replacing one arm's action changes the generated video mainly where that arm's instrument is: its region receives 19\,\% of the change while covering 10\,\% of the frame (median ratio 1.93). On generated frames, the instrument detector recovers the instruments of the real future with precision 0.92 and recall 0.73; 7.7\,\% of the generated instruments are not mounted according to the robot log, against 3.7\,\% when the detector is applied to the real frames and 3.9\,\% on their VAE reconstructions.
+On the 19 test cases (300 windows), commanded endoscope motions are realised in the commanded direction in at least 99.7\,\% of the windows for each of the six commands (pan, tilt and zoom, both ways), at a median 48--88\,\% of the commanded magnitude. Replacing one arm's action changes the generated video mainly where that arm's instrument is: its region receives 18\,\% of the change while covering 7.2\,\% of the frame (median ratio 2.42). On generated frames, the instrument detector recovers the instruments of the real future with precision 0.94 and recall 0.81; 7.6\,\% of the generated instruments are not mounted according to the robot log, against 5.3\,\% when the detector is applied to the real frames or their VAE reconstructions, and 13.0\,\% without actions.
 
-\begin{table}[t]
+\subsection{Fidelity}
+Table~\ref{tab:main} compares the interfaces on 1,000 windows spread evenly over the test cases. Paired over the same windows, \method{} improves on copying the last context frame by 0.41\,dB PSNR (95\,\% case-bootstrap interval [0.24, 0.56], 17 of 19 cases) and 0.010 SSIM, but is 0.008 LPIPS worse: it trails the copied frame in the first 0.2\,s and leads by 0.3--0.8\,dB from 0.5\,s to the end of the 2.8\,s horizon. Replaying the inferred actions is worth 2.8\,dB over the actions of another window, and the same model trained without actions is 3.0\,dB worse in every case.
+
+\subsection{A frame-wide action trades control for appearance}
+Adding a scene action, pooled outside every arm region, improves fidelity in every test case (+0.38\,dB PSNR [0.30, 0.45], $-0.008$ LPIPS), makes the arm actions more local (ratio 3.50) and lowers hallucinations to 7.2\,\%. With the learned actions zeroed, however, a commanded endoscope motion is realised at only 17--27\,\% of its magnitude. In a 12k-step pilot, the scene action carried as much endoscope motion when it was inferred from latents aligned by the measured endoscope motion, so it does not copy the motion it sees; it describes content the context cannot predict, such as tissue entering the field of view, whose position reveals the motion. Since the scene action has no physical controller, we keep \method{} without it.
+
+\begin{table*}[t]
 \centering
-\caption{Action-conditioned prediction on held-out SurgVU test cases (2.8\,s horizon, action replay). \todo{numbers}}
+\caption{Action-conditioned prediction on held-out SurgVU test cases (19 cases, 2.8\,s horizon, action replay, 50 Euler steps). PSNR, SSIM and LPIPS are means over cases with 95\,\% case-bootstrap intervals. Cam.\ gain: realised/commanded endoscope motion; Locality: share of the change inside the replaced arm's region over its area share; Halluc.: generated instruments not mounted per the robot log. \todo{remaining interfaces as their runs finish}}
 \label{tab:main}
-\begin{tabular}{lccccc}
-\toprule
-Action interface & PSNR$\uparrow$ & SSIM$\uparrow$ & LPIPS$\downarrow$ & FVD$\downarrow$ & $\Delta$PSNR$\uparrow$\\
-\midrule
-Copy last frame & & & & & --\\
-None & & & & & --\\
-State & & & & & --\\
-Monolithic & & & & & \\
-Monolithic-VQ (SurgWM-style) & & & & & \\
-Slots (FLAM-style) & & & & & \\
-\method{} & & & & & \\
-\midrule
-VAE reconstruction & & & & & --\\
-\bottomrule
-\end{tabular}
-\end{table}
+\resizebox{\textwidth}{!}{\input{tables/e1_main}}
+\end{table*}

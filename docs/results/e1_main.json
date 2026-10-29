@@ -1,1 +1,138 @@
-[]
+[
+ {
+  "run": "copy_last",
+  "label": "Copy last context frame",
+  "pred_psnr": 21.596712112426758,
+  "pred_ssim": 0.6809089779853821,
+  "pred_lpips": 0.15587441623210907,
+  "pred_fvd": 652.9652311294574,
+  "pred_psnr_ci": [
+   20.935231351852416,
+   22.271389150619505
+  ],
+  "pred_ssim_ci": [
+   0.6634021878242493,
+   0.6990825027227401
+  ],
+  "pred_lpips_ci": [
+   0.14516056515276432,
+   0.16657419614493846
+  ]
+ },
+ {
+  "run": "recon",
+  "label": "VAE reconstruction (ceiling)",
+  "pred_psnr": 34.28936767578125,
+  "pred_ssim": 0.9492471814155579,
+  "pred_lpips": 0.017504218965768814,
+  "pred_fvd": 21.676072223558855,
+  "pred_psnr_ci": [
+   33.970775508880614,
+   34.60650892257691
+  ],
+  "pred_ssim_ci": [
+   0.9461361095309258,
+   0.9517486304044723
+  ],
+  "pred_lpips_ci": [
+   0.016663375496864318,
+   0.018424503225833177
+  ],
+  "ecs_windows": 278,
+  "ecs_precision": 0.9894999569670367,
+  "ecs_recall": 0.9821459080813258,
+  "ecs_hallucination_rate": 0.05318874257681384,
+  "ecs_missing_rate": 0.017854091918674184,
+  "ecs_real_hallucination_rate": 0.053391423201776866
+ },
+ {
+  "run": "real",
+  "label": "Real frames (detector floor)",
+  "ecs_hallucination_rate": 0.053391423201776866
+ },
+ {
+  "run": "S_none",
+  "label": "None (unconditional)",
+  "action": "none",
+  "camera": false,
+  "step": 60000,
+  "pred_psnr": 18.962852478027344,
+  "pred_ssim": 0.5828327536582947,
+  "pred_lpips": 0.2492528259754181,
+  "pred_fvd": 422.3771887933236,
+  "delta_psnr": 0.0031070709228515625,
+  "ecs_precision": 0.8713754646840148,
+  "ecs_recall": 0.7008371775158039,
+  "ecs_hallucination_rate": 0.12979288369622943,
+  "pred_psnr_ci": [
+   18.488886880874634,
+   19.466370630264283
+  ],
+  "pred_ssim_ci": [
+   0.567704801261425,
+   0.5992303803563118
+  ],
+  "pred_lpips_ci": [
+   0.2377010751515627,
+   0.2611563913524151
+  ]
+ },
+ {
+  "run": "S_arms",
+  "label": "EG-SWM",
+  "action": "arms",
+  "camera": true,
+  "step": 60000,
+  "pred_psnr": 22.004947662353516,
+  "pred_ssim": 0.6910098195075989,
+  "pred_lpips": 0.16404592990875244,
+  "pred_fvd": 186.1698967138498,
+  "delta_psnr": 2.7751026153564453,
+  "locality_ratio_median": 2.4187209963063414,
+  "ecs_precision": 0.9361555839308516,
+  "ecs_recall": 0.8141978472578165,
+  "ecs_hallucination_rate": 0.07631863274727434,
+  "pred_psnr_ci": [
+   21.433684587478638,
+   22.616435956954955
+  ],
+  "pred_ssim_ci": [
+   0.6748073771595955,
+   0.7078561186790466
+  ],
+  "pred_lpips_ci": [
+   0.15314332582056522,
+   0.17506892681121825
+  ],
+  "cam_gain_mean": 0.6972142295642195
+ },
+ {
+  "run": "S_arms_scene",
+  "label": "EG-SWM + scene action",
+  "action": "arms",
+  "camera": true,
+  "step": 60000,
+  "pred_psnr": 22.379608154296875,
+  "pred_ssim": 0.7008220553398132,
+  "pred_lpips": 0.15646213293075562,
+  "pred_fvd": 174.40851539657663,
+  "delta_psnr": 3.039926528930664,
+  "locality_ratio_median": 3.504308651952532,
+  "ecs_precision": 0.9408833300762165,
+  "ecs_recall": 0.8225696224158551,
+  "ecs_hallucination_rate": 0.07230799296462771,
+  "pred_psnr_ci": [
+   21.820511198043825,
+   22.94992709159851
+  ],
+  "pred_ssim_ci": [
+   0.6850674331188202,
+   0.7168680429458618
+  ],
+  "pred_lpips_ci": [
+   0.14608209766447544,
+   0.16674807593226432
+  ],
+  "cam_gain_mean": 0.21637512902046652
+ }
+]

@@ -1,7 +1,12 @@
-\begin{tabular}{lccccccc}
+\begin{tabular}{lcccccccc}
 \toprule
-Model & PSNR$\uparrow$ & SSIM$\uparrow$ & LPIPS$\downarrow$ & FVD$\downarrow$ & $\Delta$PSNR$\uparrow$ & Locality$\uparrow$ & ECS-P$\uparrow$ \\
+Model & PSNR$\uparrow$ & SSIM$\uparrow$ & LPIPS$\downarrow$ & FVD$\downarrow$ & $\Delta$PSNR$\uparrow$ & Cam. gain$\uparrow$ & Locality$\uparrow$ & Halluc.$\downarrow$ \\
 \midrule
-
+Copy last context frame & 21.60\,{\scriptsize[20.94, 22.27]} & 0.681\,{\scriptsize[0.663, 0.699]} & 0.156\,{\scriptsize[0.145, 0.167]} & 653 & -- & -- & -- & -- \\
+VAE reconstruction (ceiling) & 34.29\,{\scriptsize[33.97, 34.61]} & 0.949\,{\scriptsize[0.946, 0.952]} & 0.018\,{\scriptsize[0.017, 0.018]} & 22 & -- & -- & -- & 0.053 \\
+Real frames (detector floor) & -- & -- & -- & -- & -- & -- & -- & 0.053 \\
+None (unconditional) & 18.96\,{\scriptsize[18.49, 19.47]} & 0.583\,{\scriptsize[0.568, 0.599]} & 0.249\,{\scriptsize[0.238, 0.261]} & 422 & 0.00 & -- & -- & 0.130 \\
+EG-SWM & 22.00\,{\scriptsize[21.43, 22.62]} & 0.691\,{\scriptsize[0.675, 0.708]} & 0.164\,{\scriptsize[0.153, 0.175]} & 186 & 2.78 & 0.70 & 2.42 & 0.076 \\
+EG-SWM + scene action & 22.38\,{\scriptsize[21.82, 22.95]} & 0.701\,{\scriptsize[0.685, 0.717]} & 0.156\,{\scriptsize[0.146, 0.167]} & 174 & 3.04 & 0.22 & 3.50 & 0.072 \\
 \bottomrule
 \end{tabular}

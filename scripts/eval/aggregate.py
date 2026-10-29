@@ -116,7 +116,7 @@ def main() -> None:
     out_md.write_text("\n".join(lines) + "\n")
     tex = ROOT / "paper" / "tmrb" / "tables" / "e1_main.tex"
     tex.parent.mkdir(parents=True, exist_ok=True)
-    keep = COLS[:8]
+    keep = COLS[:7] + COLS[9:]                  # the paper keeps the hallucination rate, which has a real-frame floor
     rows_tex = []
     for row in table:
         cells = [cell(row, k, fmt, tex=True) for k, _, fmt, _ in keep]
