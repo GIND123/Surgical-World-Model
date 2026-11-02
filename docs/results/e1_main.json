@@ -78,6 +78,35 @@
   ]
  },
  {
+  "run": "S_global",
+  "label": "Monolithic latent + camera",
+  "action": "global",
+  "camera": true,
+  "step": 60000,
+  "pred_psnr": 22.46901512145996,
+  "pred_ssim": 0.7029406428337097,
+  "pred_lpips": 0.15449395775794983,
+  "pred_fvd": 180.11799274588407,
+  "delta_psnr": 3.1690711975097656,
+  "locality_ratio_median": 1.4562350588921862,
+  "ecs_precision": 0.9391594004114823,
+  "ecs_recall": 0.8188962924995729,
+  "ecs_hallucination_rate": 0.07416478887038307,
+  "pred_psnr_ci": [
+   21.941152381896973,
+   23.01002354621887
+  ],
+  "pred_ssim_ci": [
+   0.6879600286483765,
+   0.7177580207586288
+  ],
+  "pred_lpips_ci": [
+   0.1448337260633707,
+   0.16426281109452248
+  ],
+  "cam_gain_mean": 0.15799732359106275
+ },
+ {
   "run": "S_arms",
   "label": "EG-SWM",
   "action": "arms",
