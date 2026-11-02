@@ -278,7 +278,7 @@ scripts/data/             audits, splits, downloads, 10 fps cache, latents, inst
 scripts/train/            world-model and SurgWM training
 scripts/eval/             tokenizer benchmark, evaluation sets, E1 fidelity / control, action-use diagnostics,
                           E2 probes, camera-action validation, result aggregation
-scripts/queue/            sequential GPU job queue
+scripts/queue/            sequential GPU job queue; commit and push of the result tables after each job
 scripts/release/          finished runs -> Hugging Face (EMA weights, configs, evaluation summaries, model card)
 scripts/run_services.sh   long-running pipeline stages as systemd user units
 scripts/docs/             sample export, figures, TikZ diagram build, arXiv BibTeX
@@ -337,7 +337,7 @@ python scripts/eval/tokenizer_bench.py                    # tokenizer comparison
 scripts/docs/build_diagrams.sh                            # TikZ -> PDF/PNG
 ```
 
-**Job queue.** Every experiment is a shell script in `configs/experiments/`; copies in `outputs/queue/pending/` are run in name order by `scripts/queue/run_queue.py` (logs in `outputs/queue/logs/`, history in `outputs/queue/history.tsv`). `scripts/run_services.sh queue` starts the runner as a user unit with a 72 GB memory cap, under which one out-of-memory job fails alone instead of stopping the queue. The unit does not survive a reboot: move the job left in `outputs/queue/running/` back to `pending/` (training jobs resume from their last checkpoint, saved every 5k steps) and start it again.
+**Job queue.** Every experiment is a shell script in `configs/experiments/`; copies in `outputs/queue/pending/` are run in name order by `scripts/queue/run_queue.py` (logs in `outputs/queue/logs/`, history in `outputs/queue/history.tsv`). After its evaluation, each training job regenerates the result tables, publishes its weights to Hugging Face and pushes the tables (`scripts/queue/commit_results.sh`). `scripts/run_services.sh queue` starts the runner as a user unit with a 72 GB memory cap, under which one out-of-memory job fails alone instead of stopping the queue. The unit does not survive a reboot: move the job left in `outputs/queue/running/` back to `pending/` (training jobs resume from their last checkpoint, saved every 5k steps) and start it again.
 
 | Jobs | Content |
 |---|---|
