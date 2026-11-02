@@ -107,6 +107,35 @@
   "cam_gain_mean": 0.15799732359106275
  },
  {
+  "run": "S_global_vq",
+  "label": "Monolithic VQ + camera (SurgWM-style)",
+  "action": "global_vq",
+  "camera": true,
+  "step": 60000,
+  "pred_psnr": 21.30483055114746,
+  "pred_ssim": 0.6710570454597473,
+  "pred_lpips": 0.18301352858543396,
+  "pred_fvd": 205.83344495239726,
+  "delta_psnr": 2.107645034790039,
+  "locality_ratio_median": 1.5329220742021181,
+  "ecs_precision": 0.9231382713587878,
+  "ecs_recall": 0.791047326157526,
+  "ecs_hallucination_rate": 0.08164689462665736,
+  "pred_psnr_ci": [
+   20.760972356796266,
+   21.858338451385496
+  ],
+  "pred_ssim_ci": [
+   0.6554037168622017,
+   0.6873475387692451
+  ],
+  "pred_lpips_ci": [
+   0.17244491018354893,
+   0.1937869790941477
+  ],
+  "cam_gain_mean": 0.8136787540830142
+ },
+ {
   "run": "S_arms",
   "label": "EG-SWM",
   "action": "arms",
