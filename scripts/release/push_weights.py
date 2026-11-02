@@ -3,9 +3,10 @@
 
 Each run becomes one folder of the repo: model.safetensors (the EMA weights that every evaluation uses, fp32,
 without the optimiser state), config.json (model and training config, step, parameter count) and the evaluation
-summaries that exist for it (replay.json, control.json, action_use.json). The checkpoint table of the model card
-is then rebuilt from the folders in the repo and the rows of docs/results/e1_main.json. Runs on the CPU, so it
-can run next to the GPU queue.
+summaries that exist for it (replay.json, control.json, action_use.json). The checkpoint tables of the model card
+are then rebuilt from the folders in the repo: SurgVU models with the rows of docs/results/e1_main.json, models of
+the kinematic benchmarks (E2, E3) with the evaluation on their own dataset. Runs on the CPU, so it can run next to
+the GPU queue.
 
     python scripts/release/push_weights.py S_arms S_arms_scene S_none [--dry-run]
 """
@@ -43,7 +44,8 @@ def export(run: str) -> tuple[Path, int]:
             "parameters": sum(p.numel() for p in model.parameters()), "model": cfg.to_dict(), "train": train}
     (out / "config.json").write_text(json.dumps(meta, indent=1))
     ev = OUTPUTS / "eval"
-    for src in (ev / run / "replay.json", ev / run / "control.json", ev / "action_use" / f"{run}_{st['step']}.json"):
+    own = ev / run if train["data"] == "surgvu" else ev / run / train["data"]   # eval_wm.py --data <external>
+    for src in (own / "replay.json", own / "control.json", ev / "action_use" / f"{run}_{st['step']}.json"):
         if src.exists():
             summary = json.loads(src.read_text())
             summary.pop("ckpt", None)                                   # local path
@@ -61,6 +63,8 @@ def card(text: str, runs: set[str]) -> str:
     def val(r: dict, k: str, fmt: str) -> str:
         return fmt.format(r[k]) if isinstance(r.get(k), (int, float)) else "–"
 
+    train = {run: json.loads((OUTPUTS / "runs" / run / "config.json").read_text())["train"] for run in runs}
+    other = sorted(run for run in runs if train[run]["data"] != "surgvu")
     lines = [CARD_START, "",
              "One folder per finished run: `model.safetensors` (EMA weights), `config.json` (model and training "
              "config, step) and the evaluation summaries (`replay.json`: fidelity; `control.json`: endoscope "
@@ -69,12 +73,25 @@ def card(text: str, runs: set[str]) -> str:
              "#experiments-and-evaluation-protocol)).", "",
              "| Folder | Model | Size | Steps | PSNR ↑ | LPIPS ↓ | FVD ↓ | Endoscope gain ↑ |",
              "|---|---|---|---:|---:|---:|---:|---:|"]
-    for run in sorted(runs, key=lambda r: (order.index(r) if r in order else len(order), r)):
+    for run in sorted(set(runs) - set(other), key=lambda r: (order.index(r) if r in order else len(order), r)):
         r = rows.get(run, {})
-        size = json.loads((OUTPUTS / "runs" / run / "config.json").read_text())["model"]["size"]
-        lines.append(f"| `{run}/` | {r.get('label', run)} | {size} | {r.get('step', '–')} | "
+        lines.append(f"| `{run}/` | {r.get('label', run)} | {train[run]['size']} | {r.get('step', '–')} | "
                      f"{val(r, 'pred_psnr', '{:.2f}')} | {val(r, 'pred_lpips', '{:.3f}')} | "
                      f"{val(r, 'pred_fvd', '{:.0f}')} | {val(r, 'cam_gain_mean', '{:.2f}')} |")
+    if other:
+        lines += ["", "Checkpoints for the kinematic benchmarks: SurgVU models adapted to a dataset without its "
+                  "kinematics (E2, frozen for the linear probes), and models conditioned on the robot kinematics "
+                  "(`kin`, E3). Metrics on the test episodes of their own dataset.", "",
+                  "| Folder | Data | Actions | Initialised from | Steps | PSNR ↑ | LPIPS ↓ | FVD ↓ |",
+                  "|---|---|---|---|---:|---:|---:|---:|"]
+        for run in other:
+            t = train[run]
+            p = OUTPUTS / "eval" / run / t["data"] / "replay.json"
+            r = json.loads(p.read_text()) if p.exists() else {}
+            share = f", {t['train_fraction']:.0%} of the training episodes" if t["train_fraction"] < 1 else ""
+            lines.append(f"| `{run}/` | {t['data']}{share} | `{t['action']}` | {t['init'] or 'scratch'} | "
+                         f"{r.get('step', t['steps'])} | {val(r, 'pred_psnr', '{:.2f}')} | "
+                         f"{val(r, 'pred_lpips', '{:.3f}')} | {val(r, 'pred_fvd', '{:.0f}')} |")
     lines += ["", f"Loading (with the `swm` package from the [code repository]({GITHUB})):", "", "```python",
               "import json", "from safetensors.torch import load_model",
               "from swm.models.world_model import WMConfig, WorldModel", "",

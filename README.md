@@ -337,7 +337,7 @@ python scripts/eval/tokenizer_bench.py                    # tokenizer comparison
 scripts/docs/build_diagrams.sh                            # TikZ -> PDF/PNG
 ```
 
-**Job queue.** Every experiment is a shell script in `configs/experiments/`; copies in `outputs/queue/pending/` are run in name order by `scripts/queue/run_queue.py` (logs in `outputs/queue/logs/`, history in `outputs/queue/history.tsv`). After its evaluation, each training job regenerates the result tables, publishes its weights to Hugging Face and pushes the tables (`scripts/queue/commit_results.sh`). `scripts/run_services.sh queue` starts the runner as a user unit with a 72 GB memory cap, under which one out-of-memory job fails alone instead of stopping the queue. The unit does not survive a reboot: move the job left in `outputs/queue/running/` back to `pending/` (training jobs resume from their last checkpoint, saved every 5k steps) and start it again.
+**Job queue.** Every experiment is a shell script in `configs/experiments/`; copies in `outputs/queue/pending/` are run in name order by `scripts/queue/run_queue.py` (logs in `outputs/queue/logs/`, history in `outputs/queue/history.tsv`). After its evaluation, each job regenerates the result tables (`scripts/eval/aggregate.py`: E1, E2 and E3 in `docs/results/` and `paper/tmrb/tables/`), publishes the weights it trained to Hugging Face and pushes the tables (`scripts/queue/commit_results.sh`). `scripts/run_services.sh queue` starts the runner as a user unit with a 72 GB memory cap, under which one out-of-memory job fails alone instead of stopping the queue. The unit does not survive a reboot: move the job left in `outputs/queue/running/` back to `pending/` (training jobs resume from their last checkpoint, saved every 5k steps) and start it again.
 
 | Jobs | Content |
 |---|---|
@@ -349,7 +349,7 @@ scripts/docs/build_diagrams.sh                            # TikZ -> PDF/PNG
 | 300–320 | E6 ablations: pooling over the whole frame, no forward decoder, arm regions shuffled across arms, console readout in the arm tokens |
 | 390–392 | prepare JIGSAWS, SAR-RARP50, SRT-H (`swm-external` service, next to training) |
 | 400–450 | E2: zero-shot kinematic probes; action-free adaptation to SutureBot, CRCD, JIGSAWS; probes after adaptation |
-| 500–508 | E3 on SutureBot: kinematics-conditioned prediction from scratch / from `S_arms` / from `S_global`, 10 / 25 / 100 % of the training episodes |
+| 499–508 | E3 on SutureBot: reference rows; kinematics-conditioned prediction from scratch / from `S_arms` / from `S_global`, 10 / 25 / 100 % of the training episodes |
 
 Raw SurgVU data comes from the organisers (`storage.googleapis.com/isi-surgvu/…`); links for data-use-agreement datasets live in the Git-ignored `configs/private/dataset_links.json`. A `.env` with `hf=<token>` and `HF_USER=<user>` enables weight uploads (`swm.hub.push_folder`).
 
