@@ -193,6 +193,34 @@
   "cam_gain_mean": 0.050989157083311594
  },
  {
+  "run": "S_arms_nocam",
+  "label": "EG-SWM, no camera action",
+  "action": "arms",
+  "camera": false,
+  "step": 60000,
+  "pred_psnr": 21.5157527923584,
+  "pred_ssim": 0.672463595867157,
+  "pred_lpips": 0.17635393142700195,
+  "pred_fvd": 214.575487862444,
+  "delta_psnr": 2.2714710235595703,
+  "locality_ratio_median": 2.0175016449121026,
+  "ecs_precision": 0.9309802379313735,
+  "ecs_recall": 0.8089014180762002,
+  "ecs_hallucination_rate": 0.07993314325041785,
+  "pred_psnr_ci": [
+   20.899638223648072,
+   22.149015998840333
+  ],
+  "pred_ssim_ci": [
+   0.6544060319662094,
+   0.690874283015728
+  ],
+  "pred_lpips_ci": [
+   0.16404473334550856,
+   0.18908991254866123
+  ]
+ },
+ {
   "run": "S_arms",
   "label": "EG-SWM",
   "action": "arms",
