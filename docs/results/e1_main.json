@@ -106,6 +106,34 @@
   "cam_gain_mean": 0.7904515956793432
  },
  {
+  "run": "S_global_nocam",
+  "label": "Monolithic latent (Genie)",
+  "action": "global",
+  "camera": false,
+  "step": 60000,
+  "pred_psnr": 22.492019653320312,
+  "pred_ssim": 0.7040475606918335,
+  "pred_lpips": 0.15394380688667297,
+  "pred_fvd": 172.49678330357924,
+  "delta_psnr": 3.166044235229492,
+  "locality_ratio_median": 1.433147463983384,
+  "ecs_precision": 0.9279349848232644,
+  "ecs_recall": 0.809584828293183,
+  "ecs_hallucination_rate": 0.0857730343679624,
+  "pred_psnr_ci": [
+   21.95550274848938,
+   23.041360569000243
+  ],
+  "pred_ssim_ci": [
+   0.6888916730880738,
+   0.7193566843867302
+  ],
+  "pred_lpips_ci": [
+   0.14407874681055546,
+   0.1638908728957176
+  ]
+ },
+ {
   "run": "S_global",
   "label": "Monolithic latent + camera",
   "action": "global",
