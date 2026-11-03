@@ -78,6 +78,34 @@
   ]
  },
  {
+  "run": "S_state",
+  "label": "Robot state + camera",
+  "action": "state",
+  "camera": true,
+  "step": 60000,
+  "pred_psnr": 20.43840980529785,
+  "pred_ssim": 0.6519920825958252,
+  "pred_lpips": 0.2055472582578659,
+  "pred_fvd": 265.9955719862246,
+  "delta_psnr": 1.4244327545166016,
+  "ecs_precision": 0.9098075348075348,
+  "ecs_recall": 0.7591833247907056,
+  "ecs_hallucination_rate": 0.0776003276003276,
+  "pred_psnr_ci": [
+   19.88581829071045,
+   21.007358169555662
+  ],
+  "pred_ssim_ci": [
+   0.635876689851284,
+   0.6694780722260475
+  ],
+  "pred_lpips_ci": [
+   0.19371854588389398,
+   0.21754233725368977
+  ],
+  "cam_gain_mean": 0.7904515956793432
+ },
+ {
   "run": "S_global",
   "label": "Monolithic latent + camera",
   "action": "global",
