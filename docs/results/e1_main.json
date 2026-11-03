@@ -136,6 +136,35 @@
   "cam_gain_mean": 0.8136787540830142
  },
  {
+  "run": "S_slots",
+  "label": "Slots + camera (FLAM-style)",
+  "action": "slots",
+  "camera": true,
+  "step": 60000,
+  "pred_psnr": 22.768203735351562,
+  "pred_ssim": 0.7126347422599792,
+  "pred_lpips": 0.14875438809394836,
+  "pred_fvd": 169.08816864755147,
+  "delta_psnr": 3.546875,
+  "locality_ratio_median": 1.4435082039217537,
+  "ecs_precision": 0.9386653581943082,
+  "ecs_recall": 0.8171023406799932,
+  "ecs_hallucination_rate": 0.0775269872423945,
+  "pred_psnr_ci": [
+   22.239830493927002,
+   23.309402179718017
+  ],
+  "pred_ssim_ci": [
+   0.6980369374155998,
+   0.7270446449518204
+  ],
+  "pred_lpips_ci": [
+   0.13941557332873344,
+   0.15818051509559156
+  ],
+  "cam_gain_mean": 0.050989157083311594
+ },
+ {
   "run": "S_arms",
   "label": "EG-SWM",
   "action": "arms",
