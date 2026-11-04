@@ -12,7 +12,7 @@ def test_cached_frame_logits_match_full_forward():
     b, t, s = 2, 5, (16 // 4) * (24 // 4)
     tokens = torch.randint(0, c.n_codes, (b, t, s))
     actions = torch.randint(0, c.n_actions + 1, (b, t))
-    past = [torch.zeros(b, t, s, c.dyn_dim) for _ in model.net.blocks]
+    past = model.new_cache(t)
     with torch.no_grad():
         full = model.logits(tokens, actions)
         for f in range(t):
@@ -36,7 +36,7 @@ def test_window_states_match_a_forward_pass_on_the_crop():
             lo = f + 1 - w
             acts = actions[:, lo:].clone()
             acts[:, 0] = c.n_actions
-            past = [torch.zeros(b, w, s, c.dyn_dim) for _ in model.net.blocks]
+            past = model.new_cache(w)
             for j in range(lo, f):
                 model.frame_logits(tokens[:, j], acts, j - lo, past)
             ref = model.logits(tokens[:, lo:f + 1], acts[:, :w])[:, -1]

@@ -25,7 +25,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.checkpoint import checkpoint
 
-from swm.models.layers import Attention, RMSNorm, SwiGLU, axial_rope_2d, rope_freqs
+from swm.models.layers import Attention, RMSNorm, SwiGLU, apply_rope, axial_rope_2d, rope_freqs
 
 
 class STBlockPlain(nn.Module):
@@ -265,23 +265,33 @@ class MaskGITDynamics(nn.Module):
         lg = self.logits(inp, actions)
         return F.cross_entropy(lg[mask].float(), tokens[mask])
 
-    def frame_logits(self, frame, actions, f: int, past: list[torch.Tensor]) -> torch.Tensor:
-        """Logits of frame f (tokens (B, S)) given the cached temporal-attention inputs of frames 0..f-1 of every
-        block (past[i]: (B, T, S, D), frames 0..f-1 filled; frame f is written at position f). Under causal
-        temporal attention a frame's hidden states never depend on later frames, so this equals
-        logits(tokens[:, :f + 1], actions[:, :f + 1])[:, f] while running only frame f."""
+    def new_cache(self, length: int) -> dict:
+        """Keys and values of every block's temporal attention for `length` frames, allocated on first use."""
+        return {"length": length, "k": [None] * len(self.net.blocks), "v": [None] * len(self.net.blocks)}
+
+    def frame_logits(self, frame, actions, f: int, cache: dict) -> torch.Tensor:
+        """Logits of frame f (tokens (B, S)) given the cached temporal-attention keys and values of frames 0..f-1
+        of every block (new_cache; frame f's are written at position f). Under causal temporal attention a frame's
+        hidden states never depend on later frames, so this equals logits(tokens[:, :f + 1], actions[:, :f + 1])
+        [:, f] while running only frame f (the block's attention, written out to keep the keys and values)."""
         net = self.net
         b, s = frame.shape
+        heads, hd = self.c.dyn_heads, self.c.dyn_dim // self.c.dyn_heads
         rope_s = net.rope_s.to(frame.device)
-        rope_t = rope_freqs(self.c.dyn_dim // self.c.dyn_heads, torch.arange(f + 1, device=frame.device))
+        rope_t = rope_freqs(hd, torch.arange(f, f + 1, device=frame.device))       # frame f's position
         x = (self.tok(frame) + self.act(actions[:, f])[:, None])[:, None]           # (B, 1, S, D)
-        for blk, buf in zip(net.blocks, past, strict=True):
+        for i, blk in enumerate(net.blocks):
             x = x + blk.sa(blk.n1(x).reshape(b, s, -1), freqs_q=rope_s, freqs_k=rope_s).view(b, 1, s, -1)
-            h = blk.n2(x)
-            buf[:, f] = h[:, 0]
-            kv = buf[:, :f + 1].transpose(1, 2).reshape(b * s, f + 1, -1)
-            y = blk.ta(h[:, 0].reshape(b * s, 1, -1), ctx=kv, freqs_q=rope_t[:, f:], freqs_k=rope_t)
-            x = x + y.view(b, 1, s, -1)
+            h, ta = blk.n2(x).reshape(b * s, 1, -1), blk.ta
+            q = apply_rope(ta.q_norm(ta.q(h).view(b * s, 1, heads, hd).transpose(1, 2)), rope_t)
+            k, v = ta.kv(h).view(b * s, 1, 2, heads, hd).permute(2, 0, 3, 1, 4)
+            k = apply_rope(ta.k_norm(k), rope_t)
+            if cache["k"][i] is None:
+                cache["k"][i] = k.new_zeros(b * s, heads, cache["length"], hd)
+                cache["v"][i] = v.new_zeros(b * s, heads, cache["length"], hd)
+            cache["k"][i][:, :, f], cache["v"][i][:, :, f] = k[:, :, 0], v[:, :, 0]
+            y = F.scaled_dot_product_attention(q, cache["k"][i][:, :, :f + 1], cache["v"][i][:, :, :f + 1])
+            x = x + ta.o(y.transpose(1, 2).reshape(b * s, 1, -1)).view(b, 1, s, -1)
             x = x + blk.mlp(blk.n3(x))
         return self.head(net.norm(x))[:, 0]
 
@@ -290,17 +300,17 @@ class MaskGITDynamics(nn.Module):
                  window: int | None = None):
         """Frame-by-frame MaskGIT decoding of frames n_ctx.. given context tokens and actions (B, T). Frame f sees
         frames max(0, f - window + 1)..f, as a model trained on clips of `window` frames does, the first of them
-        without an action; the hidden states of the finished frames of a window are cached (frame_logits)."""
+        without an action; the keys and values of the finished frames of a window are cached (frame_logits). A new
+        window rewrites the cache from its first frame, so no frame outside it is ever attended to."""
         tokens = tokens.clone()
         b, t, s = tokens.shape
         window = min(window or t, t)
-        lo, past, acts = -1, [], actions
+        lo, acts, past = -1, actions, self.new_cache(window)
         for f in range(n_ctx, t):
             if max(0, f + 1 - window) != lo:                          # a new window: the states of its frames before f
                 lo = max(0, f + 1 - window)
                 acts = actions[:, lo:lo + window].clone()
                 acts[:, 0] = self.c.n_actions                         # no action into the first frame, as in training
-                past = [torch.zeros(b, window, s, self.c.dyn_dim, device=tokens.device) for _ in self.net.blocks]
                 for j in range(lo, f):
                     self.frame_logits(tokens[:, j], acts, j - lo, past)
             cur = torch.full_like(tokens[:, f], self.mask_id)
