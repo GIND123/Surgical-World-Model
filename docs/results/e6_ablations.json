@@ -1,0 +1,60 @@
+[
+ {
+  "run": "S_arms",
+  "label": "EG-SWM",
+  "action": "arms",
+  "camera": true,
+  "step": 60000,
+  "pred_psnr": 22.004947662353516,
+  "pred_ssim": 0.6910098195075989,
+  "pred_lpips": 0.16404592990875244,
+  "pred_fvd": 186.1698967138498,
+  "delta_psnr": 2.7751026153564453,
+  "locality_ratio_median": 2.4187209963063414,
+  "ecs_precision": 0.9361555839308516,
+  "ecs_recall": 0.8141978472578165,
+  "ecs_hallucination_rate": 0.07631863274727434,
+  "pred_psnr_ci": [
+   21.433684587478638,
+   22.616435956954955
+  ],
+  "pred_ssim_ci": [
+   0.6748073771595955,
+   0.7078561186790466
+  ],
+  "pred_lpips_ci": [
+   0.15314332582056522,
+   0.17506892681121825
+  ],
+  "cam_gain_mean": 0.6972142295642195
+ },
+ {
+  "run": "S_arms_poolglobal",
+  "label": "EG-SWM, arm actions not grounded",
+  "action": "arms",
+  "camera": true,
+  "step": 60000,
+  "pred_psnr": 22.065467834472656,
+  "pred_ssim": 0.6922558546066284,
+  "pred_lpips": 0.16314981877803802,
+  "pred_fvd": 188.42855108286653,
+  "delta_psnr": 2.773447036743164,
+  "locality_ratio_median": 1.8415717887169434,
+  "ecs_precision": 0.9357043788389142,
+  "ecs_recall": 0.806851187425252,
+  "ecs_hallucination_rate": 0.07935407172577769,
+  "pred_psnr_ci": [
+   21.487699508666992,
+   22.68004961013794
+  ],
+  "pred_ssim_ci": [
+   0.6761175647377968,
+   0.7091123998165131
+  ],
+  "pred_lpips_ci": [
+   0.15226588100194932,
+   0.17420049384236336
+  ],
+  "cam_gain_mean": 0.6532289490715973
+ }
+]

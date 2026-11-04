@@ -228,5 +228,28 @@
   ],
   "egswm_better_lpips": 0,
   "n_cases": 19
+ },
+ {
+  "run": "S_arms_poolglobal",
+  "label": "EG-SWM, arm actions not grounded",
+  "d_psnr": 0.0605204738676548,
+  "d_psnr_ci": [
+   0.026342060416936874,
+   0.09442755747586488
+  ],
+  "egswm_better_psnr": 5,
+  "d_ssim": 0.0012460758443921804,
+  "d_ssim_ci": [
+   0.00016554233188799118,
+   0.002384524093940854
+  ],
+  "egswm_better_ssim": 9,
+  "d_lpips": -0.0008961001294665039,
+  "d_lpips_ci": [
+   -0.0019400000252062454,
+   3.5777961420535265e-05
+  ],
+  "egswm_better_lpips": 9,
+  "n_cases": 19
  }
 ]

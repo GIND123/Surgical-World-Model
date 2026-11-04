@@ -88,5 +88,14 @@
   "train_h": 5.563769062359739,
   "win_per_s": 95.85828012551131,
   "train_mem_gb": 31.440470016
+ },
+ {
+  "run": "S_arms_poolglobal",
+  "label": "EG-SWM, arm actions not grounded",
+  "size": "S",
+  "steps": 60000,
+  "train_h": 5.5702395836507,
+  "win_per_s": 95.74692889309978,
+  "train_mem_gb": 31.433165824
  }
 ]

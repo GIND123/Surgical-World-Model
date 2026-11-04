@@ -10,3 +10,4 @@
 | EG-SWM, no camera action | S | 60000 | 5.6 | 96 | 31.4 | – | – | – |
 | EG-SWM | S | 60000 | 5.6 | 96 | 31.4 | – | – | – |
 | EG-SWM + scene action | S | 60000 | 5.6 | 96 | 31.4 | – | – | – |
+| EG-SWM, arm actions not grounded | S | 60000 | 5.6 | 96 | 31.4 | – | – | – |
