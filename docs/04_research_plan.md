@@ -117,6 +117,7 @@ Status on 4 Nov 2026 of a reviewer-oriented checklist: comparisons, standard dat
 | **Ablations (E6)** | |
 | Endoscope action | done (`*_nocam`) |
 | Whole-frame pooling, no forward decoder, shuffled arm binding, console readout | `300` and `305`–`320` |
+| Boxes held across detector gaps (binding coverage 73 % → 79 % of a mounted instrument's steps) | queued `325` |
 | KL weight 10⁻³, 10⁻⁵ | queued `720`, `721` |
 | Scene action | done |
 | Learned-only action dropout, camera-stabilised inference | not run at full size: in the pilots (`096`, `097`) both lowered replay accuracy and neither restored endoscope control |

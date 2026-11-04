@@ -277,6 +277,20 @@ def stabilise(z_prev: torch.Tensor, cam: torch.Tensor, scale: torch.Tensor) -> t
     return F.grid_sample(z_prev, grid.to(z_prev.dtype), mode="bilinear", padding_mode="border", align_corners=False)
 
 
+def hold_boxes(boxes: torch.Tensor) -> torch.Tensor:
+    """(B, T, K, 4) boxes, NaN where an instrument was not detected -> each missing step takes the box of the
+    nearest step of the same window in which the instrument was detected (the earlier one on ties); instruments
+    never detected in the window stay NaN."""
+    t = boxes.shape[1]
+    ok = torch.isfinite(boxes[..., 0])                                          # (B, T, K)
+    steps = torch.arange(t, device=boxes.device, dtype=torch.float32)
+    dist = (steps[:, None] - steps[None, :]).abs()                              # (target, source)
+    cost = dist[None, :, :, None] + (~ok)[:, None].float() * 1e4                # (B, target, source, K)
+    src = cost.argmin(2)                                                        # (B, T, K)
+    held = torch.gather(boxes, 1, src[..., None].expand(-1, -1, -1, boxes.shape[-1]))
+    return torch.where(ok.any(1, keepdim=True)[..., None], held, boxes)
+
+
 def region_from_boxes(boxes: torch.Tensor, height: int, width: int, dilate: int = 1) -> torch.Tensor:
     """boxes: (..., 4) normalised x0, y0, x1, y1 in [0, 1] (NaN = absent) -> (..., H*W) bool grid mask."""
     ys = (torch.arange(height, device=boxes.device) + 0.5) / height

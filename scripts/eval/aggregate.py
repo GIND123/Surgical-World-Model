@@ -39,6 +39,7 @@ ABLATIONS = [  # E6: EG-SWM (S, 60k steps) with one part changed
     ("S_arms_poolglobal", "EG-SWM, arm actions not grounded", "arms", True),
     ("S_arms_shuffled", "EG-SWM, wrong arm binding", "arms", True),
     ("S_arms_ui", "EG-SWM + console readout", "arms", True),
+    ("S_arms_hold", "EG-SWM, boxes held across detector gaps", "arms", True),
     ("S_arms_kl1e-3", "EG-SWM, KL weight 10⁻³", "arms", True),
     ("S_arms_kl1e-5", "EG-SWM, KL weight 10⁻⁵", "arms", True),
     ("S_arms_data0.1", "EG-SWM, 10 % of the training cases", "arms", True),

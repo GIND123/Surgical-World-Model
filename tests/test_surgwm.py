@@ -19,3 +19,4 @@ def test_cached_frame_logits_match_full_forward():
             ref = model.logits(torch.cat([tokens[:, :f], frame[:, None]], 1), actions[:, :f + 1])[:, f]
             assert torch.allclose(model.frame_logits(frame, actions, f, past), ref, atol=1e-4)
             assert torch.allclose(model.frame_logits(tokens[:, f], actions, f, past), full[:, f], atol=1e-4)
+

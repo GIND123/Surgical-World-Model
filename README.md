@@ -217,7 +217,7 @@ Paired over the same windows, EG-SWM beats copying the last frame by 0.41 dB PSN
 | SurgWM-style VQ + endoscope | 23.73 | 20.36 | 21.23 |
 | copy last context frame | 23.79 | 20.68 | 21.54 |
 
-With two or more instruments bound (73 % of the windows) EG-SWM trails the monolithic latent by only 0.18 dB and the slots by 0.50 dB; with none bound it trails them by 2.2 and 2.4 dB and falls below the copied frame. The frame-wide actions do not depend on the binding; in windows without bound instruments they describe whatever moves instead (the endoscope, tissue, instruments the detector misses). This points to raising the binding coverage, for instance in the 13 % of instruments bound in only some steps, as a way to narrow the gap without a frame-wide action.
+With two or more instruments bound (73 % of the windows) EG-SWM trails the monolithic latent by only 0.18 dB and the slots by 0.50 dB; with none bound it trails them by 2.2 and 2.4 dB and falls below the copied frame. The frame-wide actions do not depend on the binding; in windows without bound instruments they describe whatever moves instead (the endoscope, tissue, instruments the detector misses). This points to raising the binding coverage as a way to narrow the gap without a frame-wide action; job `325` holds each instrument's box across the steps where the detector missed it (73 % → 79 % of the steps).
 
 **What each part of EG-SWM adds.** The endoscope action is worth 0.49 dB [0.39, 0.61], in all 19 cases. Without it the arm actions take on part of the frame-wide motion (another window's arm actions raise the τ = 0.9 loss outside the arm regions by 68 % instead of 33 %) and become less local (2.02× instead of 2.42×). Learned arm actions are worth 2.23 dB [2.01, 2.44] over robot-state tokens (both without the endoscope action). The state tokens add 0.33 dB [0.27, 0.39] over no actions and cut unmounted instruments from 13.0 % to 9.7 %; with them, the endoscope action is worth 1.15 dB [1.03, 1.26] and is realised at 79 %.
 
@@ -359,7 +359,7 @@ python scripts/data/check_sync.py crcd                    # video-kinematics lag
 ```bash
 python scripts/train/train_wm.py --name S_arms --action arms --size S --steps 60000
 #   --action none|state|global|global_vq|slots|arms|kin, --no-camera, --fwd 0 (no forward decoder), --kl,
-#   --arm-pool region|global|shuffled, --use-ui, --data <external>, --init <run>, --stems <parts.json>, --drop-no-signal (from size B), --resume
+#   --arm-pool region|global|shuffled, --use-ui, --hold-boxes, --data <external>, --init <run>, --stems <parts.json>, --drop-no-signal (from size B), --resume
 python scripts/train/train_surgwm.py --stage tokenizer    # then --stage lam, --stage dynamics
 python scripts/eval/eval_surgwm.py --fvd                  # SurgWM on the E1 windows
 python scripts/eval/eval_wm.py --run S_arms --fvd         # E1 fidelity against real frames (action replay)
@@ -385,7 +385,7 @@ python scripts/docs/figure_horizon.py                     # PSNR over the horizo
 | 100 | once all 280 parts are encoded: window index, camera statistics, fixed validation and test windows |
 | 150 | reference rows (repeat last context frame, VAE reconstruction) |
 | 200–280 | E1 at S (60k steps): `arms`, `arms` + scene (205), `global`, `global_vq`, `slots`, `state`, `none`; `arms`, `global`, `state` without the camera action |
-| 300–320 | E6 ablations: pooling over the whole frame, no forward decoder, arm regions shuffled across arms, console readout in the arm tokens |
+| 300–325 | E6 ablations: pooling over the whole frame, no forward decoder, arm regions shuffled across arms, console readout in the arm tokens, boxes held across detector gaps (`--hold-boxes`) |
 | 301, 302 | SurgWM smoke test (300 steps per stage, 32-window evaluation); figures from model rollouts and the time of one prediction |
 | 330–332 | sensitivity without `case_126`: Euler steps and guidance, 1–3 context latents, endoscope commands at 0.5–2× (EG-SWM and four other interfaces) |
 | 390–392 | prepare JIGSAWS, SAR-RARP50, SRT-H (done by the `swm-external` service, next to training) |

@@ -38,7 +38,9 @@ from swm.models.actions import (
     SlotIDM,
     Trunk,
     VQGlobalIDM,
+    hold_boxes,
     outside_regions,
+    region_from_boxes,
     stabilise,
 )
 from swm.models.dynamics import SIZES, DiTConfig, STDiT
@@ -61,6 +63,7 @@ class WMConfig:
     kin_dim: int = 28              # 4 frame transitions x (dpos 3, drot 3, djaw 1) per latent step
     arm_pool: str = "region"       # ablations: "global" (per-arm query, whole frame), "shuffled" (wrong binding)
     scene: bool = False            # arms: one more action, pooled and written only outside every arm's region
+    hold_boxes: bool = False       # arms: an instrument's box also in the steps where the detector missed it
     stabilise: bool = False        # learned actions from camera-stabilised latents (needs the camera action)
     use_ui: bool = False           # console readout (driving hand, energy) in the arm tokens
     kl_weight: float = 1e-4
@@ -88,6 +91,7 @@ class WMConfig:
         d = dict(d, latent_shape=tuple(d["latent_shape"]))
         d.setdefault("fwd_weight", 0.0)             # checkpoints from before the forward decoder
         d.setdefault("p_drop_learned", 0.0)         # ... and before learned-only dropout
+        d.setdefault("hold_boxes", False)           # ... and before boxes were held across detector gaps
         return cls(**d)
 
 
@@ -154,6 +158,8 @@ class WorldModel(nn.Module):
         if self.cfg.action == "arms":
             occ = batch["occupant"][:, 1:].flatten(0, 1)
             region = batch["region"][:, 1:]
+            if self.cfg.hold_boxes:                           # same grid and dilation as the callers' regions
+                region = region_from_boxes(hold_boxes(batch["boxes"]), *z.shape[-2:], dilate=1)[:, 1:]
             if self.cfg.arm_pool == "global":                 # factorised but not grounded
                 region = region.any(-1, keepdim=True).expand_as(region)
             elif self.cfg.arm_pool == "shuffled":             # grounded in the wrong arm's region (fixed per window)

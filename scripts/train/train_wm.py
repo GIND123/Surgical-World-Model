@@ -42,6 +42,7 @@ def parse() -> argparse.Namespace:
     ap.add_argument("--p-drop-learned", type=float, default=0.0,
                     help="probability of dropping only the learned actions (camera kept) in training")
     ap.add_argument("--use-ui", action="store_true", help="console readout (hand, energy) in the arm tokens")
+    ap.add_argument("--hold-boxes", action="store_true", help="hold each instrument's box across detector gaps")
     ap.add_argument("--fp8", action="store_true", help="FP8 training of the transformer's linear layers (torchao)")
     ap.add_argument("--steps", type=int, default=100_000)
     ap.add_argument("--bs", type=int, default=32)
@@ -130,7 +131,7 @@ def main() -> None:
     cfg = WMConfig(size=args.size, action=args.action, camera=not args.no_camera, du=args.du, dg=args.dg,
                    kl_weight=args.kl, fwd_weight=args.fwd, grad_checkpoint=args.grad_ckpt, arm_pool=args.arm_pool,
                    use_ui=args.use_ui, scene=args.scene, stabilise=args.stabilise,
-                   p_drop_learned=args.p_drop_learned)
+                   p_drop_learned=args.p_drop_learned, hold_boxes=args.hold_boxes)
     torch.backends.cudnn.benchmark = True
     (run / "config.json").write_text(json.dumps({"model": cfg.to_dict(), "train": vars(args)}, indent=1))
 
