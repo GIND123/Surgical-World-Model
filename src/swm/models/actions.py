@@ -292,6 +292,22 @@ def hold_boxes(boxes: torch.Tensor) -> torch.Tensor:
     return torch.where(ok.any(1, keepdim=True)[..., None], held, boxes)
 
 
+def wrong_binding(occupant: torch.Tensor, window: torch.Tensor) -> torch.Tensor:
+    """(B, T, A) occupants and (B, 2) window ids -> (B, A) perm: arm a pools the region of arm perm[a]. The
+    instrument arms of a window take each other's regions in a cycle of pseudo-random order fixed per window, so that
+    no instrument keeps its own region when there are two or more and the number of active arm actions is unchanged;
+    the endoscope and empty arms keep their own (empty) regions."""
+    a = occupant.shape[-1]
+    inst = (occupant >= 2).any(1)                                                   # (B, A)
+    wid = window[:, 0] * 100_003 + window[:, 1]
+    keys = ((wid[:, None] * 7919 + torch.arange(a, device=wid.device)) * 104_729) % 1_000_003
+    order = torch.where(inst, keys, keys + 1_000_003).argsort(-1)                  # instrument arms first
+    n = inst.sum(-1, keepdim=True).clamp_min(1)
+    pos = torch.arange(a, device=wid.device).expand_as(order)
+    nxt = order.gather(-1, torch.where(pos < n, (pos + 1) % n, pos))               # order[i] takes order[i + 1]
+    return torch.empty_like(order).scatter_(-1, order, nxt)
+
+
 def region_from_boxes(boxes: torch.Tensor, height: int, width: int, dilate: int = 1) -> torch.Tensor:
     """boxes: (..., 4) normalised x0, y0, x1, y1 in [0, 1] (NaN = absent) -> (..., H*W) bool grid mask."""
     ys = (torch.arange(height, device=boxes.device) + 0.5) / height

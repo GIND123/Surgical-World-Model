@@ -1,4 +1,5 @@
-# Ablation (size S, 60k steps, batch 32): arms_shuffled
+# Ablation (size S, 60k steps, batch 32): arms_shuffled. Wrong arm binding: each instrument arm pools another
+# instrument's region (a cycle among the window's instrument arms, fixed per window; swm.models.actions.wrong_binding)
 set -e
 .venv/bin/python scripts/train/train_wm.py --name S_arms_shuffled --action arms --size S --arm-pool shuffled --steps 60000 --bs 32 --eval-every 10000 --save-every 5000 --resume
 .venv/bin/python scripts/eval/diagnose_actions.py --run S_arms_shuffled --windows 512

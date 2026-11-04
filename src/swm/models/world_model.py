@@ -42,6 +42,7 @@ from swm.models.actions import (
     outside_regions,
     region_from_boxes,
     stabilise,
+    wrong_binding,
 )
 from swm.models.dynamics import SIZES, DiTConfig, STDiT
 from swm.models.layers import timestep_embedding
@@ -162,10 +163,8 @@ class WorldModel(nn.Module):
                 region = region_from_boxes(hold_boxes(batch["boxes"]), *z.shape[-2:], dilate=1)[:, 1:]
             if self.cfg.arm_pool == "global":                 # factorised but not grounded
                 region = region.any(-1, keepdim=True).expand_as(region)
-            elif self.cfg.arm_pool == "shuffled":             # grounded in the wrong arm's region (fixed per window)
-                wid = batch["window"][:, 0] * 100_003 + batch["window"][:, 1]
-                keys = ((wid[:, None] * 7919 + torch.arange(4, device=wid.device)) * 104_729) % 1_000_003
-                perm = keys.argsort(-1)
+            elif self.cfg.arm_pool == "shuffled":             # grounded in another instrument's region
+                perm = wrong_binding(batch["occupant"], batch["window"])
                 idx = perm[:, None, :, None].expand(-1, region.shape[1], -1, region.shape[-1])
                 region = torch.gather(region, 2, idx)
             out["region"] = region
