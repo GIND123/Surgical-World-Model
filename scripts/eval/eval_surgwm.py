@@ -5,7 +5,9 @@ Same windows, context and horizon as eval_wm.py: from the first 5 real frames (0
 the remaining 28 frames (2.8 s), with the latent actions that its action model infers from the real clip (action
 replay) and, for controllability, with the actions of another window. SurgWM works at 120x180: real frames are
 resized down for its input, and its predictions are resized up to 224x320 and compared with the real frames, like
-every other row. Also reports the reconstruction of its own tokenizer (its ceiling). Writes
+every other row. Its models were trained on 16-frame clips: the clip is tokenised and its actions inferred in
+16-frame windows, and each predicted frame sees at most the 15 frames before it (25 MaskGIT steps per frame,
+temperature 1, as in the paper). Also reports the reconstruction of its own tokenizer (its ceiling). Writes
 outputs/eval/<name>/replay.json (+ per-window .npz) in the format of eval_wm.py.
 
     python scripts/eval/eval_surgwm.py [--name surgwm] [--limit 1000] [--fvd]
@@ -45,7 +47,7 @@ def main() -> None:
     ap.add_argument("--name", default="surgwm")
     ap.add_argument("--split", default="test")
     ap.add_argument("--n-ctx", type=int, default=5, help="real context frames (5 = the 2 context latents of eval_wm)")
-    ap.add_argument("--mask-steps", type=int, default=12, help="MaskGIT decoding steps per frame")
+    ap.add_argument("--mask-steps", type=int, default=25, help="MaskGIT decoding steps per frame")
     ap.add_argument("--temperature", type=float, default=1.0)
     ap.add_argument("--bs", type=int, default=8)
     ap.add_argument("--limit", type=int)
@@ -81,7 +83,8 @@ def main() -> None:
             shuf = torch.cat([acts[:, :1], acts[:, 1:].roll(1, 0)], 1)                   # another window's actions
             out = {"recon": codes}
             for k, ak in (("pred", acts), ("pred_shuffled", shuf)):
-                out[k] = dyn.generate(codes, ak, first, args.mask_steps, args.temperature, generator=gen)
+                out[k] = dyn.generate(codes, ak, first, args.mask_steps, args.temperature, generator=gen,
+                                      window=c.clip)
             frames = {}
             for k, z in out.items():
                 y = tok.decode_codes(z).float().flatten(0, 1)                             # (B*T, 3, 120, 180)
@@ -102,7 +105,8 @@ def main() -> None:
             print(f"{s + bsz}/{n} windows, {time.time() - t0:.0f}s", flush=True)
     summary = dict(step={"tokenizer": s_tok, "lam": s_lam, "dynamics": s_dyn}, data="surgvu", split=args.split,
                    n_windows=n, n_ctx_frames=first, mask_steps=args.mask_steps, temperature=args.temperature,
-                   first_pred_frame=first, resolution=[c.height, c.width])
+                   window=c.clip, first_pred_frame=first, resolution=[c.height, c.width],
+                   seconds=round(time.time() - t0), peak_gb=round(torch.cuda.max_memory_allocated() / 1e9, 1))
     arrays = {"window": idx,
               "case": np.array([ds.parts[ds.index[i, 0]]["stem"].rsplit("_p", 1)[0] for i in idx])}
     for k in names:

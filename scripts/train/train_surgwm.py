@@ -5,9 +5,10 @@
     python scripts/train/train_surgwm.py --stage lam --steps 60000
     python scripts/train/train_surgwm.py --stage dynamics --steps 60000
 
-Frames are decoded on the fly from the 10 fps cache (same windows as EG-SWM) and resized to 120x180
-(40x60 for the latent action model). Outputs: outputs/runs/<name>_<stage>/ (name: surgwm). Evaluation:
-scripts/eval/eval_surgwm.py.
+Frames are decoded on the fly from the 10 fps cache (same windows as EG-SWM, their first 16 frames: SurgWM trains
+every model on 16-frame clips) and resized to 120x180 (40x60 for the latent action model). AdamW with the paper's
+learning rates and betas (0.9, 0.9999); the quantisers' codes move after each optimiser step (EMAVQ.update).
+Outputs: outputs/runs/<name>_<stage>/ (name: surgwm). Evaluation: scripts/eval/eval_surgwm.py.
 """
 
 from __future__ import annotations
@@ -72,7 +73,6 @@ def main() -> None:
     ap.add_argument("--stage", choices=["tokenizer", "lam", "dynamics"], required=True)
     ap.add_argument("--steps", type=int, default=60000)
     ap.add_argument("--bs", type=int, default=8)
-    ap.add_argument("--frames", type=int, default=16, help="clip length for tokenizer/LAM training")
     ap.add_argument("--workers", type=int, default=10)
     ap.add_argument("--grad-ckpt", action="store_true", help="recompute each transformer block in the backward pass")
     ap.add_argument("--name", default="surgwm", help="runs go to outputs/runs/<name>_<stage>")
@@ -82,9 +82,8 @@ def main() -> None:
     run = OUTPUTS / "runs" / f"{args.name}_{args.stage}"
     run.mkdir(parents=True, exist_ok=True)
     (run / "config.json").write_text(json.dumps({"model": vars(c), "train": vars(args)}, indent=1))
-    lr = {"tokenizer": 1e-4, "lam": 1e-5, "dynamics": 1e-4}[args.stage]       # as reported for SurgWM
-    n_frames = 33 if args.stage == "dynamics" else args.frames
-    ds = PixelWindows("train", n_frames=n_frames)
+    lr = {"tokenizer": 1e-4, "lam": 1e-5, "dynamics": 1e-4}[args.stage]       # as reported (dynamics: not reported)
+    ds = PixelWindows("train", n_frames=c.clip)
     dl = DataLoader(ds, batch_size=args.bs, shuffle=True, drop_last=True, num_workers=args.workers,
                     persistent_workers=True, pin_memory=True)
     if args.stage == "tokenizer":
@@ -101,7 +100,9 @@ def main() -> None:
     for m in model.modules():
         if hasattr(m, "grad_checkpoint"):
             m.grad_checkpoint = args.grad_ckpt
-    opt = torch.optim.AdamW(model.parameters(), lr=lr, betas=(0.9, 0.99), weight_decay=0.01, fused=True)
+    opt = torch.optim.AdamW(model.parameters(), lr=lr, betas=(0.9, 0.9999), weight_decay=0.01, fused=True)
+    vq = getattr(model, "vq", None)                                           # tokenizer and action model
+    restarts = 0
     step = 0
     ckpt = run / "ckpt_last.pt"
     if args.resume and ckpt.exists():
@@ -121,10 +122,10 @@ def main() -> None:
                 g["lr"] = lr * min(1.0, (step + 1) / 1000)
             with torch.autocast("cuda", dtype=torch.bfloat16):
                 if args.stage == "tokenizer":
-                    rec, vq_loss, _ = model(x)
+                    rec, vq_loss, idx = model(x)
                     rec_loss = F.mse_loss(rec.float(), x)
                     loss = rec_loss + vq_loss
-                    logs = {"rec": rec_loss.item(), "vq": vq_loss.item()}
+                    logs = {"rec": rec_loss.item(), "vq": vq_loss.item(), "codes_used": int(idx.unique().numel())}
                 elif args.stage == "lam":
                     small = F.interpolate(x.flatten(0, 1), size=(c.lam_height, c.lam_width), mode="area")
                     rec_loss, vq_loss, idx = model(small.view(*x.shape[:2], 3, c.lam_height, c.lam_width))
@@ -145,10 +146,14 @@ def main() -> None:
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             opt.step()
             opt.zero_grad(set_to_none=True)
+            if vq is not None:
+                restarts += vq.update()
             step += 1
             if step % 100 == 0:
                 rec = dict(step=step, sec_per_step=(time.time() - t0) / 100,
                            mem_gb=round(torch.cuda.max_memory_allocated() / 1e9, 1), **logs)
+                if vq is not None:
+                    rec["restarts"], restarts = restarts, 0                   # codes restarted in the last 100 steps
                 log.write(json.dumps(rec) + "\n")
                 log.flush()
                 t0 = time.time()
