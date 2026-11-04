@@ -58,8 +58,9 @@ DROPS = ("0.25", "0.5", "1.0")       # share of the instrument detections remove
 CONTRASTS = [  # (a, b): a minus b, paired over the test cases on the E1 windows (e1_contrasts; quoted in the text)
     ("S_arms", "copy_last"), ("S_arms", "S_none"), ("S_slots", "S_arms"), ("S_global", "S_arms"),
     ("S_global_nocam", "S_arms"), ("S_arms_scene", "S_arms"), ("S_arms", "S_global_vq"), ("S_arms", "S_state"),
-    ("S_global_vq", "copy_last"), ("S_arms", "S_arms_nocam"), ("S_arms_nocam", "S_state_nocam"),
-    ("S_state_nocam", "S_none"), ("S_state", "S_state_nocam"), ("S_global_nocam", "S_global"),
+    ("S_global_vq", "copy_last"), ("S_arms", "S_arms_nocam"), ("S_arms", "S_arms_nofwd"),
+    ("S_arms_nocam", "S_state_nocam"), ("S_state_nocam", "S_none"), ("S_state", "S_state_nocam"),
+    ("S_global_nocam", "S_global"),
     ("S_arms", "surgwm"), ("surgwm", "copy_last"),
     *((run, "S_arms") for run, *_ in ABLATIONS),
 ]
@@ -825,6 +826,7 @@ def numbers() -> None:
                     val[f"use/{run}/{key}_t9_{s}"] = pct(u[f"gap_{name}_{side}_pct"][-1])
         if u.get("posterior", {}).get("kl_per_arm") is not None:
             put(f"use/{run}/kl", u["posterior"]["kl_per_arm"], 1)
+            val[f"use/{run}/active"] = str(u["posterior"]["active_units"])      # of the 8 dimensions of an arm action
     for run in ("S_arms",):
         for name in ("replay", "control"):
             p = OUTPUTS / "eval" / run / f"{name}.json"

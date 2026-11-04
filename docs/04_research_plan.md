@@ -117,7 +117,7 @@ Status on 4 Nov 2026 of a reviewer-oriented checklist: comparisons, standard dat
 | E5 expert study | planned; needs surgeons; material from the E1 rollouts |
 | **Ablations (E6)** | |
 | Endoscope action | done (`*_nocam`) |
-| Whole-frame pooling, no forward decoder, wrong arm binding, console readout | `300` and `305`–`320`. The wrong binding was corrected before `310` ran (4 Nov): it permuted the regions of all four arms, so instrument arms also took the endoscope's or an empty arm's region (no region, so no action: 12 % of the active arm actions of 300 test windows lost) and a quarter kept their own; now the instrument arms of a window take each other's regions in a cycle, which changes the binding of every instrument in the 90 % of windows with two or more and keeps the number of active actions |
+| Whole-frame pooling, no forward decoder, wrong arm binding, console readout | `300` and `305`–`320`; `300` and `305` done (grounding makes the arm actions local; the forward decoder keeps them in use: without it 3 of 8 dimensions stay active and PSNR falls 0.36 dB in all 19 cases). The wrong binding was corrected before `310` ran (4 Nov): it permuted the regions of all four arms, so instrument arms also took the endoscope's or an empty arm's region (no region, so no action: 12 % of the active arm actions of 300 test windows lost) and a quarter kept their own; now the instrument arms of a window take each other's regions in a cycle, which changes the binding of every instrument in the 90 % of windows with two or more and keeps the number of active actions |
 | Boxes held across detector gaps (binding coverage 73 % → 79 % of a mounted instrument's steps) | queued `325` |
 | KL weight 10⁻³, 10⁻⁵ | queued `720`, `721` |
 | Scene action | done |

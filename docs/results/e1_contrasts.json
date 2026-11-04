@@ -240,6 +240,30 @@
   "a_better_lpips": 19
  },
  {
+  "a": "S_arms",
+  "b": "S_arms_nofwd",
+  "label": "EG-SWM \u2212 EG-SWM, diffusion loss only",
+  "n_cases": 19,
+  "d_psnr": 0.3572482168674469,
+  "d_psnr_ci": [
+   0.31967237815260885,
+   0.3918011963367462
+  ],
+  "a_better_psnr": 19,
+  "d_ssim": 0.010990993119776249,
+  "d_ssim_ci": [
+   0.009867872949689627,
+   0.01215677740983665
+  ],
+  "a_better_ssim": 19,
+  "d_lpips": -0.00837475061416626,
+  "d_lpips_ci": [
+   -0.009402313176542521,
+   -0.007244110503233969
+  ],
+  "a_better_lpips": 19
+ },
+ {
   "a": "S_arms_nocam",
   "b": "S_state_nocam",
   "label": "EG-SWM, no camera action \u2212 Robot state",
