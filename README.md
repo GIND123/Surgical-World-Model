@@ -50,7 +50,7 @@ Compared action interfaces, all sharing tokenizer, backbone, data and budget: `n
 
 ![EG-SWM architecture with a sample input and output](docs/figures/architecture.png)
 
-*Sample input/output from a held-out test case (`case_139`, suturing; frames 0.4 s apart). Until the first model is trained, the output row shows the ground-truth future of that window; it will be replaced by model rollouts on the same window. Frames: SurgVU dataset (Zia et al., 2025), endoscope field only.*
+*Sample input/output from a held-out test case (`case_139`, suturing; frames 0.4 s apart). The output row is EG-SWM's prediction (`S_arms`, 4 context latents, 50 Euler steps) with the actions inferred from the real clip; the real frames are in [docs/figures/samples/](docs/figures/samples/) (`fut*.jpg`). Frames: SurgVU dataset (Zia et al., 2025), endoscope field only.*
 
 **Tokenizer.** A frozen Wan2.2 video VAE compresses 4 frames into one latent $z_t\in\mathbb{R}^{48\times14\times20}$; a 3.3 s training window (33 frames at 10 fps) becomes 9 latents.
 
@@ -218,6 +218,20 @@ Paired over the same windows, EG-SWM beats copying the last frame by 0.41 dB PSN
 | copy last context frame | 23.79 | 20.68 | 21.54 |
 
 With two or more instruments bound (73 % of the windows) EG-SWM trails the monolithic latent by only 0.18 dB and the slots by 0.50 dB; with none bound it trails them by 2.2 and 2.4 dB and falls below the copied frame. The frame-wide actions do not depend on the binding; in windows without bound instruments they describe whatever moves instead (the endoscope, tissue, instruments the detector misses). This points to raising the binding coverage as a way to narrow the gap without a frame-wide action; job `325` holds each instrument's box across the steps where the detector missed it (73 % → 79 % of the steps).
+
+**Rollouts** (`scripts/docs/make_rollouts.py`, jobs `302` and `307`; columns: the last context frame, then the frames 0.8, 1.6 and 2.8 s later).
+
+![Interfaces compared on two typical test windows](docs/figures/rollouts_compare.png)
+
+*Two typical test windows (EG-SWM's PSNR nearest its median, at least two instruments in view), each interface with the actions inferred from the real clip. In `case_080` EG-SWM brings the entering instrument in at the right place; in `case_054` a grasper enters at 1.2 s, the monolithic and slot actions draw an instrument roughly where it enters, and EG-SWM does not.*
+
+![Control: arm actions and endoscope commands](docs/figures/rollouts_control.png)
+
+*Control on the first window. Replacing one arm's action with another window's changes that instrument and little else (change map); with the arm actions zeroed, no instrument enters. A commanded pan or zoom (learned actions zeroed) is carried out by EG-SWM and hardly at all by the monolithic latent or the scene action.*
+
+![The four worst test windows](docs/figures/rollouts_failures.png)
+
+*EG-SWM's four lowest-PSNR test windows, one per case: an instrument entering as the view washes out (`case_135`), the fluorescence imaging mode (`case_064`), smoke (`case_026`) and fast motion of two instruments (`case_118`).*
 
 **What each part of EG-SWM adds.** The endoscope action is worth 0.49 dB [0.39, 0.61], in all 19 cases. Without it the arm actions take on part of the frame-wide motion (another window's arm actions raise the τ = 0.9 loss outside the arm regions by 68 % instead of 33 %) and become less local (2.02× instead of 2.42×). Learned arm actions are worth 2.23 dB [2.01, 2.44] over robot-state tokens (both without the endoscope action). The state tokens add 0.33 dB [0.27, 0.39] over no actions and cut unmounted instruments from 13.0 % to 9.7 %; with them, the endoscope action is worth 1.15 dB [1.03, 1.26] and is realised at 79 %.
 
@@ -392,6 +406,7 @@ python scripts/docs/figure_horizon.py                     # PSNR over the horizo
 | 301, 302 | SurgWM smoke test (300 steps per stage, 32-window evaluation); figures from model rollouts and the time of one prediction |
 | 304 | SurgWM smoke test of the corrected re-implementation (2,000 steps for the tokenizer and the action model, so that code use shows) |
 | 306 | locality test again for the 8 runs evaluated before per-window results were recorded, for intervals over cases ([e1_locality](docs/results/e1_locality.md)) |
+| 307 | rollout figures again with clearer column and row labels (2 min) |
 | 330–332 | sensitivity without `case_126`: Euler steps and guidance, 1–3 context latents, endoscope commands at 0.5–2× (EG-SWM and four other interfaces) |
 | 333 | H4: 14 s autoregressive rollouts (five 2.8 s chunks) on 95 clips of the test cases: fidelity and unmounted instruments over time |
 | 334 | test of the scene-action explanation: share of a learned action's effect in the content the moving endoscope reveals |

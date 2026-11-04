@@ -11,11 +11,11 @@
 % ================= sample input / output (held-out test case, suturing) =================
 \foreach \i in {0,...,3} {
   \node[inner sep=0, anchor=north west] (c\i) at (\i*18, 0) {\frm{ctx\i.jpg}};
-  \node[inner sep=0, anchor=north west] (f\i) at (124+\i*18, 0) {\frm{fut\i.jpg}};
+  \node[inner sep=0, anchor=north west] (f\i) at (124+\i*18, 0) {\frm{pred\i.jpg}};
 }
 \node[note, anchor=south] at (35, 1.5) {\textbf{input}: context frames $x_{1:4}$ (0.4\,s apart) + actions};
 \node[note, anchor=south] at (159, 1.5) {\textbf{output}: predicted frames $\hat x_{5:8}$ (next 1.6\,s)};
-\node[note, anchor=north east, align=right] at (195, -27.5) {shown here: ground-truth future\\ of this held-out window};
+\node[note, anchor=north east, align=right] at (195, -27.5) {shown here: EG-SWM's prediction\\ for this held-out window, with\\ actions inferred from the real clip};
 
 % ================= tokenizer =================
 \node[proc, minimum width=71mm, minimum height=7mm, anchor=north west] (enc) at (0, -19)

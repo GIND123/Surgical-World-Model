@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import textwrap
 import time
 from pathlib import Path
 
@@ -51,7 +52,7 @@ SAMPLES = ROOT / "docs" / "figures" / "samples"
 FIG = ROOT / "docs" / "figures"
 INTERFACES = [("S_arms", "EG-SWM"), ("S_global", "Monolithic latent"), ("S_slots", "Slots"),
               ("S_global_vq", "VQ (SurgWM-style)"), ("S_state", "Robot state"), ("S_none", "No actions")]
-SHOW = (4, 12, 20, 32)                 # frames shown: last context frame (0.4 s), 1.2 s, 2.0 s, 3.2 s
+SHOW = (4, 12, 20, 32)                 # frames shown: the last context frame, then 0.8, 1.6 and 2.8 s ahead
 
 
 def batch(items: list[dict]) -> dict:
@@ -73,20 +74,24 @@ def real_frames(stem: str, start: int) -> np.ndarray:
     return np.stack(out)
 
 
-def grid(rows: list[tuple[str, list[np.ndarray]]], cols: list[str], path: Path, scale: float = 1.6) -> None:
-    fig, axes = plt.subplots(len(rows), len(cols), figsize=(scale * len(cols), scale * 0.7 * len(rows) + 0.3),
-                             squeeze=False)
+def grid(rows: list[tuple[str, list[np.ndarray]]], cols: list[str], path: Path, panel: float = 1.6) -> None:
+    """Rows of frames under the column titles, each row's label wrapped beside it; the figure is sized to the
+    panels, and a change map (2-D) shares one colour scale along its row."""
+    label_w, title_h, panel_h = 1.5, 0.3, panel * MODEL_H / MODEL_W
+    w, h = label_w + panel * len(cols), title_h + 1.04 * panel_h * len(rows)
+    fig, axes = plt.subplots(len(rows), len(cols), figsize=(w, h), squeeze=False)
     for r, (label, imgs) in enumerate(rows):
+        vmax = max(float(np.max(i)) for i in imgs) if imgs[0].ndim == 2 else None
         for c, img in enumerate(imgs):
             ax = axes[r, c]
-            ax.imshow(img, cmap="magma" if img.ndim == 2 else None, vmin=0, vmax=None)
+            ax.imshow(img, cmap="magma" if img.ndim == 2 else None, vmin=0, vmax=vmax)
             ax.set_xticks([])
             ax.set_yticks([])
             if r == 0:
                 ax.set_title(cols[c], fontsize=8)
             if c == 0:
-                ax.set_ylabel(label, fontsize=7, rotation=0, ha="right", va="center")
-    fig.subplots_adjust(wspace=0.03, hspace=0.05, left=0.2, right=0.995, top=0.94, bottom=0.01)
+                ax.set_ylabel(textwrap.fill(label, 22), fontsize=7, rotation=0, ha="right", va="center")
+    fig.subplots_adjust(wspace=0.03, hspace=0.04, left=label_w / w, right=0.995, top=1 - title_h / h, bottom=0.005)
     fig.savefig(path, dpi=150)
     plt.close(fig)
     print(f"wrote {path}", flush=True)
@@ -150,7 +155,7 @@ def main() -> None:
             picks.append(j)
         if len(picks) == 2:
             break
-    times = [f"{t / 10:.1f} s" for t in SHOW]
+    times = ["last context frame"] + [f"+{(t - SHOW[0]) / 10:.1f} s" for t in SHOW[1:]]   # as in e1_horizon
 
     if "compare" in parts:
         rows = []
