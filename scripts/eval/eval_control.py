@@ -47,6 +47,21 @@ def decode(vae, z, mean, std) -> torch.Tensor:
         return vae.decode(lat).sample.float().clamp(-1, 1).add(1).div(2).permute(0, 2, 3, 4, 1)   # B T H W 3
 
 
+def command(b: dict, name: str, mag: np.ndarray, n_ctx: int) -> tuple[dict, np.ndarray]:
+    """Batch b with the endoscope command `name` at magnitude `mag` (dx, dy, log s) in every predicted latent step;
+    the context keeps its measured motion. Returns the batch and the commanded (dx, dy, log s, angle)."""
+    sx, sy, sz = COMMANDS[name]
+    raw = np.zeros((9, 16), np.float32)
+    cmd = np.array([sx * mag[0], sy * mag[1], sz * mag[2], 0.0], np.float32)
+    raw[1:] = np.tile(cmd, 4)
+    valid = np.zeros((9, 4), bool)
+    valid[1:] = True                                    # a commanded still camera is valid, not unknown
+    cam = torch.from_numpy(camera_input(raw, camera_scale(), valid)).to(b["camera"].device)
+    bc = dict(b, camera=cam[None].expand(len(b["camera"]), -1, -1).clone())
+    bc["camera"][:, :n_ctx] = b["camera"][:, :n_ctx]
+    return bc, cmd
+
+
 def realised_motion(frames: np.ndarray, first: int) -> np.ndarray:
     """(T, H, W, 3) in [0,1] -> mean (dx, dy, log s) over the predicted transitions."""
     g = [cv2.cvtColor((f * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY) for f in frames]
@@ -116,15 +131,8 @@ def main() -> None:
         # ---- camera compliance (only models with an explicit camera action)
         if cfg is not None and cfg.camera and "camera" in tests:
             zero = {k: (torch.zeros_like(v) if k.startswith("u_") else v) for k, v in acts.items()}
-            for name, (sx, sy, sz) in COMMANDS.items():
-                raw = np.zeros((9, 16), np.float32)
-                cmd = np.array([sx * mag[0], sy * mag[1], sz * mag[2], 0.0], np.float32)
-                raw[1:] = np.tile(cmd, 4)
-                valid = np.zeros((9, 4), bool)
-                valid[1:] = True                                    # a commanded still camera is valid, not unknown
-                cam = torch.from_numpy(camera_input(raw, camera_scale(), valid)).cuda()
-                bc = dict(b, camera=cam[None].expand(bsz, -1, -1).clone())
-                bc["camera"][:, :args.n_ctx] = b["camera"][:, :args.n_ctx]
+            for name in COMMANDS:
+                bc, cmd = command(b, name, mag, args.n_ctx)
                 with torch.autocast("cuda", dtype=torch.bfloat16):
                     out = model.generate(bc, args.n_ctx, args.steps, actions=zero, generator=gen)
                 px = decode(vae, out, mean, std).cpu().numpy()

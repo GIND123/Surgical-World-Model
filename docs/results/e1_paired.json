@@ -1,0 +1,232 @@
+[
+ {
+  "run": "copy_last",
+  "label": "Copy last context frame",
+  "d_psnr": -0.40823835134506226,
+  "d_psnr_ci": [
+   -0.5639863893389702,
+   -0.23950412906706342
+  ],
+  "egswm_better_psnr": 17,
+  "d_ssim": -0.010100853629410267,
+  "d_ssim_ci": [
+   -0.01536257672123611,
+   -0.004614962730556727
+  ],
+  "egswm_better_ssim": 14,
+  "d_lpips": -0.008171522989869118,
+  "d_lpips_ci": [
+   -0.010215055313892663,
+   -0.005838856182526797
+  ],
+  "egswm_better_lpips": 1,
+  "n_cases": 19
+ },
+ {
+  "run": "S_none",
+  "label": "None (unconditional)",
+  "d_psnr": -3.0420944690704346,
+  "d_psnr_ci": [
+   -3.234775596857071,
+   -2.8565287709236147
+  ],
+  "egswm_better_psnr": 19,
+  "d_ssim": -0.1081770583987236,
+  "d_ssim_ci": [
+   -0.11401700917631388,
+   -0.1028392905369401
+  ],
+  "egswm_better_ssim": 19,
+  "d_lpips": 0.08520689606666565,
+  "d_lpips_ci": [
+   0.08110327199101448,
+   0.08981993701308966
+  ],
+  "egswm_better_lpips": 19,
+  "n_cases": 19
+ },
+ {
+  "run": "S_state_nocam",
+  "label": "Robot state",
+  "d_psnr": -2.714038133621216,
+  "d_psnr_ci": [
+   -2.875965940952301,
+   -2.555394023656845
+  ],
+  "egswm_better_psnr": 19,
+  "d_ssim": -0.09687110036611557,
+  "d_ssim_ci": [
+   -0.1019619831815362,
+   -0.09178796838968993
+  ],
+  "egswm_better_ssim": 19,
+  "d_lpips": 0.07272158563137054,
+  "d_lpips_ci": [
+   0.06989376060664654,
+   0.07575534973293542
+  ],
+  "egswm_better_lpips": 19,
+  "n_cases": 19
+ },
+ {
+  "run": "S_state",
+  "label": "Robot state + camera",
+  "d_psnr": -1.566538691520691,
+  "d_psnr_ci": [
+   -1.6919415444135666,
+   -1.451946657896042
+  ],
+  "egswm_better_psnr": 19,
+  "d_ssim": -0.0390176996588707,
+  "d_ssim_ci": [
+   -0.04183626798912883,
+   -0.03643620172515512
+  ],
+  "egswm_better_ssim": 19,
+  "d_lpips": 0.04150131717324257,
+  "d_lpips_ci": [
+   0.0388125772587955,
+   0.04432442933320999
+  ],
+  "egswm_better_lpips": 19,
+  "n_cases": 19
+ },
+ {
+  "run": "S_global_nocam",
+  "label": "Monolithic latent (Genie)",
+  "d_psnr": 0.48707228899002075,
+  "d_psnr_ci": [
+   0.3941927507519722,
+   0.5876287698745727
+  ],
+  "egswm_better_psnr": 0,
+  "d_ssim": 0.01303776353597641,
+  "d_ssim_ci": [
+   0.010749000729992986,
+   0.01532006473280489
+  ],
+  "egswm_better_ssim": 0,
+  "d_lpips": -0.01010213978588581,
+  "d_lpips_ci": [
+   -0.012438422255218028,
+   -0.007863518688827753
+  ],
+  "egswm_better_lpips": 0,
+  "n_cases": 19
+ },
+ {
+  "run": "S_global",
+  "label": "Monolithic latent + camera",
+  "d_psnr": 0.4640657603740692,
+  "d_psnr_ci": [
+   0.36748590171337125,
+   0.5737318694591522
+  ],
+  "egswm_better_psnr": 0,
+  "d_ssim": 0.011930800974369049,
+  "d_ssim_ci": [
+   0.00972519766073674,
+   0.014084156858734785
+  ],
+  "egswm_better_ssim": 0,
+  "d_lpips": -0.009551970288157463,
+  "d_lpips_ci": [
+   -0.011787042650394142,
+   -0.00732151713455096
+  ],
+  "egswm_better_lpips": 0,
+  "n_cases": 19
+ },
+ {
+  "run": "S_global_vq",
+  "label": "Monolithic VQ + camera (SurgWM-style)",
+  "d_psnr": -0.7001183032989502,
+  "d_psnr_ci": [
+   -0.7862029433250427,
+   -0.6198195397853852
+  ],
+  "egswm_better_psnr": 19,
+  "d_ssim": -0.019952677190303802,
+  "d_ssim_ci": [
+   -0.022002634406089783,
+   -0.01785400831140578
+  ],
+  "egswm_better_ssim": 19,
+  "d_lpips": 0.018967587500810623,
+  "d_lpips_ci": [
+   0.017046057712286712,
+   0.02090961425565183
+  ],
+  "egswm_better_lpips": 19,
+  "n_cases": 19
+ },
+ {
+  "run": "S_slots",
+  "label": "Slots + camera (FLAM-style)",
+  "d_psnr": 0.7632585763931274,
+  "d_psnr_ci": [
+   0.6580013498663903,
+   0.8744719564914704
+  ],
+  "egswm_better_psnr": 0,
+  "d_ssim": 0.021624894812703133,
+  "d_ssim_ci": [
+   0.018936694506555794,
+   0.024206744506955143
+  ],
+  "egswm_better_ssim": 0,
+  "d_lpips": -0.015291539952158928,
+  "d_lpips_ci": [
+   -0.017656828090548516,
+   -0.01291462506633252
+  ],
+  "egswm_better_lpips": 0,
+  "n_cases": 19
+ },
+ {
+  "run": "S_arms_nocam",
+  "label": "EG-SWM, no camera action",
+  "d_psnr": -0.4891964793205261,
+  "d_psnr_ci": [
+   -0.6068215385079384,
+   -0.3877904996275902
+  ],
+  "egswm_better_psnr": 19,
+  "d_ssim": -0.018546191975474358,
+  "d_ssim_ci": [
+   -0.022531650867313145,
+   -0.015247467556037012
+  ],
+  "egswm_better_ssim": 19,
+  "d_lpips": 0.012307997792959213,
+  "d_lpips_ci": [
+   0.009461488015949726,
+   0.015487625845707953
+  ],
+  "egswm_better_lpips": 19,
+  "n_cases": 19
+ },
+ {
+  "run": "S_arms_scene",
+  "label": "EG-SWM + scene action",
+  "d_psnr": 0.37466028332710266,
+  "d_psnr_ci": [
+   0.30364762991666794,
+   0.45099148377776144
+  ],
+  "egswm_better_psnr": 0,
+  "d_ssim": 0.00981223862618208,
+  "d_ssim_ci": [
+   0.008427666081115604,
+   0.011244907486252485
+  ],
+  "egswm_better_ssim": 0,
+  "d_lpips": -0.00758381187915802,
+  "d_lpips_ci": [
+   -0.009144073049537838,
+   -0.00601882307091728
+  ],
+  "egswm_better_lpips": 0,
+  "n_cases": 19
+ }
+]

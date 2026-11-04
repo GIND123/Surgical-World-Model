@@ -1,0 +1,92 @@
+[
+ {
+  "run": "S_none",
+  "label": "None (unconditional)",
+  "size": "S",
+  "steps": 60000,
+  "train_h": 4.576362212495106,
+  "win_per_s": 116.5408917758176,
+  "train_mem_gb": 26.02096384
+ },
+ {
+  "run": "S_state_nocam",
+  "label": "Robot state",
+  "size": "S",
+  "steps": 60000,
+  "train_h": 5.1833484569582104,
+  "win_per_s": 102.89359045837986,
+  "train_mem_gb": 29.730797568
+ },
+ {
+  "run": "S_state",
+  "label": "Robot state + camera",
+  "size": "S",
+  "steps": 60000,
+  "train_h": 5.1834150950082245,
+  "win_per_s": 102.89226765707969,
+  "train_mem_gb": 29.736832512
+ },
+ {
+  "run": "S_global_nocam",
+  "label": "Monolithic latent (Genie)",
+  "size": "S",
+  "steps": 60000,
+  "train_h": 5.558595736818653,
+  "win_per_s": 95.94749440055082,
+  "train_mem_gb": 31.427337728
+ },
+ {
+  "run": "S_global",
+  "label": "Monolithic latent + camera",
+  "size": "S",
+  "steps": 60000,
+  "train_h": 5.559202671051025,
+  "win_per_s": 95.93701918993018,
+  "train_mem_gb": 31.839873024
+ },
+ {
+  "run": "S_global_vq",
+  "label": "Monolithic VQ + camera (SurgWM-style)",
+  "size": "S",
+  "steps": 60000,
+  "train_h": 5.563697020212261,
+  "win_per_s": 95.8595213570753,
+  "train_mem_gb": 31.431459328
+ },
+ {
+  "run": "S_slots",
+  "label": "Slots + camera (FLAM-style)",
+  "size": "S",
+  "steps": 60000,
+  "train_h": 5.582492987314819,
+  "win_per_s": 95.53676727319399,
+  "train_mem_gb": 31.483656704
+ },
+ {
+  "run": "S_arms_nocam",
+  "label": "EG-SWM, no camera action",
+  "size": "S",
+  "steps": 60000,
+  "train_h": 5.553399801246994,
+  "win_per_s": 96.0372658949524,
+  "train_mem_gb": 31.422580224
+ },
+ {
+  "run": "S_arms",
+  "label": "EG-SWM",
+  "size": "S",
+  "steps": 60000,
+  "train_h": 5.56365350881548,
+  "win_per_s": 95.86027104101272,
+  "train_mem_gb": 31.433165824
+ },
+ {
+  "run": "S_arms_scene",
+  "label": "EG-SWM + scene action",
+  "size": "S",
+  "steps": 60000,
+  "train_h": 5.563769062359739,
+  "win_per_s": 95.85828012551131,
+  "train_mem_gb": 31.440470016
+ }
+]

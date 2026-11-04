@@ -5,18 +5,19 @@
 * Weights (public, CC BY-NC-SA 4.0): <https://huggingface.co/GOVINDFROM/surgical-world-model> — one folder per finished run (EMA weights, config, evaluation summaries), published by each queue job
 * Research documents: [data audit](docs/01_data_audit.md) · [external data](docs/02_external_data.md) · [literature review](docs/03_literature_review.md) · [research plan](docs/04_research_plan.md) · [legacy](docs/legacy.md)
 
-## Status (updated 2026-11-04, 15:30 IST)
+## Status (updated 2026-11-04, 17:00 IST)
 
 | Stage | State |
 |---|---|
 | Data audit, literature review, hypotheses, case-level split, tokenizer choice | done |
-| Model, 7 action interfaces, kinematics-conditioned mode, SurgWM re-implementation, evaluation suite, result aggregation | done |
+| Model, 7 action interfaces, kinematics-conditioned mode, SurgWM re-implementation and its evaluation, evaluation suite, result aggregation | done |
 | SurgVU processing (10 fps cache → Wan2.2 latents → detection → arm binding → console readout) | done: 280/280 parts, 519,554 training windows; fixed held-out sets of 1,900 test windows (19 cases) and 275 validation windows |
-| External preparation (SutureBot → CRCD → JIGSAWS → SAR-RARP50) | SutureBot, CRCD and JIGSAWS done and sync-checked (JIGSAWS: 103 trials with video, 5,763 windows, 86 episodes pass the sync check); SAR-RARP50 done (4,901 windows); SRT-H done (16,588 windows from 10,923 episodes; pooled sync check passes) |
+| External preparation (SutureBot, CRCD, JIGSAWS, SRT-H, SAR-RARP50) | all done. SutureBot, CRCD, JIGSAWS and SRT-H are sync-checked (JIGSAWS: 103 trials with video, 5,763 windows, 86 episodes pass; SRT-H: 16,588 windows from 10,923 episodes, pooled check passes); SAR-RARP50: 4,901 windows, no kinematics |
 | Camera-action validation (E2b) | done on CRCD (endoscope-arm kinematics) and AutoLaparo (surgeon-labelled laparoscope moves) — see results below |
-| External downloads | SRT-H done (preparation queued); AutoLaparo Task 2 received from the authors (300 clips, 3.8 GB) and used for E2b |
+| External downloads | all done; AutoLaparo Task 2 received from the authors (300 clips, 3.8 GB) and used for E2b |
 | Pilot (S, partial data) | diffusion loss only: learned arm actions collapse; the forward-decoder objective (not the weaker bottleneck) makes them used, and action replay is 12 % more accurate. The monolithic action replays 17 % better still, almost all outside the instrument regions; a scene action (`095`) closes the gap but weakens the endoscope action; neither learned-only dropout (`096`) nor camera-stabilised inference (`097`) restores it; arms + scene ran as a full variant (`205`, below) |
-| 10 controlled runs (incl. arms + scene) → reference evaluation → 4 grounding/readout/objective ablations | all 10 interface runs done and evaluated, weights on Hugging Face. Fidelity and control pull apart: the learned actions that cover the whole frame (slots, monolithic, scene) predict 0.4–0.8 dB better than EG-SWM in every case but realise only 5–22 % of a commanded endoscope move (EG-SWM 70 %); among the interfaces that keep the endoscope controllable, EG-SWM leads SurgWM-style VQ by 0.70 dB and robot state by 1.57 dB, and it is the only one that steers each instrument and beats a copied frame. The endoscope action is worth 0.49 dB to EG-SWM. Ablations running: `S_arms_poolglobal` since 4 Nov 11:11, then no forward decoder, shuffled arm binding, console readout (≈ 6.7 h each). A power cut stopped the machine from 29 Oct 16:23 to 2 Nov 13:38, and a Wi-Fi outage on 3 Nov delayed two uploads (caught up) |
+| 10 controlled runs (incl. arms + scene) → reference evaluation → 4 grounding/readout/objective ablations | all 10 interface runs done and evaluated, weights on Hugging Face. Fidelity and control pull apart: the learned actions that cover the whole frame (slots, monolithic, scene) predict 0.4–0.8 dB better than EG-SWM in every case but realise only 5–22 % of a commanded endoscope move (EG-SWM 70 %); among the interfaces that keep the endoscope controllable, EG-SWM leads SurgWM-style VQ by 0.70 dB and robot state by 1.57 dB, and it is the only one that steers each instrument and beats a copied frame. The endoscope action is worth 0.49 dB to EG-SWM. The fidelity gap sits where no instrument is bound to an arm: with two or more bound, EG-SWM trails the monolithic latent by only 0.18 dB. Ablations running: `S_arms_poolglobal` since 4 Nov 11:11, then no forward decoder, shuffled arm binding, console readout (≈ 6.7 h each). A power cut stopped the machine from 29 Oct 16:23 to 2 Nov 13:38, and a Wi-Fi outage on 3 Nov delayed two uploads (caught up) |
+| Pre-submission checklist (4 Nov), see [research plan §10](docs/04_research_plan.md#10-pre-submission-checklist) | queued after E3: SurgWM re-implementation (`600`–`603`, smoke test `301`), E3 on SRT-H (`610`–`619`), E4 on SAR-RARP50 (`620`–`625`), seeds 1–2 of EG-SWM, monolithic, slots and VQ (`710`–`717`), KL weight and data scale (`720`–`731`); sensitivity to sampler, context and command size without `case_126` (`330`–`332`); figures from model rollouts (`302`). About 125 GPU-hours of new jobs; with the jobs already queued and the size-B flagship (designed once the ablations finish), the queue runs to about 12 Nov |
 | Manuscript | draft in `paper/tmrb`; results tables generated by `scripts/eval/aggregate.py` |
 
 Results tables appear in [docs/results/](docs/results/) as runs finish.
@@ -28,13 +29,14 @@ Results tables appear in [docs/results/](docs/results/) as runs finish.
 | E1 | fidelity and controllability of each action interface at equal capacity | SurgVU, 1,900 fixed held-out windows from 19 test cases | `scripts/eval/eval_wm.py`, `scripts/eval/eval_control.py` |
 | E2 | do learned per-arm actions encode real robot motion? | SutureBot, CRCD, JIGSAWS (held-out episodes / surgeons) | `scripts/eval/probe_kinematics.py` |
 | E2b | does the explicit camera action measure real endoscope motion? | CRCD (ECM joints, camera pedal); AutoLaparo (surgeon-labelled laparoscope moves) | `scripts/eval/validate_camera_action.py`, `scripts/eval/validate_camera_autolaparo.py` |
-| E3 | kinematics-conditioned prediction, data efficiency of unlabeled pre-training | SutureBot, SRT-H, CRCD | `scripts/train/train_wm.py --action kin --init <run>` |
-| E4 | transfer to clinical surgery | SAR-RARP50 | — |
-| E6 | ablations (action structure, camera, grounding, bottleneck, tokenizer, data and model scale) | SurgVU | `scripts/train/train_wm.py` |
+| E3 | kinematics-conditioned prediction, data efficiency of unlabeled pre-training | SutureBot, SRT-H (synced episodes; CRCD has too few) | `scripts/train/train_wm.py --action kin --init <run>` |
+| E4 | transfer to clinical surgery: SurgVU models zero-shot, after action-free adaptation, and EG-SWM trained on the clinical videos alone | SAR-RARP50 (10 test videos) | `scripts/train/train_wm.py --data sar_rarp50`, `scripts/eval/eval_wm.py --data sar_rarp50` |
+| E5 | expert realism (surgeon 2-AFC real vs generated, plausibility ratings) | E1 rollouts | planned, needs surgeons |
+| E6 | ablations (action structure, camera, grounding, objective, KL weight, data and model scale) and sensitivity (sampler, context, command size, seeds) | SurgVU | `scripts/train/train_wm.py`, `scripts/eval/eval_wm.py`, `scripts/eval/eval_control.py` |
 
 Metrics: PSNR / SSIM / LPIPS per predicted frame against **real** frames (not VAE reconstructions), FVD with the StyleGAN-V I3D port, ΔPSNR under swapped actions, endoscope compliance (commanded vs re-estimated motion), per-arm locality of action changes, embodiment consistency (instrument detector on generated frames vs the robot's logged instruments), and linear-probe R² against kinematics. Reference rows: repeat-last-context-frame and VAE reconstruction.
 
-Compared action interfaces, all sharing tokenizer, backbone, data and budget: `none`, `state` (robot state only), `global` (monolithic continuous latent action, Genie-style), `global_vq` (12 discrete actions, SurgWM-style), `slots` (unsupervised factors, FLAM-style), `arms` (**EG-SWM**), each with or without the explicit camera action; plus the full SurgWM re-implementation and, on kinematic benchmarks, Cosmos-H-Surgical-Simulator.
+Compared action interfaces, all sharing tokenizer, backbone, data and budget: `none`, `state` (robot state only), `global` (monolithic continuous latent action, Genie-style), `global_vq` (12 discrete actions, SurgWM-style), `slots` (unsupervised factors, FLAM-style), `arms` (**EG-SWM**), each with or without the explicit camera action; plus the full SurgWM re-implementation (`scripts/train/train_surgwm.py`, `scripts/eval/eval_surgwm.py`) and, on kinematic benchmarks, Cosmos-H-Surgical-Simulator (not run yet: it needs NVIDIA's Cosmos stack and a check that its Open-H training episodes do not include our test episodes).
 
 ## Overview
 
@@ -182,6 +184,10 @@ The flow-matching loss at the highest noise level (τ = 0.9) separates the two m
 
 *Endoscope gain*: realised / commanded endoscope motion with the learned actions zeroed (median per command, mean over the six commands). *Locality*: one arm's action replaced → share of the pixel change in that arm's region over the region's share of the frame; \* no arm action of its own, so the whole learned action is replaced. *Unmounted*: generated instruments that the robot log does not mount, on the 278 windows with a usable log; the detector itself finds 5.3 % on the real frames and on VAE reconstructions (which keep 98 % of the instruments).
 
+![PSNR over the prediction horizon](docs/figures/e1_horizon.png)
+
+*PSNR of each predicted frame, 0.1–2.8 s after the last context frame (mean over the 1,000 test windows). Paired per-case differences to EG-SWM, with intervals and the number of cases each model loses: [docs/results/e1_paired.md](docs/results/e1_paired.md).*
+
 Paired over the same windows, EG-SWM beats copying the last frame by 0.41 dB PSNR [0.24, 0.56] (17 of 19 cases) and 0.010 SSIM [0.005, 0.015], but is 0.008 LPIPS worse [0.006, 0.010]. It trails the copied frame only in the first 0.2 s (−1.5 dB at 0.1 s) and leads by 0.3–0.8 dB from 0.5 s to the end of the horizon. Replaying the right actions is worth 2.8 dB over another window's, and the model without actions is 3.0 dB worse [2.9, 3.2] in every case.
 
 **Endoscope commands and instruments** (learned actions zeroed; median realised / commanded motion per command; instrument class-set precision / recall against the real future on the 278 windows with a usable robot log):
@@ -201,15 +207,27 @@ Paired over the same windows, EG-SWM beats copying the last frame by 0.41 dB PSN
 
 **Fidelity and control pull apart.** The interfaces fall into two groups. Those whose learned action covers the whole frame (the monolithic latent, the slots, and EG-SWM's scene action) predict the best pictures: the slots beat EG-SWM by 0.76 dB PSNR [0.66, 0.87] and the monolithic latent by 0.46 dB [0.37, 0.57], each in all 19 cases. They do it by taking over the endoscope's job: a commanded endoscope move is realised at 5 % (slots), 16 % (monolithic) and 22 % (scene) of its magnitude, against 70 % for EG-SWM. On the 512 validation windows another window's endoscope action raises the slots' replay error by 1.9 % (EG-SWM: 27 %), and the monolithic latent predicts as well without an endoscope action as with one (+0.02 dB [−0.00, 0.05]). Their learned actions act as strongly outside the instrument regions as inside (flow-matching loss at τ = 0.9 with another window's action, inside / outside: slots +135 % / +154 %, monolithic +101 % / +107 %; EG-SWM's arm actions +68 % / +33 %), so they steer no particular instrument. The second group keeps the endoscope controllable, and EG-SWM is by far the most faithful in it: 0.70 dB [0.62, 0.79] ahead of SurgWM's 12-code action, which carries little (another window's code raises the replay error by 10 %) and falls below the copied frame (−0.29 dB [−0.46, −0.12]), and 1.57 dB [1.45, 1.69] ahead of robot-state tokens with the endoscope action. **EG-SWM is the only interface that steers each instrument and the endoscope and still beats the copied frame in PSNR and SSIM.** Under action replay, an action inferred from the real future can carry how that future looks; the more of the frame it covers, the more it carries, the endoscope motion included, and none of the frame-wide actions has a controller that could set it in a simulation.
 
+**Where the fidelity gap comes from.** Only 49 % of the arm slots are bound to an image region (the detector misses an instrument, or cannot match it to the robot log), and EG-SWM's arm actions reach only bound instruments. Grouping the 1,000 test windows by how many mounted instruments are bound for most of the predicted steps ([docs/results/e1_binding.md](docs/results/e1_binding.md)):
+
+| PSNR | none bound (93 windows) | one bound (179) | two or more bound (728) |
+|---|---:|---:|---:|
+| EG-SWM | 22.94 | 20.83 | 22.17 |
+| monolithic latent + endoscope | 25.10 | 21.58 | 22.35 |
+| 4 slots + endoscope | **25.32** | **21.85** | **22.67** |
+| SurgWM-style VQ + endoscope | 23.73 | 20.36 | 21.23 |
+| copy last context frame | 23.79 | 20.68 | 21.54 |
+
+With two or more instruments bound (73 % of the windows) EG-SWM trails the monolithic latent by only 0.18 dB and the slots by 0.50 dB; with none bound it trails them by 2.2 and 2.4 dB and falls below the copied frame. The frame-wide actions do not depend on the binding. More of the gap can therefore be closed by binding more instruments (detector recall, matching) than by changing the action space.
+
 **What each part of EG-SWM adds.** The endoscope action is worth 0.49 dB [0.39, 0.61], in all 19 cases. Without it the arm actions take on part of the frame-wide motion (another window's arm actions raise the τ = 0.9 loss outside the arm regions by 68 % instead of 33 %) and become less local (2.02× instead of 2.42×). Learned arm actions are worth 2.23 dB [2.01, 2.44] over robot-state tokens (both without the endoscope action). The state tokens add 0.33 dB [0.27, 0.39] over no actions and cut unmounted instruments from 13.0 % to 9.7 %; with them, the endoscope action is worth 1.15 dB [1.03, 1.26] and is realised at 79 %.
 
-**The scene action: a better picture, a weaker endoscope.** On identical windows the scene action improves every case (+0.38 dB PSNR [0.30, 0.45], +0.010 SSIM, −0.008 LPIPS, which ties the copied frame), makes the arm actions more local and the instruments slightly more faithful. But with the learned actions zeroed, a commanded endoscope move is realised at only 17–27 % of its magnitude, against 48–88 % for EG-SWM; the direction stays right. This is the pilot's finding at full scale, and it fits the hypothesis above: the scene action carries the appearance of what the moving endoscope reveals, so the model leaves part of the endoscope motion to it. **EG-SWM therefore stays without it.** Every EG-SWM action has a physical controller (the arms and the endoscope), whereas the scene action has none: to simulate a commanded procedure it would have to be sampled from a prior that does not exist yet, and set to zero it suppresses the endoscope motion that a surgeon commands. The scene action is reported as an ablation of the fidelity–control trade-off.
+**The scene action: a better picture, a weaker endoscope.** On identical windows the scene action improves every case (+0.37 dB PSNR [0.30, 0.45], +0.010 SSIM, −0.008 LPIPS, which ties the copied frame), makes the arm actions more local and the instruments slightly more faithful. But with the learned actions zeroed, a commanded endoscope move is realised at only 17–27 % of its magnitude, against 48–88 % for EG-SWM; the direction stays right. This is the pilot's finding at full scale, and it fits the hypothesis above: the scene action carries the appearance of what the moving endoscope reveals, so the model leaves part of the endoscope motion to it. **EG-SWM therefore stays without it.** Every EG-SWM action has a physical controller (the arms and the endoscope), whereas the scene action has none: to simulate a commanded procedure it would have to be sampled from a prior that does not exist yet, and set to zero it suppresses the endoscope motion that a surgeon commands. The scene action is reported as an ablation of the fidelity–control trade-off.
 
 Two evaluation problems surfaced on the way, and both are fixed:
 * **Too few cases.** `--limit` took the first windows of a case-ordered list, so the first numbers came from 10 (fidelity) and 3 (control) of the 20 test cases. It now spreads the windows evenly over all cases.
 * **A test case with no surgery.** With all cases included, copying the last frame scored 23.8 dB, ahead of the model. One test case (`case_126`) is 78 % recorder colour bars (no video input) and otherwise shows no surgery, and copying it scores 63 dB. It is now excluded (Data facts below).
 
-**Sampler** (`S_arms`, 200 test windows spread over the 20 cases; job `204`):
+**Sampler** (`S_arms`, 200 test windows spread over the 20 test cases, so still including `case_126`; job `204`, repeated without it for EG-SWM and four other interfaces by job `330`):
 
 | Euler steps, guidance | PSNR ↑ | SSIM ↑ | LPIPS ↓ | PSNR at 2.8 s | ΔPSNR |
 |---|---:|---:|---:|---:|---:|
@@ -262,9 +280,9 @@ The mean motion of moving clips peaks at 5.3 s, 2.2× its level before the onset
 | Dataset | Role | Access | Local status |
 |---|---|---|---|
 | SurgVU (Intuitive) | training + main benchmark | public | `data/raw/surgvu*` |
-| Open-H-Embodiment: SutureBot, SRT-H porcine cholecystectomy, CRCD | kinematic grounding, kinematics-conditioned benchmarks | CC-BY-4.0 | SutureBot, CRCD prepared and sync-checked; SRT-H downloaded (107 GB), prepared after SurgVU encoding |
+| Open-H-Embodiment: SutureBot, SRT-H porcine cholecystectomy, CRCD | kinematic grounding, kinematics-conditioned benchmarks | CC-BY-4.0 | all three prepared and sync-checked (SRT-H: 107 GB, 16,588 windows) |
 | JIGSAWS | kinematic grounding (da Vinci) | data-use agreement | prepared: 103 of 120 trials (17 have kinematics but no video), 5,763 windows; 86/103 episodes pass the video–kinematics sync check |
-| SAR-RARP50 | clinical (human) transfer | CC BY-NC-SA 4.0 | prepared: 4,901 windows |
+| SAR-RARP50 | clinical (human) transfer (E4) | CC BY-NC-SA 4.0 | prepared: 4,901 windows (40 training, 10 test videos); no kinematics, instruments bound to arm slots by image side |
 | AutoLaparo | external test of the camera action (laparoscope motion labels) | request form | Task 2 downloaded (300 clips, 3.8 GB); Tasks 1 and 3 not needed |
 
 PhysioNet holds no surgical video with robot kinematics, so nothing is taken from it ([details](docs/02_external_data.md)).
@@ -292,12 +310,13 @@ src/swm/                  package
 scripts/data/             audits, splits, downloads, 10 fps cache, latents, instrument detection, arm binding,
                           console readout, external-dataset preparation, sync check
 scripts/train/            world-model and SurgWM training
-scripts/eval/             tokenizer benchmark, evaluation sets, E1 fidelity / control, action-use diagnostics,
-                          E2 probes, camera-action validation, result aggregation
+scripts/eval/             tokenizer benchmark, evaluation sets, E1 fidelity / control (also of the SurgWM
+                          re-implementation), action-use diagnostics, E2 probes, camera-action validation,
+                          result aggregation
 scripts/queue/            sequential GPU job queue; commit and push of the result tables after each job
 scripts/release/          finished runs -> Hugging Face (EMA weights, configs, evaluation summaries, model card)
 scripts/run_services.sh   long-running pipeline stages as systemd user units
-scripts/docs/             sample export, figures, TikZ diagram build, arXiv BibTeX
+scripts/docs/             sample export, figures and model rollouts for them, TikZ diagram build, arXiv BibTeX
 configs/experiments/      one shell script per queued job (see below)
 configs/splits/           case-level split; parts used by the pilots
 configs/stats/            camera-action normalisation
@@ -342,8 +361,10 @@ python scripts/train/train_wm.py --name S_arms --action arms --size S --steps 60
 #   --action none|state|global|global_vq|slots|arms|kin, --no-camera, --fwd 0 (no forward decoder), --kl,
 #   --arm-pool region|global|shuffled, --use-ui, --data <external>, --init <run>, --stems <parts.json>, --drop-no-signal (from size B), --resume
 python scripts/train/train_surgwm.py --stage tokenizer    # then --stage lam, --stage dynamics
+python scripts/eval/eval_surgwm.py --fvd                  # SurgWM on the E1 windows
 python scripts/eval/eval_wm.py --run S_arms --fvd         # E1 fidelity against real frames (action replay)
 python scripts/eval/eval_control.py --run S_arms          # E1 camera control, locality, embodiment consistency
+#   --tests camera --scale 2 --tag control_scale2.0: endoscope commands at twice the size only
 python scripts/eval/diagnose_actions.py --run S_arms      # are the learned actions used? (collapse check)
 python scripts/eval/probe_kinematics.py --data suturebot --runs S_arms S_global --baselines   # E2
 python scripts/eval/validate_camera_action.py --data crcd # E2b on CRCD
@@ -351,9 +372,11 @@ python scripts/eval/validate_camera_autolaparo.py         # E2b on AutoLaparo
 python scripts/eval/aggregate.py                          # docs/results/*.md, paper/tmrb/tables/*.tex
 python scripts/eval/tokenizer_bench.py                    # tokenizer comparison
 scripts/docs/build_diagrams.sh                            # TikZ -> PDF/PNG
+python scripts/docs/make_rollouts.py                      # figures from model rollouts, time of one prediction
+python scripts/docs/figure_horizon.py                     # PSNR over the horizon
 ```
 
-**Job queue.** Every experiment is a shell script in `configs/experiments/`; copies in `outputs/queue/pending/` are run in name order by `scripts/queue/run_queue.py` (logs in `outputs/queue/logs/`, history in `outputs/queue/history.tsv`). After its evaluation, each job regenerates the result tables (`scripts/eval/aggregate.py`: E1, E2 and E3 in `docs/results/` and `paper/tmrb/tables/`), publishes the weights it trained to Hugging Face and pushes the tables (`scripts/queue/commit_results.sh`); an upload or push that fails for want of a network is caught up by the next job. `scripts/run_services.sh queue` starts the runner as a user unit with a 72 GB memory cap, under which one out-of-memory job fails alone instead of stopping the queue. The unit does not survive a reboot: move the job left in `outputs/queue/running/` back to `pending/` (training jobs resume from their last checkpoint, saved every 5k steps) and start it again.
+**Job queue.** Every experiment is a shell script in `configs/experiments/`; copies in `outputs/queue/pending/` are run in name order by `scripts/queue/run_queue.py` (logs in `outputs/queue/logs/`, history in `outputs/queue/history.tsv`). After its evaluation, each job regenerates the result tables (`scripts/eval/aggregate.py`: E1 to E6, seeds, sensitivity, cost, in `docs/results/` and `paper/tmrb/tables/`), publishes the weights it trained to Hugging Face and pushes the tables (`scripts/queue/commit_results.sh`); an upload or push that fails for want of a network is caught up by the next job. `scripts/run_services.sh queue` starts the runner as a user unit with a 72 GB memory cap, under which one out-of-memory job fails alone instead of stopping the queue. The unit does not survive a reboot: move the job left in `outputs/queue/running/` back to `pending/` (training jobs resume from their last checkpoint, saved every 5k steps) and start it again.
 
 | Jobs | Content |
 |---|---|
@@ -363,9 +386,16 @@ scripts/docs/build_diagrams.sh                            # TikZ -> PDF/PNG
 | 150 | reference rows (repeat last context frame, VAE reconstruction) |
 | 200–280 | E1 at S (60k steps): `arms`, `arms` + scene (205), `global`, `global_vq`, `slots`, `state`, `none`; `arms`, `global`, `state` without the camera action |
 | 300–320 | E6 ablations: pooling over the whole frame, no forward decoder, arm regions shuffled across arms, console readout in the arm tokens |
-| 390–392 | prepare JIGSAWS, SAR-RARP50, SRT-H (`swm-external` service, next to training) |
+| 301, 302 | SurgWM smoke test (300 steps per stage, 32-window evaluation); figures from model rollouts and the time of one prediction |
+| 330–332 | sensitivity without `case_126`: Euler steps and guidance, 1–3 context latents, endoscope commands at 0.5–2× (EG-SWM and four other interfaces) |
+| 390–392 | prepare JIGSAWS, SAR-RARP50, SRT-H (done by the `swm-external` service, next to training) |
 | 400–450 | E2: zero-shot kinematic probes; action-free adaptation to SutureBot, CRCD, JIGSAWS; probes after adaptation |
 | 499–508 | E3 on SutureBot: reference rows; kinematics-conditioned prediction from scratch / from `S_arms` / from `S_global`, 10 / 25 / 100 % of the training episodes |
+| 600–603 | SurgWM re-implementation: VQ-VAE tokenizer, latent action model, MaskGIT dynamics (60k steps each), evaluation on the E1 windows |
+| 610–619 | E3 on SRT-H, as on SutureBot |
+| 620–625 | E4 on SAR-RARP50: reference rows and SurgVU models zero-shot; adaptation of EG-SWM, monolithic, VQ and slots (5k steps); EG-SWM from scratch with the same budget |
+| 710–717 | seeds 1 and 2 of `S_arms`, `S_global`, `S_slots`, `S_global_vq` |
+| 720–731 | E6: KL weight 10⁻³ and 10⁻⁵; 10 % and 30 % of the training cases |
 
 Raw SurgVU data comes from the organisers (`storage.googleapis.com/isi-surgvu/…`); links for data-use-agreement datasets live in the Git-ignored `configs/private/dataset_links.json`. A `.env` with `hf=<token>` and `HF_USER=<user>` enables weight uploads (`swm.hub.push_folder`).
 

@@ -1,0 +1,86 @@
+{
+ "windows": {
+  "none bound": 93,
+  "one bound": 179,
+  "two or more bound": 728
+ },
+ "rows": [
+  {
+   "run": "copy_last",
+   "label": "Copy last context frame",
+   "none bound": 23.788803100585938,
+   "one bound": 20.681636810302734,
+   "two or more bound": 21.5391902923584
+  },
+  {
+   "run": "S_none",
+   "label": "None (unconditional)",
+   "none bound": 20.273645401000977,
+   "one bound": 18.077333450317383,
+   "two or more bound": 19.013334274291992
+  },
+  {
+   "run": "S_state_nocam",
+   "label": "Robot state",
+   "none bound": 20.630964279174805,
+   "one bound": 18.277442932128906,
+   "two or more bound": 19.368690490722656
+  },
+  {
+   "run": "S_state",
+   "label": "Robot state + camera",
+   "none bound": 22.362388610839844,
+   "one bound": 19.52774429321289,
+   "two or more bound": 20.41588592529297
+  },
+  {
+   "run": "S_global_nocam",
+   "label": "Monolithic latent (Genie)",
+   "none bound": 24.973939895629883,
+   "one bound": 21.59097671508789,
+   "two or more bound": 22.39497947692871
+  },
+  {
+   "run": "S_global",
+   "label": "Monolithic latent + camera",
+   "none bound": 25.10458755493164,
+   "one bound": 21.583269119262695,
+   "two or more bound": 22.348512649536133
+  },
+  {
+   "run": "S_global_vq",
+   "label": "Monolithic VQ + camera (SurgWM-style)",
+   "none bound": 23.726438522338867,
+   "one bound": 20.360441207885742,
+   "two or more bound": 21.225927352905273
+  },
+  {
+   "run": "S_slots",
+   "label": "Slots + camera (FLAM-style)",
+   "none bound": 25.315284729003906,
+   "one bound": 21.85213279724121,
+   "two or more bound": 22.66637420654297
+  },
+  {
+   "run": "S_arms_nocam",
+   "label": "EG-SWM, no camera action",
+   "none bound": 20.106544494628906,
+   "one bound": 20.41572380065918,
+   "two or more bound": 21.96394920349121
+  },
+  {
+   "run": "S_arms",
+   "label": "EG-SWM",
+   "none bound": 22.94092559814453,
+   "one bound": 20.82666778564453,
+   "two or more bound": 22.173511505126953
+  },
+  {
+   "run": "S_arms_scene",
+   "label": "EG-SWM + scene action",
+   "none bound": 24.557674407958984,
+   "one bound": 21.27490997314453,
+   "two or more bound": 22.371286392211914
+  }
+ ]
+}

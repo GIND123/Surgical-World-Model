@@ -14,6 +14,7 @@ without any result is not written.
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -301,6 +302,137 @@ def sensitivity() -> None:
               tabular("lccc", [r"Model & Command scale & Mean gain & Right direction \\"], rows_tex))
 
 
+def paired() -> None:
+    """Each model against EG-SWM on the same test windows: per-case differences (model minus EG-SWM), their mean with
+    a 95 % bootstrap interval over cases, and the number of cases in which EG-SWM is better."""
+    base = OUTPUTS / "eval" / "S_arms" / "replay.npz"
+    if not base.exists():
+        return
+    b = np.load(base)
+    cases = sorted(set(b["case"].tolist()))
+    pick = np.random.default_rng(0).integers(0, len(cases), (2000, len(cases)))
+
+    def per_case(d, prefix: str, m: str) -> np.ndarray:
+        x = d[f"{prefix}_{m}"].mean(1)
+        return np.array([x[d["case"] == c].mean() for c in cases])
+
+    srcs = [("copy_last", "Copy last context frame", OUTPUTS / "eval" / "reference" / "reference.npz", "copy_last")]
+    srcs += [(run, label, OUTPUTS / "eval" / run / "replay.npz", "pred") for run, label, *_ in ROWS + ABLATIONS
+             if run != "S_arms"]
+    table = []
+    for run, label, npz, prefix in srcs:
+        if not npz.exists():
+            continue
+        d = np.load(npz)
+        if "case" not in d or not np.array_equal(d["window"], b["window"]):
+            continue                                                # not the E1 windows
+        row = dict(run=run, label=label)
+        for m, better in (("psnr", 1), ("ssim", 1), ("lpips", -1)):
+            diff = per_case(d, prefix, m) - per_case(b, "pred", m)
+            row[f"d_{m}"] = float(diff.mean())
+            row[f"d_{m}_ci"] = np.quantile(diff[pick].mean(1), [0.025, 0.975]).tolist()
+            row[f"egswm_better_{m}"] = int((better * diff < 0).sum())
+        row["n_cases"] = len(cases)
+        table.append(row)
+    if not table:
+        return
+    cols = [("d_psnr", "ΔPSNR", "{:.2f}"), ("d_ssim", "ΔSSIM", "{:.3f}"), ("d_lpips", "ΔLPIPS", "{:.3f}")]
+    lines = ["| Model | " + " | ".join(f"{h} vs EG-SWM | EG-SWM better ({h[1:]})" for _, h, _ in cols) + " |",
+             "|" + "---|" * (2 * len(cols) + 1)]
+    rows_tex = []
+    for r in table:
+        n = r["n_cases"]
+        lines.append(f"| {r['label']} | " + " | ".join(f"{cell(r, k, f)} | {r['egswm_better_' + k[2:]]}/{n}"
+                                                       for k, _, f in cols) + " |")
+        rows_tex.append(tex(r["label"]) + " & " + " & ".join(f"{cell(r, k, f, tex=True)} & {r['egswm_better_' + k[2:]]}"
+                                                             for k, _, f in cols) + r" \\")
+    head = "Model & " + " & ".join(rf"{tex(h)} & better" for _, h, _ in cols) + r" \\"
+    write("e1_paired", table, lines, tabular("l" + "cc" * len(cols), [head], rows_tex))
+
+
+def binding() -> None:
+    """E1 fidelity by how many of a window's mounted instruments are bound to an arm region (detected and matched
+    through the robot log) over the predicted steps; EG-SWM's arm actions only reach bound instruments."""
+    sys.path.insert(0, str(ROOT / "scripts" / "eval"))
+    from eval_wm import EvalWindows, spread
+
+    ev = EvalWindows("test")
+    idx = spread(len(ev), 1000)
+    n_bound = np.zeros(len(idx), int)
+    for j, i in enumerate(idx):
+        p, w = ev.index[i]
+        c = ev.parts[p]["cond"]
+        occ, box = c["occupant"][w][2:], c["boxes"][w][2:]               # predicted latent steps
+        inst = (occ >= 2).all(0)                                         # instrument arms (not empty, not endoscope)
+        n_bound[j] = int((inst & (np.isfinite(box[..., 0]).mean(0) >= 0.5)).sum())
+    groups = [("none bound", n_bound == 0), ("one bound", n_bound == 1), ("two or more bound", n_bound >= 2)]
+    srcs = [("copy_last", "Copy last context frame", OUTPUTS / "eval" / "reference" / "reference.npz", "copy_last")]
+    srcs += [(run, label, OUTPUTS / "eval" / run / "replay.npz", "pred") for run, label, *_ in ROWS]
+    table = []
+    for run, label, npz, prefix in srcs:
+        if not npz.exists():
+            continue
+        d = np.load(npz)
+        if not np.array_equal(d["window"], idx):
+            continue
+        x = d[f"{prefix}_psnr"].mean(1)
+        table.append(dict(run=run, label=label, **{g: float(x[m].mean()) for g, m in groups if m.any()}))
+    if not table:
+        return
+    heads = [f"{g} ({int(m.sum())} windows)" for g, m in groups]
+    lines = ["| Model | " + " | ".join(heads) + " |", "|" + "---|" * (len(heads) + 1)]
+    lines += [f"| {r['label']} | " + " | ".join(cell(r, g, "{:.2f}") for g, _ in groups) + " |" for r in table]
+    rows_tex = [tex(r["label"]) + " & " + " & ".join(cell(r, g, "{:.2f}", tex=True) for g, _ in groups) + r" \\"
+                for r in table]
+    head = [rf" & \multicolumn{{{len(groups)}}}{{c}}{{Instruments bound (windows)}} \\",
+            rf"\cmidrule(lr){{2-{len(groups) + 1}}}",
+            "Model & " + " & ".join(f"{g.split()[0]} ({int(m.sum())})".replace("two", r"$\geq$2")
+                                    for g, m in groups) + r" \\"]
+    data = dict(windows={g: int(m.sum()) for g, m in groups}, rows=table)
+    write("e1_binding", data, lines, tabular("l" + "c" * len(groups), head, rows_tex))
+
+
+def cost() -> None:
+    """Parameters, training time and memory (from the training logs) and the time of one 2.8 s prediction
+    (outputs/eval/timing.json, written by scripts/docs/make_rollouts.py)."""
+    timing = OUTPUTS / "eval" / "timing.json"
+    timing = json.loads(timing.read_text()) if timing.exists() else {}
+    table = []
+    for run, label, *_ in ROWS + ABLATIONS:
+        log, cfg = OUTPUTS / "runs" / run / "log.jsonl", OUTPUTS / "runs" / run / "config.json"
+        if not (log.exists() and cfg.exists() and (OUTPUTS / "eval" / run / "replay.json").exists()):
+            continue
+        train = json.loads(cfg.read_text())["train"]
+        recs = []
+        for line in log.read_text(errors="replace").splitlines():
+            try:
+                recs.append(json.loads(line))
+            except json.JSONDecodeError:                                 # a line cut short by the power cut
+                continue
+        recs = [r for r in recs if "win_per_s" in r]
+        speed = float(np.median([r["win_per_s"] for r in recs]))
+        steps = max(r["step"] for r in recs)
+        row = dict(run=run, label=label, size=train["size"], steps=steps, train_h=steps * train["bs"] / speed / 3600,
+                   win_per_s=speed, train_mem_gb=float(max(r["mem_gb"] for r in recs)))
+        if run in timing:
+            row.update(parameters=timing[run]["parameters"], gen_s=timing[run]["generate_s"],
+                       decode_s=timing[run]["decode_s"], infer_mem_gb=timing[run]["peak_gb"])
+        table.append(row)
+    if not table:
+        return
+    cols = [("train_h", "Training (h)", "{:.1f}"), ("win_per_s", "Windows/s", "{:.0f}"),
+            ("train_mem_gb", "Training memory (GB)", "{:.1f}"), ("gen_s", "Prediction (s)", "{:.2f}"),
+            ("decode_s", "VAE decoding (s)", "{:.2f}"), ("infer_mem_gb", "Inference memory (GB)", "{:.1f}")]
+    lines = ["| Model | Size | Steps | " + " | ".join(h for _, h, _ in cols) + " |", "|" + "---|" * (len(cols) + 3)]
+    lines += [f"| {r['label']} | {r['size']} | {r['steps']} | " + " | ".join(cell(r, k, f) for k, _, f in cols)
+              + " |" for r in table]
+    rows_tex = [tex(f"{r['label']} & {r['size']} & {r['steps']} & ")
+                + " & ".join(cell(r, k, f, tex=True) for k, _, f in cols) + r" \\" for r in table]
+    write("cost", table, lines, tabular("lcc" + "c" * len(cols),
+                                        ["Model & Size & Steps & " + " & ".join(h for _, h, _ in cols) + r" \\"],
+                                        rows_tex))
+
+
 def e2() -> None:
     """Kinematic grounding: R^2 of the linear probes on held-out episodes per target, averaged over the two arms
     (per arm in the JSON), for model-free features, frozen SurgVU models and models adapted without kinematics."""
@@ -408,6 +540,9 @@ def e4() -> None:
 
 def main() -> None:
     e1()
+    paired()
+    binding()
+    cost()
     e6()
     seeds()
     sensitivity()
