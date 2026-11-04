@@ -73,11 +73,11 @@
 \expandafter\def\csname val@cost/S/speed\endcsname{96--117}
 \expandafter\def\csname val@cost/S/train_h\endcsname{4.6--5.6}
 \expandafter\def\csname val@cost/S_arms/decode_s\endcsname{0.37}
-\expandafter\def\csname val@cost/S_arms/gen_s\endcsname{0.29}
+\expandafter\def\csname val@cost/S_arms/gen_s\endcsname{0.28}
 \expandafter\def\csname val@cost/S_arms/infer_mem\endcsname{3.7}
 \expandafter\def\csname val@cost/S_arms/realtime\endcsname{4.3}
 \expandafter\def\csname val@cost/S_global/decode_s\endcsname{0.37}
-\expandafter\def\csname val@cost/S_global/gen_s\endcsname{0.29}
+\expandafter\def\csname val@cost/S_global/gen_s\endcsname{0.28}
 \expandafter\def\csname val@cost/S_global/infer_mem\endcsname{3.7}
 \expandafter\def\csname val@cost/S_global/realtime\endcsname{4.3}
 \expandafter\def\csname val@ctl/S_arms/area\endcsname{7.2}
@@ -88,6 +88,7 @@
 \expandafter\def\csname val@ctl/S_arms/gain_range\endcsname{48--88}
 \expandafter\def\csname val@ctl/S_arms/halluc\endcsname{7.6}
 \expandafter\def\csname val@ctl/S_arms/locality\endcsname{2.42}
+\expandafter\def\csname val@ctl/S_arms/locality_ci\endcsname{[2.29, 2.70]}
 \expandafter\def\csname val@ctl/S_arms/real_halluc\endcsname{5.3}
 \expandafter\def\csname val@ctl/S_arms/share\endcsname{18}
 \expandafter\def\csname val@ctl/S_arms/sign_min\endcsname{99.7}
@@ -96,6 +97,7 @@
 \expandafter\def\csname val@ctl/S_arms_nocam/ecs_r\endcsname{0.81}
 \expandafter\def\csname val@ctl/S_arms_nocam/halluc\endcsname{8.0}
 \expandafter\def\csname val@ctl/S_arms_nocam/locality\endcsname{2.02}
+\expandafter\def\csname val@ctl/S_arms_nocam/locality_ci\endcsname{[1.82, 2.17]}
 \expandafter\def\csname val@ctl/S_arms_nocam/real_halluc\endcsname{5.3}
 \expandafter\def\csname val@ctl/S_arms_nocam/share\endcsname{15}
 \expandafter\def\csname val@ctl/S_arms_nofwd/area\endcsname{7.2}
@@ -106,6 +108,7 @@
 \expandafter\def\csname val@ctl/S_arms_nofwd/gain_range\endcsname{40--88}
 \expandafter\def\csname val@ctl/S_arms_nofwd/halluc\endcsname{7.4}
 \expandafter\def\csname val@ctl/S_arms_nofwd/locality\endcsname{2.21}
+\expandafter\def\csname val@ctl/S_arms_nofwd/locality_ci\endcsname{[2.09, 2.40]}
 \expandafter\def\csname val@ctl/S_arms_nofwd/real_halluc\endcsname{5.3}
 \expandafter\def\csname val@ctl/S_arms_nofwd/share\endcsname{17}
 \expandafter\def\csname val@ctl/S_arms_nofwd/sign_min\endcsname{99.7}
@@ -117,6 +120,7 @@
 \expandafter\def\csname val@ctl/S_arms_poolglobal/gain_range\endcsname{48--79}
 \expandafter\def\csname val@ctl/S_arms_poolglobal/halluc\endcsname{7.9}
 \expandafter\def\csname val@ctl/S_arms_poolglobal/locality\endcsname{1.84}
+\expandafter\def\csname val@ctl/S_arms_poolglobal/locality_ci\endcsname{[1.71, 2.03]}
 \expandafter\def\csname val@ctl/S_arms_poolglobal/real_halluc\endcsname{5.3}
 \expandafter\def\csname val@ctl/S_arms_poolglobal/share\endcsname{14}
 \expandafter\def\csname val@ctl/S_arms_poolglobal/sign_min\endcsname{99.3}
@@ -128,6 +132,7 @@
 \expandafter\def\csname val@ctl/S_arms_scene/gain_range\endcsname{17--27}
 \expandafter\def\csname val@ctl/S_arms_scene/halluc\endcsname{7.2}
 \expandafter\def\csname val@ctl/S_arms_scene/locality\endcsname{3.50}
+\expandafter\def\csname val@ctl/S_arms_scene/locality_ci\endcsname{[3.06, 3.82]}
 \expandafter\def\csname val@ctl/S_arms_scene/real_halluc\endcsname{5.3}
 \expandafter\def\csname val@ctl/S_arms_scene/share\endcsname{23}
 \expandafter\def\csname val@ctl/S_arms_scene/sign_min\endcsname{99.7}
@@ -139,6 +144,7 @@
 \expandafter\def\csname val@ctl/S_global/gain_range\endcsname{10--21}
 \expandafter\def\csname val@ctl/S_global/halluc\endcsname{7.4}
 \expandafter\def\csname val@ctl/S_global/locality\endcsname{1.46}
+\expandafter\def\csname val@ctl/S_global/locality_ci\endcsname{[1.31, 1.56]}
 \expandafter\def\csname val@ctl/S_global/real_halluc\endcsname{5.3}
 \expandafter\def\csname val@ctl/S_global/share\endcsname{11}
 \expandafter\def\csname val@ctl/S_global/sign_min\endcsname{99.3}
@@ -147,6 +153,7 @@
 \expandafter\def\csname val@ctl/S_global_nocam/ecs_r\endcsname{0.81}
 \expandafter\def\csname val@ctl/S_global_nocam/halluc\endcsname{8.6}
 \expandafter\def\csname val@ctl/S_global_nocam/locality\endcsname{1.43}
+\expandafter\def\csname val@ctl/S_global_nocam/locality_ci\endcsname{[1.32, 1.51]}
 \expandafter\def\csname val@ctl/S_global_nocam/real_halluc\endcsname{5.3}
 \expandafter\def\csname val@ctl/S_global_nocam/share\endcsname{11}
 \expandafter\def\csname val@ctl/S_global_vq/area\endcsname{7.2}
@@ -157,6 +164,7 @@
 \expandafter\def\csname val@ctl/S_global_vq/gain_range\endcsname{42--103}
 \expandafter\def\csname val@ctl/S_global_vq/halluc\endcsname{8.2}
 \expandafter\def\csname val@ctl/S_global_vq/locality\endcsname{1.53}
+\expandafter\def\csname val@ctl/S_global_vq/locality_ci\endcsname{[1.41, 1.62]}
 \expandafter\def\csname val@ctl/S_global_vq/real_halluc\endcsname{5.3}
 \expandafter\def\csname val@ctl/S_global_vq/share\endcsname{12}
 \expandafter\def\csname val@ctl/S_global_vq/sign_min\endcsname{99.7}
@@ -172,6 +180,7 @@
 \expandafter\def\csname val@ctl/S_slots/gain_range\endcsname{2--8}
 \expandafter\def\csname val@ctl/S_slots/halluc\endcsname{7.8}
 \expandafter\def\csname val@ctl/S_slots/locality\endcsname{1.44}
+\expandafter\def\csname val@ctl/S_slots/locality_ci\endcsname{[1.37, 1.51]}
 \expandafter\def\csname val@ctl/S_slots/real_halluc\endcsname{5.3}
 \expandafter\def\csname val@ctl/S_slots/share\endcsname{11}
 \expandafter\def\csname val@ctl/S_slots/sign_min\endcsname{98.3}
@@ -193,6 +202,10 @@
 \expandafter\def\csname val@ctl/reference/halluc\endcsname{5.3}
 \expandafter\def\csname val@ctl/reference/real_halluc\endcsname{5.3}
 \expandafter\def\csname val@derived/pool_way\endcsname{60}
+\expandafter\def\csname val@diff/S_arms-S_arms_nocam/locality\endcsname{0.40}
+\expandafter\def\csname val@diff/S_arms-S_arms_nocam/locality_ci\endcsname{[0.31, 0.62]}
+\expandafter\def\csname val@diff/S_arms-S_arms_nocam/locality_losses\endcsname{2}
+\expandafter\def\csname val@diff/S_arms-S_arms_nocam/locality_wins\endcsname{17}
 \expandafter\def\csname val@diff/S_arms-S_arms_nocam/losses\endcsname{0}
 \expandafter\def\csname val@diff/S_arms-S_arms_nocam/lpips\endcsname{$-$0.012}
 \expandafter\def\csname val@diff/S_arms-S_arms_nocam/lpips_ci\endcsname{[$-$0.015, $-$0.009]}
@@ -201,6 +214,10 @@
 \expandafter\def\csname val@diff/S_arms-S_arms_nocam/ssim\endcsname{0.019}
 \expandafter\def\csname val@diff/S_arms-S_arms_nocam/ssim_ci\endcsname{[0.015, 0.023]}
 \expandafter\def\csname val@diff/S_arms-S_arms_nocam/wins\endcsname{19}
+\expandafter\def\csname val@diff/S_arms-S_arms_nofwd/locality\endcsname{0.21}
+\expandafter\def\csname val@diff/S_arms-S_arms_nofwd/locality_ci\endcsname{[0.10, 0.42]}
+\expandafter\def\csname val@diff/S_arms-S_arms_nofwd/locality_losses\endcsname{9}
+\expandafter\def\csname val@diff/S_arms-S_arms_nofwd/locality_wins\endcsname{10}
 \expandafter\def\csname val@diff/S_arms-S_arms_nofwd/losses\endcsname{0}
 \expandafter\def\csname val@diff/S_arms-S_arms_nofwd/lpips\endcsname{$-$0.008}
 \expandafter\def\csname val@diff/S_arms-S_arms_nofwd/lpips_ci\endcsname{[$-$0.009, $-$0.007]}
@@ -209,6 +226,26 @@
 \expandafter\def\csname val@diff/S_arms-S_arms_nofwd/ssim\endcsname{0.011}
 \expandafter\def\csname val@diff/S_arms-S_arms_nofwd/ssim_ci\endcsname{[0.010, 0.012]}
 \expandafter\def\csname val@diff/S_arms-S_arms_nofwd/wins\endcsname{19}
+\expandafter\def\csname val@diff/S_arms-S_arms_poolglobal/locality\endcsname{0.58}
+\expandafter\def\csname val@diff/S_arms-S_arms_poolglobal/locality_ci\endcsname{[0.48, 0.76]}
+\expandafter\def\csname val@diff/S_arms-S_arms_poolglobal/locality_losses\endcsname{0}
+\expandafter\def\csname val@diff/S_arms-S_arms_poolglobal/locality_wins\endcsname{19}
+\expandafter\def\csname val@diff/S_arms-S_arms_scene/locality\endcsname{$-$1.09}
+\expandafter\def\csname val@diff/S_arms-S_arms_scene/locality_ci\endcsname{[$-$1.25, $-$0.71]}
+\expandafter\def\csname val@diff/S_arms-S_arms_scene/locality_losses\endcsname{19}
+\expandafter\def\csname val@diff/S_arms-S_arms_scene/locality_wins\endcsname{0}
+\expandafter\def\csname val@diff/S_arms-S_global/locality\endcsname{0.96}
+\expandafter\def\csname val@diff/S_arms-S_global/locality_ci\endcsname{[0.83, 1.22]}
+\expandafter\def\csname val@diff/S_arms-S_global/locality_losses\endcsname{0}
+\expandafter\def\csname val@diff/S_arms-S_global/locality_wins\endcsname{19}
+\expandafter\def\csname val@diff/S_arms-S_global_nocam/locality\endcsname{0.99}
+\expandafter\def\csname val@diff/S_arms-S_global_nocam/locality_ci\endcsname{[0.88, 1.25]}
+\expandafter\def\csname val@diff/S_arms-S_global_nocam/locality_losses\endcsname{0}
+\expandafter\def\csname val@diff/S_arms-S_global_nocam/locality_wins\endcsname{19}
+\expandafter\def\csname val@diff/S_arms-S_global_vq/locality\endcsname{0.89}
+\expandafter\def\csname val@diff/S_arms-S_global_vq/locality_ci\endcsname{[0.77, 1.15]}
+\expandafter\def\csname val@diff/S_arms-S_global_vq/locality_losses\endcsname{0}
+\expandafter\def\csname val@diff/S_arms-S_global_vq/locality_wins\endcsname{19}
 \expandafter\def\csname val@diff/S_arms-S_global_vq/losses\endcsname{0}
 \expandafter\def\csname val@diff/S_arms-S_global_vq/lpips\endcsname{$-$0.019}
 \expandafter\def\csname val@diff/S_arms-S_global_vq/lpips_ci\endcsname{[$-$0.021, $-$0.017]}
@@ -225,6 +262,10 @@
 \expandafter\def\csname val@diff/S_arms-S_none/ssim\endcsname{0.108}
 \expandafter\def\csname val@diff/S_arms-S_none/ssim_ci\endcsname{[0.103, 0.114]}
 \expandafter\def\csname val@diff/S_arms-S_none/wins\endcsname{19}
+\expandafter\def\csname val@diff/S_arms-S_slots/locality\endcsname{0.98}
+\expandafter\def\csname val@diff/S_arms-S_slots/locality_ci\endcsname{[0.86, 1.23]}
+\expandafter\def\csname val@diff/S_arms-S_slots/locality_losses\endcsname{0}
+\expandafter\def\csname val@diff/S_arms-S_slots/locality_wins\endcsname{19}
 \expandafter\def\csname val@diff/S_arms-S_state/losses\endcsname{0}
 \expandafter\def\csname val@diff/S_arms-S_state/lpips\endcsname{$-$0.042}
 \expandafter\def\csname val@diff/S_arms-S_state/lpips_ci\endcsname{[$-$0.044, $-$0.039]}

@@ -768,7 +768,8 @@ def numbers() -> None:
     docs/results/numbers.json: main/<run>/<metric>[_ci], ctl/<run>/... (control and embodiment), diff/<a>-<b>/...
     (e1_contrasts), use/<run>/... (action-use diagnostics on the validation windows: replay error and its rise in %
     when the learned action (swap), the endoscope action (cam_swap) or both are replaced, inside and outside the arm
-    regions, and at noise level 0.9), bind/... (e1_binding) and horizon/... (EG-SWM minus the copied frame)."""
+    regions, and at noise level 0.9), diff/S_arms-<run>/locality[_ci, _wins, _losses] (e1_locality), bind/...
+    (e1_binding) and horizon/... (EG-SWM minus the copied frame)."""
     res, val = ROOT / "docs" / "results", {}
 
     def f(x: float, nd: int) -> str:
@@ -840,6 +841,13 @@ def numbers() -> None:
                 put(f"{k}/{m}", r[f"d_{m}"], nd, r[f"d_{m}_ci"])
             val[f"{k}/wins"], val[f"{k}/losses"] = str(r["a_better_psnr"]), str(r["n_cases"] - r["a_better_psnr"])
             val["main/n_cases"] = str(r["n_cases"])
+    if (res / "e1_locality.json").exists():                    # interval of each median; EG-SWM minus each run, paired
+        for r in json.loads((res / "e1_locality.json").read_text()):
+            put(f"ctl/{r['run']}/locality", r["locality"], 2, r["locality_ci"])
+            if "d_locality" in r:
+                k = f"diff/S_arms-{r['run']}/locality"
+                put(k, -r["d_locality"], 2, [-x for x in r["d_locality_ci"][::-1]])
+                val[f"{k}_wins"], val[f"{k}_losses"] = str(r["egswm_better"]), str(r["n_cases"] - r["egswm_better"])
     if (res / "e1_binding.json").exists():
         d = json.loads((res / "e1_binding.json").read_text())
         for k, v in d.get("coverage", {}).items():
