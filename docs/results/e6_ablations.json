@@ -10,7 +10,7 @@
   "pred_lpips": 0.16404592990875244,
   "pred_fvd": 186.1698967138498,
   "delta_psnr": 2.7751026153564453,
-  "locality_ratio_median": 2.4187209963063414,
+  "locality_ratio_median": 2.418720886778528,
   "ecs_precision": 0.9361555839308516,
   "ecs_recall": 0.8141978472578165,
   "ecs_hallucination_rate": 0.07631863274727434,

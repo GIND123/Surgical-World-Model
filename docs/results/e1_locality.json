@@ -1,0 +1,148 @@
+[
+ {
+  "run": "S_global_nocam",
+  "label": "Monolithic latent (Genie)",
+  "n_rows": 630,
+  "locality": 1.4331474057818103,
+  "locality_ci": [
+   1.315311664772391,
+   1.5060743634045703
+  ],
+  "d_locality": -0.9855734809967176,
+  "d_locality_ci": [
+   -1.246338003490814,
+   -0.8771930924766009
+  ],
+  "egswm_better": 19,
+  "n_cases": 19
+ },
+ {
+  "run": "S_global",
+  "label": "Monolithic latent + camera",
+  "n_rows": 630,
+  "locality": 1.4562351384123802,
+  "locality_ci": [
+   1.3132564175945194,
+   1.5631904991688574
+  ],
+  "d_locality": -0.9624857483661478,
+  "d_locality_ci": [
+   -1.2232552741077514,
+   -0.8330626775611315
+  ],
+  "egswm_better": 19,
+  "n_cases": 19
+ },
+ {
+  "run": "S_global_vq",
+  "label": "Monolithic VQ + camera (SurgWM-style)",
+  "n_rows": 630,
+  "locality": 1.5329221779429179,
+  "locality_ci": [
+   1.4141119403019888,
+   1.6208207403142716
+  ],
+  "d_locality": -0.8857987088356101,
+  "d_locality_ci": [
+   -1.151391665424632,
+   -0.7665856356221316
+  ],
+  "egswm_better": 19,
+  "n_cases": 19
+ },
+ {
+  "run": "S_slots",
+  "label": "Slots + camera (FLAM-style)",
+  "n_rows": 630,
+  "locality": 1.4435082039217537,
+  "locality_ci": [
+   1.3712097818725095,
+   1.514992134575455
+  ],
+  "d_locality": -0.9752126828567742,
+  "d_locality_ci": [
+   -1.230321347426637,
+   -0.8638236956934099
+  ],
+  "egswm_better": 19,
+  "n_cases": 19
+ },
+ {
+  "run": "S_arms_nocam",
+  "label": "EG-SWM, no camera action",
+  "n_rows": 630,
+  "locality": 2.0175016449121026,
+  "locality_ci": [
+   1.8176985042983458,
+   2.1719601624342806
+  ],
+  "d_locality": -0.4012192418664253,
+  "d_locality_ci": [
+   -0.6187711188211992,
+   -0.30618926224605497
+  ],
+  "egswm_better": 17,
+  "n_cases": 19
+ },
+ {
+  "run": "S_arms",
+  "label": "EG-SWM",
+  "n_rows": 630,
+  "locality": 2.418720886778528,
+  "locality_ci": [
+   2.293104120687095,
+   2.7032154293102724
+  ]
+ },
+ {
+  "run": "S_arms_scene",
+  "label": "EG-SWM + scene action",
+  "n_rows": 630,
+  "locality": 3.504308651952532,
+  "locality_ci": [
+   3.0629120652720228,
+   3.8188426428277547
+  ],
+  "d_locality": 1.085587765174004,
+  "d_locality_ci": [
+   0.7143615885094844,
+   1.245013584771317
+  ],
+  "egswm_better": 0,
+  "n_cases": 19
+ },
+ {
+  "run": "S_arms_nofwd",
+  "label": "EG-SWM, diffusion loss only",
+  "n_rows": 630,
+  "locality": 2.2118889177734395,
+  "locality_ci": [
+   2.0948338613844593,
+   2.401547494716798
+  ],
+  "d_locality": -0.20683196900508838,
+  "d_locality_ci": [
+   -0.42076797511411246,
+   -0.1003321052374879
+  ],
+  "egswm_better": 10,
+  "n_cases": 19
+ },
+ {
+  "run": "S_arms_poolglobal",
+  "label": "EG-SWM, arm actions not grounded",
+  "n_rows": 630,
+  "locality": 1.8415717887169434,
+  "locality_ci": [
+   1.7149274562851824,
+   2.0308323706413227
+  ],
+  "d_locality": -0.5771490980615845,
+  "d_locality_ci": [
+   -0.7614421763498871,
+   -0.48058786500835426
+  ],
+  "egswm_better": 19,
+  "n_cases": 19
+ }
+]
