@@ -164,12 +164,14 @@ def main() -> None:
 
     if "control" in parts:
         j = picks[0]
-        b = batch([ev[int(idx[j])], ev[int(idx[(j + 1) % len(idx)])]])   # second window: source of other actions
+        arm = int(np.flatnonzero(np.isfinite(ev[int(idx[j])]["boxes"][-1, :, 0].numpy()))[0])
+        src = next(int(idx[(j + d) % len(idx)]) for d in range(1, len(idx))     # the same arm bound elsewhere
+                   if np.isfinite(ev[int(idx[(j + d) % len(idx)])]["boxes"][-1, arm, 0].item()))
+        b = batch([ev[int(idx[j])], ev[src]])
         b1 = {k: v[:1] for k, v in b.items()}
         a = acts("S_arms", b)
         a1 = {k: (v[:1] if v.ndim else v) for k, v in a.items()}             # "kl" is a scalar
         own = gen("S_arms", b1, actions=a1)[0]
-        arm = int(np.flatnonzero(np.isfinite(b1["boxes"][0, -1, :, 0].cpu().numpy()))[0])
         u = a["u_arms"][:1].clone()
         u[:, :, arm] = a["u_arms"][1:, :, arm]
         swap = gen("S_arms", b1, actions=dict(a1, u_arms=u))[0]
