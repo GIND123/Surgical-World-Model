@@ -78,6 +78,33 @@
   ]
  },
  {
+  "run": "S_state_nocam",
+  "label": "Robot state",
+  "action": "state",
+  "camera": false,
+  "step": 60000,
+  "pred_psnr": 19.290908813476562,
+  "pred_ssim": 0.5941387414932251,
+  "pred_lpips": 0.23676751554012299,
+  "pred_fvd": 358.2288158056882,
+  "delta_psnr": -0.022581100463867188,
+  "ecs_precision": 0.8997122893547062,
+  "ecs_recall": 0.7479924824876132,
+  "ecs_hallucination_rate": 0.09730785039046445,
+  "pred_psnr_ci": [
+   18.815464162826537,
+   19.813107538223267
+  ],
+  "pred_ssim_ci": [
+   0.578553295135498,
+   0.6109326109290123
+  ],
+  "pred_lpips_ci": [
+   0.2254782747477293,
+   0.24767745546996595
+  ]
+ },
+ {
   "run": "S_state",
   "label": "Robot state + camera",
   "action": "state",
