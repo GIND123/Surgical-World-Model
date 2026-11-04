@@ -49,6 +49,7 @@ SEEDS = ("S_arms", "S_global", "S_slots", "S_global_vq")    # also trained with 
 SENS_RUNS = ("S_arms", "S_global", "S_slots", "S_global_vq", "S_arms_scene")
 SAMPLER = (("1.0", "20"), ("1.0", "50"), ("1.0", "100"), ("2.0", "50"))   # guidance scale, Euler steps
 CAM_RUNS, CAM_SCALES = ("S_arms", "S_global_vq", "S_state"), ("0.5", "1.0", "2.0")
+LONG_RUNS = ("S_arms", "S_global", "S_slots", "S_global_vq", "S_state", "S_none", "S_arms_scene")
 COLS = [  # key, header, format, higher-is-better
     ("pred_psnr", "PSNR", "{:.2f}", True), ("pred_ssim", "SSIM", "{:.3f}", True),
     ("pred_lpips", "LPIPS", "{:.3f}", False), ("pred_fvd", "FVD", "{:.0f}", False),
@@ -434,6 +435,40 @@ def cost() -> None:
                                         rows_tex))
 
 
+def long_rollouts() -> None:
+    """H4: 14 s autoregressive rollouts (scripts/eval/eval_long.py): fidelity per 2.8 s chunk and the share of
+    generated instruments that the robot log does not mount, early and late."""
+    srcs = [("reference", "Copy last context frame")] + [(r, LABEL[r]) for r in LONG_RUNS]
+    table = []
+    for run, label in srcs:
+        p = OUTPUTS / "eval" / run / "long.json"
+        if not p.exists():
+            continue
+        d = json.loads(p.read_text())
+        x, lp_ = np.array(d["psnr_by_frame"]), np.array(d["lpips_by_frame"])
+        row = dict(run=run, label=label, n_clips=d["n_clips"])
+        for c in range(0, len(x) // 28):
+            row[f"psnr_c{c}"] = float(x[28 * c:28 * c + 28].mean())
+            row[f"lpips_c{c}"] = float(lp_[28 * c:28 * c + 28].mean())
+        if run != "reference":
+            row["halluc_first"], row["halluc_last"] = d["halluc_rate_by_second"][0], d["halluc_rate_by_second"][-1]
+            first_s, last_s = d["detector_seconds"][0], d["detector_seconds"][-1]
+        table.append(row)
+    if not table or len(table) == 1 and table[0]["run"] == "reference":
+        return
+    n = max(int(k[6:]) for k in table[0] if k.startswith("psnr_c")) + 1
+    cols = [(f"psnr_c{c}", f"PSNR {2.8 * c:.1f}–{2.8 * (c + 1):.1f} s", "{:.2f}") for c in range(n)]
+    cols += [(f"lpips_c{n - 1}", f"LPIPS {2.8 * (n - 1):.1f}–{2.8 * n:.1f} s", "{:.3f}"),
+             ("halluc_first", f"Unmounted at {first_s:.1f} s", "{:.3f}"),
+             ("halluc_last", f"Unmounted at {last_s:.1f} s", "{:.3f}")]
+    lines = ["| Model | " + " | ".join(h for _, h, _ in cols) + " |", "|" + "---|" * (len(cols) + 1)]
+    lines += [f"| {r['label']} | " + " | ".join(cell(r, k, f) for k, _, f in cols) + " |" for r in table]
+    rows_tex = [tex(r["label"]) + " & " + " & ".join(cell(r, k, f, tex=True) for k, _, f in cols) + r" \\"
+                for r in table]
+    head = "Model & " + " & ".join(h.replace("–", "--") for _, h, _ in cols) + r" \\"
+    write("e1_long", table, lines, tabular("l" + "c" * len(cols), [head], rows_tex))
+
+
 def e2() -> None:
     """Kinematic grounding: R^2 of the linear probes on held-out episodes per target, averaged over the two arms
     (per arm in the JSON), for model-free features, frozen SurgVU models and models adapted without kinematics."""
@@ -547,6 +582,7 @@ def main() -> None:
     e6()
     seeds()
     sensitivity()
+    long_rollouts()
     e2()
     e3()
     e4()

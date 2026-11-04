@@ -1,0 +1,477 @@
+[
+{
+"case": "case_000",
+"stem": "case_000_p001",
+"window": 140
+},
+{
+"case": "case_000",
+"stem": "case_000_p001",
+"window": 160
+},
+{
+"case": "case_000",
+"stem": "case_000_p001",
+"window": 264
+},
+{
+"case": "case_000",
+"stem": "case_000_p001",
+"window": 328
+},
+{
+"case": "case_000",
+"stem": "case_000_p001",
+"window": 437
+},
+{
+"case": "case_026",
+"stem": "case_026_p001",
+"window": 2894
+},
+{
+"case": "case_026",
+"stem": "case_026_p002",
+"window": 7
+},
+{
+"case": "case_026",
+"stem": "case_026_p002",
+"window": 263
+},
+{
+"case": "case_026",
+"stem": "case_026_p002",
+"window": 1240
+},
+{
+"case": "case_026",
+"stem": "case_026_p002",
+"window": 1819
+},
+{
+"case": "case_027",
+"stem": "case_027_p001",
+"window": 1282
+},
+{
+"case": "case_027",
+"stem": "case_027_p001",
+"window": 2580
+},
+{
+"case": "case_027",
+"stem": "case_027_p001",
+"window": 3122
+},
+{
+"case": "case_027",
+"stem": "case_027_p002",
+"window": 278
+},
+{
+"case": "case_027",
+"stem": "case_027_p002",
+"window": 859
+},
+{
+"case": "case_029",
+"stem": "case_029_p001",
+"window": 64
+},
+{
+"case": "case_029",
+"stem": "case_029_p001",
+"window": 289
+},
+{
+"case": "case_029",
+"stem": "case_029_p001",
+"window": 1153
+},
+{
+"case": "case_029",
+"stem": "case_029_p001",
+"window": 1208
+},
+{
+"case": "case_029",
+"stem": "case_029_p001",
+"window": 1343
+},
+{
+"case": "case_031",
+"stem": "case_031_p001",
+"window": 304
+},
+{
+"case": "case_031",
+"stem": "case_031_p001",
+"window": 1124
+},
+{
+"case": "case_031",
+"stem": "case_031_p001",
+"window": 1523
+},
+{
+"case": "case_031",
+"stem": "case_031_p001",
+"window": 1593
+},
+{
+"case": "case_031",
+"stem": "case_031_p001",
+"window": 1813
+},
+{
+"case": "case_042",
+"stem": "case_042_p001",
+"window": 1020
+},
+{
+"case": "case_042",
+"stem": "case_042_p001",
+"window": 2079
+},
+{
+"case": "case_042",
+"stem": "case_042_p001",
+"window": 2452
+},
+{
+"case": "case_042",
+"stem": "case_042_p001",
+"window": 2572
+},
+{
+"case": "case_042",
+"stem": "case_042_p001",
+"window": 2657
+},
+{
+"case": "case_048",
+"stem": "case_048_p001",
+"window": 1453
+},
+{
+"case": "case_048",
+"stem": "case_048_p001",
+"window": 2650
+},
+{
+"case": "case_048",
+"stem": "case_048_p001",
+"window": 3111
+},
+{
+"case": "case_048",
+"stem": "case_048_p002",
+"window": 459
+},
+{
+"case": "case_048",
+"stem": "case_048_p002",
+"window": 577
+},
+{
+"case": "case_054",
+"stem": "case_054_p001",
+"window": 559
+},
+{
+"case": "case_054",
+"stem": "case_054_p001",
+"window": 1593
+},
+{
+"case": "case_054",
+"stem": "case_054_p001",
+"window": 2396
+},
+{
+"case": "case_054",
+"stem": "case_054_p001",
+"window": 2997
+},
+{
+"case": "case_054",
+"stem": "case_054_p002",
+"window": 130
+},
+{
+"case": "case_064",
+"stem": "case_064_p001",
+"window": 293
+},
+{
+"case": "case_064",
+"stem": "case_064_p001",
+"window": 1655
+},
+{
+"case": "case_064",
+"stem": "case_064_p001",
+"window": 1900
+},
+{
+"case": "case_064",
+"stem": "case_064_p001",
+"window": 2828
+},
+{
+"case": "case_064",
+"stem": "case_064_p002",
+"window": 65
+},
+{
+"case": "case_079",
+"stem": "case_079_p001",
+"window": 1254
+},
+{
+"case": "case_079",
+"stem": "case_079_p001",
+"window": 1579
+},
+{
+"case": "case_079",
+"stem": "case_079_p001",
+"window": 2778
+},
+{
+"case": "case_079",
+"stem": "case_079_p001",
+"window": 2907
+},
+{
+"case": "case_079",
+"stem": "case_079_p001",
+"window": 3519
+},
+{
+"case": "case_080",
+"stem": "case_080_p001",
+"window": 1027
+},
+{
+"case": "case_080",
+"stem": "case_080_p001",
+"window": 1192
+},
+{
+"case": "case_080",
+"stem": "case_080_p001",
+"window": 1477
+},
+{
+"case": "case_080",
+"stem": "case_080_p001",
+"window": 3295
+},
+{
+"case": "case_080",
+"stem": "case_080_p002",
+"window": 394
+},
+{
+"case": "case_118",
+"stem": "case_118_p001",
+"window": 1260
+},
+{
+"case": "case_118",
+"stem": "case_118_p001",
+"window": 1665
+},
+{
+"case": "case_118",
+"stem": "case_118_p001",
+"window": 2113
+},
+{
+"case": "case_118",
+"stem": "case_118_p002",
+"window": 571
+},
+{
+"case": "case_118",
+"stem": "case_118_p002",
+"window": 801
+},
+{
+"case": "case_121",
+"stem": "case_121_p001",
+"window": 668
+},
+{
+"case": "case_121",
+"stem": "case_121_p001",
+"window": 1483
+},
+{
+"case": "case_121",
+"stem": "case_121_p001",
+"window": 2531
+},
+{
+"case": "case_121",
+"stem": "case_121_p001",
+"window": 2959
+},
+{
+"case": "case_121",
+"stem": "case_121_p001",
+"window": 3828
+},
+{
+"case": "case_134",
+"stem": "case_134_p001",
+"window": 261
+},
+{
+"case": "case_134",
+"stem": "case_134_p001",
+"window": 1111
+},
+{
+"case": "case_134",
+"stem": "case_134_p001",
+"window": 1955
+},
+{
+"case": "case_134",
+"stem": "case_134_p001",
+"window": 2749
+},
+{
+"case": "case_134",
+"stem": "case_134_p002",
+"window": 59
+},
+{
+"case": "case_135",
+"stem": "case_135_p001",
+"window": 1629
+},
+{
+"case": "case_135",
+"stem": "case_135_p001",
+"window": 3124
+},
+{
+"case": "case_135",
+"stem": "case_135_p001",
+"window": 3349
+},
+{
+"case": "case_135",
+"stem": "case_135_p002",
+"window": 1239
+},
+{
+"case": "case_135",
+"stem": "case_135_p002",
+"window": 1264
+},
+{
+"case": "case_136",
+"stem": "case_136_p001",
+"window": 229
+},
+{
+"case": "case_136",
+"stem": "case_136_p001",
+"window": 494
+},
+{
+"case": "case_136",
+"stem": "case_136_p001",
+"window": 1729
+},
+{
+"case": "case_136",
+"stem": "case_136_p001",
+"window": 3016
+},
+{
+"case": "case_136",
+"stem": "case_136_p002",
+"window": 224
+},
+{
+"case": "case_139",
+"stem": "case_139_p001",
+"window": 1058
+},
+{
+"case": "case_139",
+"stem": "case_139_p001",
+"window": 2198
+},
+{
+"case": "case_139",
+"stem": "case_139_p001",
+"window": 2363
+},
+{
+"case": "case_139",
+"stem": "case_139_p001",
+"window": 2543
+},
+{
+"case": "case_139",
+"stem": "case_139_p002",
+"window": 991
+},
+{
+"case": "case_146",
+"stem": "case_146_p001",
+"window": 1672
+},
+{
+"case": "case_146",
+"stem": "case_146_p001",
+"window": 2905
+},
+{
+"case": "case_146",
+"stem": "case_146_p001",
+"window": 2975
+},
+{
+"case": "case_146",
+"stem": "case_146_p002",
+"window": 1508
+},
+{
+"case": "case_146",
+"stem": "case_146_p002",
+"window": 1718
+},
+{
+"case": "case_152",
+"stem": "case_152_p001",
+"window": 954
+},
+{
+"case": "case_152",
+"stem": "case_152_p001",
+"window": 1703
+},
+{
+"case": "case_152",
+"stem": "case_152_p001",
+"window": 1758
+},
+{
+"case": "case_152",
+"stem": "case_152_p001",
+"window": 2063
+},
+{
+"case": "case_152",
+"stem": "case_152_p001",
+"window": 2206
+}
+]

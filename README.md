@@ -362,6 +362,7 @@ python scripts/train/train_wm.py --name S_arms --action arms --size S --steps 60
 #   --arm-pool region|global|shuffled, --use-ui, --hold-boxes, --data <external>, --init <run>, --stems <parts.json>, --drop-no-signal (from size B), --resume
 python scripts/train/train_surgwm.py --stage tokenizer    # then --stage lam, --stage dynamics
 python scripts/eval/eval_surgwm.py --fvd                  # SurgWM on the E1 windows
+python scripts/eval/eval_long.py --run S_arms            # H4: 14 s rollouts, chunk by chunk
 python scripts/eval/eval_wm.py --run S_arms --fvd         # E1 fidelity against real frames (action replay)
 python scripts/eval/eval_control.py --run S_arms          # E1 camera control, locality, embodiment consistency
 #   --tests camera --scale 2 --tag control_scale2.0: endoscope commands at twice the size only
@@ -388,6 +389,7 @@ python scripts/docs/figure_horizon.py                     # PSNR over the horizo
 | 300–325 | E6 ablations: pooling over the whole frame, no forward decoder, arm regions shuffled across arms, console readout in the arm tokens, boxes held across detector gaps (`--hold-boxes`) |
 | 301, 302 | SurgWM smoke test (300 steps per stage, 32-window evaluation); figures from model rollouts and the time of one prediction |
 | 330–332 | sensitivity without `case_126`: Euler steps and guidance, 1–3 context latents, endoscope commands at 0.5–2× (EG-SWM and four other interfaces) |
+| 333 | H4: 14 s autoregressive rollouts (five 2.8 s chunks) on 95 clips of the test cases: fidelity and unmounted instruments over time |
 | 390–392 | prepare JIGSAWS, SAR-RARP50, SRT-H (done by the `swm-external` service, next to training) |
 | 400–450 | E2: zero-shot kinematic probes; action-free adaptation to SutureBot, CRCD, JIGSAWS; probes after adaptation |
 | 499–508 | E3 on SutureBot: reference rows; kinematics-conditioned prediction from scratch / from `S_arms` / from `S_global`, 10 / 25 / 100 % of the training episodes |

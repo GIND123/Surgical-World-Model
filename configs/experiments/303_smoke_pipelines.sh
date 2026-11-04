@@ -1,6 +1,6 @@
 # Smoke test of the paths that no job has run yet, before jobs 305-731 depend on them: training and evaluation on
 # external data (E2 adaptation, E3 kinematics on SutureBot and SRT-H, E4 SAR-RARP50), kinematic probes with model
-# features, and the new evaluation options (context length, endoscope-command scale). 30 steps each, 8-16 windows;
+# features, the new evaluation options (context length, endoscope-command scale) and long rollouts. 30 steps each, 8-16 windows;
 # everything written here is removed at the end.
 set -e
 T="--size S --steps 30 --bs 8 --warmup 10 --eval-every 15 --save-every 30"
@@ -15,8 +15,11 @@ T="--size S --steps 30 --bs 8 --warmup 10 --eval-every 15 --save-every 30"
 .venv/bin/python scripts/eval/eval_wm.py --run S_arms --limit 8 --n-ctx 1 --tag smoke_ctx1
 .venv/bin/python scripts/eval/eval_control.py --run S_arms --limit 8 --tests camera --scale 2.0 --tag smoke_control
 .venv/bin/python scripts/eval/eval_control.py --run S_arms --limit 8 --tag smoke_control_all
+.venv/bin/python scripts/eval/eval_long.py --run S_arms --limit 4 --chunks 2 --tag smoke_long
+.venv/bin/python scripts/eval/eval_long.py --reference --limit 4 --chunks 2 --tag smoke_long
 echo "### smoke test passed"
 rm -rf outputs/runs/smoke_sb_kin outputs/runs/smoke_srth_kin outputs/runs/smoke_sar_arms outputs/runs/smoke_crcd_vq \
   outputs/eval/smoke_sb_kin outputs/eval/smoke_srth_kin outputs/eval/smoke_sar_arms outputs/eval/probes/suturebot.json \
   outputs/eval/S_arms/smoke_ctx1.json outputs/eval/S_arms/smoke_ctx1.npz outputs/eval/S_arms/smoke_control.json \
-  outputs/eval/S_arms/smoke_control_all.json
+  outputs/eval/S_arms/smoke_control_all.json outputs/eval/S_arms/smoke_long.json outputs/eval/S_arms/smoke_long.npz \
+  outputs/eval/reference/smoke_long.json outputs/eval/reference/smoke_long.npz
