@@ -5,8 +5,9 @@ Each run becomes one folder of the repo: model.safetensors (the EMA weights that
 without the optimiser state), config.json (model and training config, step, parameter count) and the evaluation
 summaries that exist for it (replay.json, control.json, action_use.json). The checkpoint tables of the model card
 are then rebuilt from the folders in the repo: SurgVU models with the rows of docs/results/e1_main.json, models of
-the kinematic benchmarks (E2, E3) with the evaluation on their own dataset. Runs on the CPU, so it can run next to
-the GPU queue.
+the kinematic benchmarks (E2, E3) with the evaluation on their own dataset. Runs that a finished queue job was to
+publish but that are not in the repo (an upload during a network outage) are published as well. Runs on the CPU, so
+it can run next to the GPU queue.
 
     python scripts/release/push_weights.py S_arms S_arms_scene S_none [--dry-run]
 """
@@ -15,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 import torch
@@ -52,6 +54,12 @@ def export(run: str) -> tuple[Path, int]:
             name = "action_use.json" if src.parent.name == "action_use" else src.name
             (out / name).write_text(json.dumps(summary, indent=1))
     return out, st["step"]
+
+
+def queued() -> set[str]:
+    """Runs published by the queue jobs that have finished."""
+    return {run for f in (OUTPUTS / "queue" / "done").glob("*.sh")
+            for run in re.findall(r"push_weights\.py ([\w.]+)", f.read_text())}
 
 
 def card(text: str, runs: set[str]) -> str:
@@ -110,14 +118,15 @@ def main() -> None:
     from huggingface_hub import HfApi, hf_hub_download
 
     api, rid = HfApi(token=hub.token()), hub.repo_id()
-    for run in args.runs:
+    have = {f.split("/")[0] for f in api.list_repo_files(rid) if f.endswith("/model.safetensors")}
+    runs = list(args.runs) + sorted(queued() - have - set(args.runs))
+    for run in runs:
         out, step = export(run)
         size = (out / "model.safetensors").stat().st_size / 1e6
         print(f"{run}: step {step}, {size:.0f} MB -> {out}", flush=True)
         if not args.dry_run:
             hub.push_folder(out, run, f"{run}: EMA weights at step {step}, config and evaluation")
-    have = {f.split("/")[0] for f in api.list_repo_files(rid) if f.endswith("/model.safetensors")}
-    text = card(Path(hf_hub_download(rid, "README.md", token=hub.token())).read_text(), have | set(args.runs))
+    text = card(Path(hf_hub_download(rid, "README.md", token=hub.token())).read_text(), have | set(runs))
     (STAGE / "README.md").write_text(text)
     if args.dry_run:
         print(text)

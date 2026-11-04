@@ -37,7 +37,7 @@ GREEK = {"α": r"$\alpha$", "β": r"$\beta$", "γ": r"$\gamma$", "δ": r"$\delta
 def tex_escape(s: str) -> str:
     s = " ".join(s.split()).replace("&", r"\&").replace("%", r"\%").replace("_", r"\_").replace("#", r"\#")
     for g, t in GREEK.items():
-        s = s.replace(g, t)
+        s = s.replace(f"${g}$", t).replace(g, t)             # some arXiv titles already put the letter in math
     return s
 
 
@@ -56,7 +56,7 @@ def main() -> None:
         title = tex_escape(e.find("a:title", NS).text)
         authors = " and ".join(a.find("a:name", NS).text.strip() for a in e.findall("a:author", NS))
         year = e.find("a:published", NS).text[:4]
-        note = f",\n  note = {{{tex_escape(venue)}}}" if venue else ""
+        note = f",\n  note = {{{{{tex_escape(venue)}}}}}" if venue else ""   # braced, or IEEEtran lowercases it
         print(f"@article{{{key},\n  title = {{{{{title}}}}},\n  author = {{{tex_escape(authors)}}},\n"
               f"  journal = {{arXiv preprint arXiv:{aid}}},\n  year = {{{year}}}{note}\n}}\n")
 
