@@ -3,7 +3,8 @@
 
 E1 (action interfaces) and E6 (ablations of EG-SWM) read outputs/eval/<run>/{replay,control}.json and
 outputs/eval/reference/{reference,control}.json; PSNR, SSIM and LPIPS are means over test cases of the per-case
-means, with 95 % bootstrap intervals over cases (from the per-window arrays in <run>/replay.npz). Seeds: mean and
+means, with 95 % bootstrap intervals over cases (from the per-window arrays in <run>/replay.npz); locality has its
+interval and its difference to EG-SWM from <run>/{locality,control}_rows.json (e1_locality). Seeds: mean and
 standard deviation over the runs trained with seeds 0-2. Sensitivity: sampler, context length and endoscope-command
 scale on 200 (100) of the test windows. E2 reads the kinematic probes outputs/eval/probes/<data>_{zeroshot,adapted}
 .json; E3 and E4 read outputs/eval/<run>/<data>/replay.json, with intervals over test episodes. Each table is
@@ -117,12 +118,27 @@ def cell(row: dict, key: str, fmt: str, tex: bool = False) -> str:
     return v.replace("-", "$-$") if tex else v
 
 
+def locality_rows(run: str) -> list[dict] | None:
+    """Per (window, arm) locality results with the test case: from the locality-only re-evaluation of the runs
+    evaluated before eval_control.py recorded them (job 306), else from the control evaluation."""
+    for tag in ("locality", "control"):
+        p = OUTPUTS / "eval" / run / f"{tag}_rows.json"
+        if p.exists():
+            rows = json.loads(p.read_text())["locality"]
+            if rows and "case" in rows[0]:
+                return rows
+    return None
+
+
 def load(run: str) -> dict:
     out = {}
     for name in ("replay", "control"):
         p = OUTPUTS / "eval" / run / f"{name}.json"
         if p.exists():
             out.update(json.loads(p.read_text()))
+    rows = locality_rows(run)
+    if rows:                                         # the same source as the intervals of locality()
+        out["locality_ratio_median"] = float(np.median([r["ratio"] for r in rows]))
     out.update(by_case(OUTPUTS / "eval" / run / "replay.npz", "pred"))
     gains = [v for k, v in out.items() if k.startswith("cam_") and k.endswith("_gain")]
     if gains:  # sign accuracy saturates at 1.0, so the table reports how much of the commanded motion is realised
@@ -350,6 +366,54 @@ def paired() -> None:
                                                              for k, _, f in cols) + r" \\")
     head = "Model & " + " & ".join(rf"{tex(h)} & better" for _, h, _ in cols) + r" \\"
     write("e1_paired", table, lines, tabular("l" + "cc" * len(cols), [head], rows_tex))
+
+
+def locality() -> None:
+    """Locality of each interface's learned actions (median over windows and instruments) with a 95 % interval from
+    resampling test cases, all rows of a drawn case together; and paired against EG-SWM on the same windows and
+    instruments: the difference of the medians over the same resampled cases, and the number of cases in which
+    EG-SWM's arm actions are the more local."""
+    base = locality_rows("S_arms")
+    if base is None:
+        return
+    cases = sorted({r["case"] for r in base})
+    pick = np.random.default_rng(0).integers(0, len(cases), (2000, len(cases)))
+
+    def per_case(rows: list[dict]) -> list[np.ndarray]:
+        return [np.array([r["ratio"] for r in rows if r["case"] == c]) for c in cases]
+
+    def boot(per: list[np.ndarray]) -> np.ndarray:
+        return np.array([np.median(np.concatenate([per[j] for j in p])) for p in pick])
+
+    b_per = per_case(base)
+    b_med, b_boot = float(np.median(np.concatenate(b_per))), boot(b_per)
+    table = []
+    for run, label, *_ in ROWS + ABLATIONS:
+        rows = locality_rows(run)
+        if rows is None:
+            continue
+        per = per_case(rows)
+        boots = boot(per)
+        row = dict(run=run, label=label, n_rows=len(rows), locality=float(np.median(np.concatenate(per))),
+                   locality_ci=np.quantile(boots, [0.025, 0.975]).tolist())
+        if run != "S_arms":
+            both = [(np.median(x), np.median(y)) for x, y in zip(per, b_per, strict=True) if len(x) and len(y)]
+            row.update(d_locality=row["locality"] - b_med,
+                       d_locality_ci=np.quantile(boots - b_boot, [0.025, 0.975]).tolist(),
+                       egswm_better=int(sum(m < e for m, e in both)), n_cases=len(both))
+        table.append(row)
+
+    def better(r: dict) -> str:
+        return f"{r['egswm_better']}/{r['n_cases']}" if "egswm_better" in r else "–"
+
+    lines = ["| Model | Locality ↑ | ΔLocality vs EG-SWM | EG-SWM more local (cases) |", "|---|---|---|---|"]
+    lines += [f"| {r['label']} | {cell(r, 'locality', '{:.2f}')} | {cell(r, 'd_locality', '{:.2f}')} | {better(r)} |"
+              for r in table]
+    rows_tex = [tex(r["label"]) + f" & {cell(r, 'locality', '{:.2f}', tex=True)} & "
+                f"{cell(r, 'd_locality', '{:.2f}', tex=True)} & {better(r).replace('–', '--')}" + r" \\"
+                for r in table]
+    head = r"Model & Locality$\uparrow$ & $\Delta$ vs EG-SWM & EG-SWM more local \\"
+    write("e1_locality", table, lines, tabular("lccc", [head], rows_tex))
 
 
 def binding() -> None:
@@ -597,6 +661,7 @@ def e4() -> None:
 def main() -> None:
     e1()
     paired()
+    locality()
     binding()
     cost()
     e6()

@@ -10,6 +10,9 @@ ecs      the instrument detector on generated vs real future frames: class-set p
          the endoscope arm and no unknown instrument (about 10 % of the test windows have no usable log). The
          detector's own rate of unmounted classes on the real frames is recorded alongside as the floor
 
+Writes outputs/eval/<run>/<tag>.json (summary) and <tag>_rows.json (per window, arm and frame, with the test case,
+for intervals over cases).
+
     python scripts/eval/eval_control.py --run eg_swm_S --limit 300
     python scripts/eval/eval_control.py --reference      # ECS of the VAE reconstruction (tokenizer ceiling)
     python scripts/eval/eval_control.py --run eg_swm_S --tests camera --scale 0.5 --tag control_scale0.5
@@ -121,13 +124,17 @@ def main() -> None:
         b["region"] = region_from_boxes(b["boxes"], 14, 20, dilate=1)
         bsz = len(items)
         real = np.asarray(real_all[idx[s:s + bsz]], np.float32) / 255
+        case = [ds.parts[ds.index[i, 0]]["stem"].rsplit("_p", 1)[0] for i in idx[s:s + bsz]]   # for intervals
+        where = [dict(window=int(i), case=c) for i, c in zip(idx[s:s + bsz], case, strict=True)]
         if args.reference:                                      # no actions -> no camera or locality tests
             acts, base_px = {}, decode(vae, b["z"], mean, std).cpu().numpy()
         else:
-            with torch.autocast("cuda", dtype=torch.bfloat16):
+            with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16):
                 acts = model.infer_actions(b["z"], b, stochastic=False)
-                base = model.generate(b, args.n_ctx, args.steps, actions=acts, generator=gen)
-            base_px = decode(vae, base, mean, std).cpu().numpy()
+            if "ecs" in tests:                                  # the replayed future, for the detector only
+                with torch.autocast("cuda", dtype=torch.bfloat16):
+                    base = model.generate(b, args.n_ctx, args.steps, actions=acts, generator=gen)
+                base_px = decode(vae, base, mean, std).cpu().numpy()
         # ---- camera compliance (only models with an explicit camera action)
         if cfg is not None and cfg.camera and "camera" in tests:
             zero = {k: (torch.zeros_like(v) if k.startswith("u_") else v) for k, v in acts.items()}
@@ -138,7 +145,7 @@ def main() -> None:
                 px = decode(vae, out, mean, std).cpu().numpy()
                 for i in range(bsz):
                     r = realised_motion(px[i], first)
-                    res["camera"][name].append(dict(commanded=cmd[:3].tolist(), realised=r.tolist()))
+                    res["camera"][name].append(dict(commanded=cmd[:3].tolist(), realised=r.tolist(), **where[i]))
         # ---- locality: replace one action, measure where the change lands
         alt = {k: v.roll(1, 0) for k, v in acts.items() if k.startswith("u_")}
         boxes = b["boxes"].cpu().numpy()
@@ -154,12 +161,16 @@ def main() -> None:
                 targets.append((arm, a2))
         elif "u_extra" in acts:
             targets.append((None, dict(acts, u_extra=alt["u_extra"])))
-        for arm, a2 in targets:
-            g1, g2 = (torch.Generator(device="cuda").manual_seed(s) for _ in range(2))   # same noise for both
+        if targets:                                     # the window's own actions, once for every replaced action
             with torch.autocast("cuda", dtype=torch.bfloat16):
-                out = model.generate(b, args.n_ctx, args.steps, actions=a2, generator=g1)
-                ref = model.generate(b, args.n_ctx, args.steps, actions=acts, generator=g2)
-            diff = (decode(vae, out, mean, std) - decode(vae, ref, mean, std)).abs().mean(-1)[:, first:]  # B T H W
+                ref = model.generate(b, args.n_ctx, args.steps, actions=acts,
+                                     generator=torch.Generator(device="cuda").manual_seed(s))
+            ref_px = decode(vae, ref, mean, std)
+        for arm, a2 in targets:
+            with torch.autocast("cuda", dtype=torch.bfloat16):                          # the reference's noise
+                out = model.generate(b, args.n_ctx, args.steps, actions=a2,
+                                     generator=torch.Generator(device="cuda").manual_seed(s))
+            diff = (decode(vae, out, mean, std) - ref_px).abs().mean(-1)[:, first:]       # B T H W
             h, w = diff.shape[-2:]
             for i in range(bsz):
                 for k in ([arm] if arm is not None else range(4)):
@@ -175,7 +186,7 @@ def main() -> None:
                     share = float((dm * m).sum() / max(dm.sum(), 1e-8))
                     area = float(m.mean())
                     res["locality"].append(dict(arm=int(k), share=share, area=area, ratio=share / max(area, 1e-6),
-                                                change=float(dm.mean())))
+                                                change=float(dm.mean()), **where[i]))
         # ---- embodiment consistency
         for i in range(bsz if "ecs" in tests else 0):
             occ = b["occupant"][i, -1].tolist()
@@ -190,7 +201,7 @@ def main() -> None:
                 gc = {int(c) for c in g.boxes.cls.tolist()}
                 rc = {int(c) for c in r.boxes.cls.tolist()}
                 res["ecs"].append(dict(tp=len(gc & rc), gen=len(gc), real=len(rc), halluc=len(gc - mounted),
-                                       missing=len(rc - gc), real_halluc=len(rc - mounted)))
+                                       missing=len(rc - gc), real_halluc=len(rc - mounted), **where[i]))
         print(f"{s + bsz}/{n}", flush=True)
     summary = dict(meta, run=run, n_windows=n, tests=sorted(tests), command_scale=args.scale)
     if cfg is not None and cfg.camera and "camera" in tests:
@@ -217,6 +228,7 @@ def main() -> None:
     out = OUTPUTS / "eval" / run
     out.mkdir(parents=True, exist_ok=True)
     (out / f"{args.tag}.json").write_text(json.dumps(summary, indent=1))
+    (out / f"{args.tag}_rows.json").write_text(json.dumps(res))           # per window, for intervals over cases
     print(json.dumps(summary, indent=1))
 
 
