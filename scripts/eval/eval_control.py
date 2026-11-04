@@ -12,6 +12,7 @@ ecs      the instrument detector on generated vs real future frames: class-set p
 
     python scripts/eval/eval_control.py --run eg_swm_S --limit 300
     python scripts/eval/eval_control.py --reference      # ECS of the VAE reconstruction (tokenizer ceiling)
+    python scripts/eval/eval_control.py --run eg_swm_S --tests camera --scale 0.5 --tag control_scale0.5
 """
 
 from __future__ import annotations
@@ -75,7 +76,11 @@ def main() -> None:
     ap.add_argument("--steps", type=int, default=50, help="Euler steps (20 drifts at long horizons)")
     ap.add_argument("--n-ctx", type=int, default=2)
     ap.add_argument("--magnitude", type=float, default=0.99, help="quantile of real camera motion to command")
+    ap.add_argument("--scale", type=float, default=1.0, help="multiplies the commanded motion (proportionality test)")
+    ap.add_argument("--tests", default="camera,locality,ecs")
+    ap.add_argument("--tag", default="control")
     args = ap.parse_args()
+    tests = set(args.tests.split(","))
     assert args.reference != bool(args.run), "give --run or --reference"
     model, meta = (None, {}) if args.reference else load_model(args.run, None)
     cfg = None if args.reference else model.cfg
@@ -89,7 +94,7 @@ def main() -> None:
     det = YOLO(str(DETECTOR))
     stats = json.loads((Path(__file__).resolve().parents[2] / "configs/stats/egomotion.json").read_text())
     q = "abs_q99" if args.magnitude >= 0.99 else "abs_q90"
-    mag = np.asarray(stats[q], np.float32)
+    mag = np.asarray(stats[q], np.float32) * args.scale
     first = 4 * (args.n_ctx - 1) + 1
     gen = torch.Generator(device="cuda").manual_seed(0)
     res = {"camera": {k: [] for k in COMMANDS}, "locality": [], "ecs": []}
@@ -109,7 +114,7 @@ def main() -> None:
                 base = model.generate(b, args.n_ctx, args.steps, actions=acts, generator=gen)
             base_px = decode(vae, base, mean, std).cpu().numpy()
         # ---- camera compliance (only models with an explicit camera action)
-        if cfg is not None and cfg.camera:
+        if cfg is not None and cfg.camera and "camera" in tests:
             zero = {k: (torch.zeros_like(v) if k.startswith("u_") else v) for k, v in acts.items()}
             for name, (sx, sy, sz) in COMMANDS.items():
                 raw = np.zeros((9, 16), np.float32)
@@ -130,7 +135,9 @@ def main() -> None:
         alt = {k: v.roll(1, 0) for k, v in acts.items() if k.startswith("u_")}
         boxes = b["boxes"].cpu().numpy()
         targets = []
-        if "u_arms" in acts:
+        if "locality" not in tests:
+            pass
+        elif "u_arms" in acts:
             for arm in range(4):
                 a2 = dict(acts)
                 u = acts["u_arms"].clone()
@@ -162,7 +169,7 @@ def main() -> None:
                     res["locality"].append(dict(arm=int(k), share=share, area=area, ratio=share / max(area, 1e-6),
                                                 change=float(dm.mean())))
         # ---- embodiment consistency
-        for i in range(bsz):
+        for i in range(bsz if "ecs" in tests else 0):
             occ = b["occupant"][i, -1].tolist()
             if OCC_INDEX[CAMERA] not in occ or OCC_INDEX[UNKNOWN] in occ:
                 continue                                              # no usable robot log for this window
@@ -177,8 +184,8 @@ def main() -> None:
                 res["ecs"].append(dict(tp=len(gc & rc), gen=len(gc), real=len(rc), halluc=len(gc - mounted),
                                        missing=len(rc - gc), real_halluc=len(rc - mounted)))
         print(f"{s + bsz}/{n}", flush=True)
-    summary = dict(meta, run=run, n_windows=n)
-    if cfg is not None and cfg.camera:
+    summary = dict(meta, run=run, n_windows=n, tests=sorted(tests), command_scale=args.scale)
+    if cfg is not None and cfg.camera and "camera" in tests:
         for name, rows in res["camera"].items():
             c = np.array([r["commanded"] for r in rows])
             r = np.array([r["realised"] for r in rows])
@@ -194,13 +201,14 @@ def main() -> None:
         summary["locality_area_mean"] = float(np.mean([x["area"] for x in loc]))
     e = res["ecs"]
     tp, ng, nr = sum(x["tp"] for x in e), sum(x["gen"] for x in e), sum(x["real"] for x in e)
-    summary.update(ecs_windows=res.get("ecs_windows", 0), ecs_precision=tp / max(ng, 1), ecs_recall=tp / max(nr, 1),
-                   ecs_hallucination_rate=sum(x["halluc"] for x in e) / max(ng, 1),
-                   ecs_missing_rate=sum(x["missing"] for x in e) / max(nr, 1),
-                   ecs_real_hallucination_rate=sum(x["real_halluc"] for x in e) / max(nr, 1))
+    if "ecs" in tests:
+        summary.update(ecs_windows=res.get("ecs_windows", 0), ecs_precision=tp / max(ng, 1),
+                       ecs_recall=tp / max(nr, 1), ecs_hallucination_rate=sum(x["halluc"] for x in e) / max(ng, 1),
+                       ecs_missing_rate=sum(x["missing"] for x in e) / max(nr, 1),
+                       ecs_real_hallucination_rate=sum(x["real_halluc"] for x in e) / max(nr, 1))
     out = OUTPUTS / "eval" / run
     out.mkdir(parents=True, exist_ok=True)
-    (out / "control.json").write_text(json.dumps(summary, indent=1))
+    (out / f"{args.tag}.json").write_text(json.dumps(summary, indent=1))
     print(json.dumps(summary, indent=1))
 
 

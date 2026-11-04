@@ -6,7 +6,8 @@
     python scripts/train/train_surgwm.py --stage dynamics --steps 60000
 
 Frames are decoded on the fly from the 10 fps cache (same windows as EG-SWM) and resized to 120x180
-(40x60 for the latent action model). Outputs: outputs/runs/surgwm_<stage>/.
+(40x60 for the latent action model). Outputs: outputs/runs/<name>_<stage>/ (name: surgwm). Evaluation:
+scripts/eval/eval_surgwm.py.
 """
 
 from __future__ import annotations
@@ -73,11 +74,14 @@ def main() -> None:
     ap.add_argument("--bs", type=int, default=8)
     ap.add_argument("--frames", type=int, default=16, help="clip length for tokenizer/LAM training")
     ap.add_argument("--workers", type=int, default=10)
+    ap.add_argument("--grad-ckpt", action="store_true", help="recompute each transformer block in the backward pass")
+    ap.add_argument("--name", default="surgwm", help="runs go to outputs/runs/<name>_<stage>")
     ap.add_argument("--resume", action="store_true")
     args = ap.parse_args()
     c = SurgWMConfig()
-    run = OUTPUTS / "runs" / f"surgwm_{args.stage}"
+    run = OUTPUTS / "runs" / f"{args.name}_{args.stage}"
     run.mkdir(parents=True, exist_ok=True)
+    (run / "config.json").write_text(json.dumps({"model": vars(c), "train": vars(args)}, indent=1))
     lr = {"tokenizer": 1e-4, "lam": 1e-5, "dynamics": 1e-4}[args.stage]       # as reported for SurgWM
     n_frames = 33 if args.stage == "dynamics" else args.frames
     ds = PixelWindows("train", n_frames=n_frames)
@@ -90,9 +94,13 @@ def main() -> None:
     else:
         model = MaskGITDynamics(c).cuda()
         tok = VideoVQVAE(c).cuda().eval()
-        tok.load_state_dict(torch.load(OUTPUTS / "runs/surgwm_tokenizer/ckpt_last.pt", weights_only=False)["model"])
         lam = LatentActionModel(c).cuda().eval()
-        lam.load_state_dict(torch.load(OUTPUTS / "runs/surgwm_lam/ckpt_last.pt", weights_only=False)["model"])
+        for m, stage in ((tok, "tokenizer"), (lam, "lam")):
+            st = torch.load(OUTPUTS / "runs" / f"{args.name}_{stage}" / "ckpt_last.pt", weights_only=False)
+            m.load_state_dict(st["model"])
+    for m in model.modules():
+        if hasattr(m, "grad_checkpoint"):
+            m.grad_checkpoint = args.grad_ckpt
     opt = torch.optim.AdamW(model.parameters(), lr=lr, betas=(0.9, 0.99), weight_decay=0.01, fused=True)
     step = 0
     ckpt = run / "ckpt_last.pt"
@@ -139,7 +147,8 @@ def main() -> None:
             opt.zero_grad(set_to_none=True)
             step += 1
             if step % 100 == 0:
-                rec = dict(step=step, sec_per_step=(time.time() - t0) / 100, **logs)
+                rec = dict(step=step, sec_per_step=(time.time() - t0) / 100,
+                           mem_gb=round(torch.cuda.max_memory_allocated() / 1e9, 1), **logs)
                 log.write(json.dumps(rec) + "\n")
                 log.flush()
                 t0 = time.time()

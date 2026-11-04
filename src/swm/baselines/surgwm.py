@@ -17,6 +17,7 @@ from dataclasses import dataclass
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.utils.checkpoint import checkpoint
 
 from swm.models.actions import VQ
 from swm.models.layers import Attention, RMSNorm, SwiGLU, axial_rope_2d, rope_freqs
@@ -46,13 +47,17 @@ class STTransformer(nn.Module):
         self.blocks = nn.ModuleList(STBlockPlain(dim, heads, causal) for _ in range(depth))
         self.norm = RMSNorm(dim)
         self.heads, self.h, self.w = heads, h, w
+        self.grad_checkpoint = False
         self.register_buffer("rope_s", axial_rope_2d(dim // heads, h, w, "cpu"), persistent=False)
 
     def forward(self, x):                     # (B, T, S, D)
         rope_t = rope_freqs(x.shape[-1] // self.heads, torch.arange(x.shape[1], device=x.device))
         rope_s = self.rope_s.to(x.device)
         for blk in self.blocks:
-            x = blk(x, rope_s, rope_t)
+            if self.grad_checkpoint and self.training:
+                x = checkpoint(blk, x, rope_s, rope_t, use_reentrant=False)
+            else:
+                x = blk(x, rope_s, rope_t)
         return self.norm(x)
 
 
@@ -177,17 +182,40 @@ class MaskGITDynamics(nn.Module):
         lg = self.logits(inp, actions)
         return F.cross_entropy(lg[mask].float(), tokens[mask])
 
+    def frame_logits(self, frame, actions, f: int, past: list[torch.Tensor]) -> torch.Tensor:
+        """Logits of frame f (tokens (B, S)) given the cached temporal-attention inputs of frames 0..f-1 of every
+        block (past[i]: (B, T, S, D), frames 0..f-1 filled; frame f is written at position f). Under causal
+        temporal attention a frame's hidden states never depend on later frames, so this equals
+        logits(tokens[:, :f + 1], actions[:, :f + 1])[:, f] while running only frame f."""
+        net = self.net
+        b, s = frame.shape
+        rope_s = net.rope_s.to(frame.device)
+        rope_t = rope_freqs(self.c.dyn_dim // self.c.dyn_heads, torch.arange(f + 1, device=frame.device))
+        x = (self.tok(frame) + self.act(actions[:, f])[:, None])[:, None]           # (B, 1, S, D)
+        for blk, buf in zip(net.blocks, past, strict=True):
+            x = x + blk.sa(blk.n1(x).reshape(b, s, -1), freqs_q=rope_s, freqs_k=rope_s).view(b, 1, s, -1)
+            h = blk.n2(x)
+            buf[:, f] = h[:, 0]
+            kv = buf[:, :f + 1].transpose(1, 2).reshape(b * s, f + 1, -1)
+            y = blk.ta(h[:, 0].reshape(b * s, 1, -1), ctx=kv, freqs_q=rope_t[:, f:], freqs_k=rope_t)
+            x = x + y.view(b, 1, s, -1)
+            x = x + blk.mlp(blk.n3(x))
+        return self.head(net.norm(x))[:, 0]
+
     @torch.no_grad()
     def generate(self, tokens, actions, n_ctx: int, steps: int = 12, temperature: float = 1.0, generator=None):
-        """Frame-by-frame MaskGIT decoding of frames n_ctx.. given context tokens and actions."""
+        """Frame-by-frame MaskGIT decoding of frames n_ctx.. given context tokens and actions (B, T), with the
+        hidden states of finished frames cached (frame_logits)."""
         tokens = tokens.clone()
         b, t, s = tokens.shape
+        past = [torch.zeros(b, t, s, self.c.dyn_dim, device=tokens.device) for _ in self.net.blocks]
+        for f in range(n_ctx):
+            self.frame_logits(tokens[:, f], actions, f, past)
         for f in range(n_ctx, t):
-            cur = tokens[:, :f + 1].clone()
-            cur[:, f] = self.mask_id
+            cur = torch.full_like(tokens[:, f], self.mask_id)
             known = torch.zeros(b, s, dtype=torch.bool, device=tokens.device)
             for k in range(steps):
-                lg = self.logits(cur, actions[:, :f + 1])[:, f].float() / max(temperature, 1e-4)
+                lg = self.frame_logits(cur, actions, f, past).float() / max(temperature, 1e-4)
                 probs = lg.softmax(-1)
                 sample = torch.multinomial(probs.view(-1, probs.shape[-1]), 1, generator=generator).view(b, s)
                 conf = probs.gather(-1, sample[..., None])[..., 0]
@@ -197,7 +225,8 @@ class MaskGITDynamics(nn.Module):
                     n_keep = s
                 thresh = conf.topk(max(n_keep, 1), dim=-1).values[:, -1:]
                 newly = (conf >= thresh) & ~known
-                cur[:, f] = torch.where(newly, sample, cur[:, f])
+                cur = torch.where(newly, sample, cur)
                 known |= newly
-            tokens[:, f] = cur[:, f]
+            tokens[:, f] = cur
+            self.frame_logits(cur, actions, f, past)                  # cache the states of the finished frame
         return tokens

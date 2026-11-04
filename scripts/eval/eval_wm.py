@@ -135,6 +135,8 @@ def main() -> None:
     arrays = {"window": idx}                                       # positions in the fixed window list
     if args.data == "surgvu":                                      # for confidence intervals over test cases
         arrays["case"] = np.array([ds.parts[ds.index[i, 0]]["stem"].rsplit("_p", 1)[0] for i in idx])
+    else:                                                          # ... and over test episodes
+        arrays["case"] = ds.rows["episode"].to_numpy()[ds.index[idx]].astype(str)
     for k in names:
         for m in ("psnr", "ssim", "lpips"):
             x = torch.cat(per[k][m]).numpy()                       # (N, horizon)

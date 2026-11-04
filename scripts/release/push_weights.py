@@ -59,14 +59,26 @@ def export(run: str) -> tuple[Path, int]:
 def queued() -> set[str]:
     """Runs published by the queue jobs that have finished."""
     return {run for f in (OUTPUTS / "queue" / "done").glob("*.sh")
-            for run in re.findall(r"push_weights\.py ([\w.]+)", f.read_text())}
+            for run in re.findall(r"push_weights\.py ([\w.-]+)", f.read_text())}
 
 
 def card(text: str, runs: set[str]) -> str:
-    """The model card with its checkpoint table rebuilt for `runs` (in the order of the E1 table)."""
-    rows = json.loads((ROOT / "docs" / "results" / "e1_main.json").read_text())
+    """The model card with its checkpoint table rebuilt for `runs` (in the order of the E1 and E6 tables; other
+    runs, such as further seeds, after them with their own evaluation summaries)."""
+    rows = [r for name in ("e1_main", "e6_ablations") if (ROOT / "docs" / "results" / f"{name}.json").exists()
+            for r in json.loads((ROOT / "docs" / "results" / f"{name}.json").read_text())]
     order = [r["run"] for r in rows]
     rows = {r["run"]: r for r in rows}
+    for run in set(runs) - set(rows):
+        r = {}
+        for name in ("replay", "control"):
+            p = OUTPUTS / "eval" / run / f"{name}.json"
+            if p.exists():
+                r.update(json.loads(p.read_text()))
+        gains = [v for k, v in r.items() if k.startswith("cam_") and k.endswith("_gain")]
+        if gains:
+            r["cam_gain_mean"] = sum(gains) / len(gains)
+        rows[run] = r
 
     def val(r: dict, k: str, fmt: str) -> str:
         return fmt.format(r[k]) if isinstance(r.get(k), (int, float)) else "–"
@@ -82,7 +94,7 @@ def card(text: str, runs: set[str]) -> str:
              "| Folder | Model | Size | Steps | PSNR ↑ | LPIPS ↓ | FVD ↓ | Endoscope gain ↑ |",
              "|---|---|---|---:|---:|---:|---:|---:|"]
     for run in sorted(set(runs) - set(other), key=lambda r: (order.index(r) if r in order else len(order), r)):
-        r = rows.get(run, {})
+        r = rows[run]
         lines.append(f"| `{run}/` | {r.get('label', run)} | {train[run]['size']} | {r.get('step', '–')} | "
                      f"{val(r, 'pred_psnr', '{:.2f}')} | {val(r, 'pred_lpips', '{:.3f}')} | "
                      f"{val(r, 'pred_fvd', '{:.0f}')} | {val(r, 'cam_gain_mean', '{:.2f}')} |")

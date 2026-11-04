@@ -5,6 +5,7 @@ four frame transitions of (dpos, drot, djaw), normalised with training-split sta
 a PSM), and ``kin_net`` (9, 4, 7): the net motion over the step (targets of the grounding probes).
 Kinematics come from signals_synced.npz when scripts/data/check_sync.py has run (lag-corrected, with a per-window
 ``synced`` flag); ``synced_only`` keeps only windows whose video and kinematics are verified to be in sync.
+Datasets without kinematics (SAR-RARP50) give zeros for both and keep the image-side arm binding of the preparer.
 """
 
 from __future__ import annotations
@@ -14,7 +15,7 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
-from swm.data.kinematics import arm_motion, per_latent_step
+from swm.data.kinematics import LAYOUTS, arm_motion, per_latent_step
 from swm.data.windows import camera_input, camera_scale, latent_stats
 from swm.paths import PROCESSED
 
@@ -56,17 +57,20 @@ class ExternalWindows(Dataset):
         layout = dataset_layout or name
         cat, net = {}, {}
         for arm in SLOTS:
-            c, n_ = per_latent_step(arm_motion(sig, layout, arm))
-            cat[arm], net[arm] = c, n_
+            if layout in LAYOUTS:
+                cat[arm], net[arm] = per_latent_step(arm_motion(sig, layout, arm))
+            else:                                # no kinematics: zero motion, nothing to calibrate against
+                cat[arm], net[arm] = np.zeros((len(self.rows), 9, 28), np.float32), np.zeros((len(self.rows), 9, 7),
+                                                                                             np.float32)
         train = (self.rows["split"] == "train").to_numpy() & self.synced
-        self.swapped = calibrate_sides(cond, net, train)
+        self.swapped = layout in LAYOUTS and calibrate_sides(cond, net, train)
         if self.swapped:
             b = cond["boxes"].copy()
             cond["boxes"][:, :, 0], cond["boxes"][:, :, 2] = b[:, :, 2], b[:, :, 0]
         self.kin = np.zeros((len(self.rows), 9, 4, cat["psm1"].shape[-1]), np.float32)
         self.kin_net = np.zeros((len(self.rows), 9, 4, net["psm1"].shape[-1]), np.float32)
         for arm, slot in SLOTS.items():
-            scale = np.abs(cat[arm][train][:, 1:]).reshape(-1, cat[arm].shape[-1]).std(0) + 1e-8
+            scale = np.abs(cat[arm][train][:, 1:]).reshape(-1, cat[arm].shape[-1]).std(0) + 1e-8   # 1e-8: no kinematics
             self.kin[:, :, slot] = cat[arm] / scale
             self.kin_net[:, :, slot] = net[arm]
         self.cond = cond

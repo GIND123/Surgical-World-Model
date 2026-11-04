@@ -8,7 +8,7 @@ import numpy as np
 LAYOUTS = {
     "suturebot": {"psm1": (("state", 0, 3), ("state", 7)), "psm2": (("state", 8, 11), ("state", 15))},
     "jigsaws": {"psm1": (("state", 0, 3), ("state", 7)), "psm2": (("state", 8, 11), ("state", 15))},
-    "srth_chole": {"psm1": (("state", 0, 3), ("state", 7)), "psm2": (("state", 8, 11), ("state", 15))},
+    "srth": {"psm1": (("state", 0, 3), ("state", 7)), "psm2": (("state", 8, 11), ("state", 15))},
     "crcd": {"psm1": (("action", 0, 3), ("state", 6)), "psm2": (("action", 7, 10), ("state", 13))},
 }
 
