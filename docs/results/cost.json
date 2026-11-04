@@ -98,6 +98,15 @@
   "train_mem_gb": 31.440470016
  },
  {
+  "run": "S_arms_nofwd",
+  "label": "EG-SWM, diffusion loss only",
+  "size": "S",
+  "steps": 60000,
+  "train_h": 5.397602399183329,
+  "win_per_s": 98.80930344443821,
+  "train_mem_gb": 31.394970112
+ },
+ {
   "run": "S_arms_poolglobal",
   "label": "EG-SWM, arm actions not grounded",
   "size": "S",

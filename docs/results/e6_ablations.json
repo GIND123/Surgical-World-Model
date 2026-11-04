@@ -29,6 +29,35 @@
   "cam_gain_mean": 0.6972142295642195
  },
  {
+  "run": "S_arms_nofwd",
+  "label": "EG-SWM, diffusion loss only",
+  "action": "arms",
+  "camera": true,
+  "step": 60000,
+  "pred_psnr": 21.6476993560791,
+  "pred_ssim": 0.6800187826156616,
+  "pred_lpips": 0.1724206954240799,
+  "pred_fvd": 204.0924550906422,
+  "delta_psnr": 2.466573715209961,
+  "locality_ratio_median": 2.2118889177734395,
+  "ecs_precision": 0.9374120956399438,
+  "ecs_recall": 0.7971125918332479,
+  "ecs_hallucination_rate": 0.07363873819570022,
+  "pred_psnr_ci": [
+   21.077024507522584,
+   22.26032509803772
+  ],
+  "pred_ssim_ci": [
+   0.6632225006818772,
+   0.6971988424658775
+  ],
+  "pred_lpips_ci": [
+   0.16092416793107986,
+   0.18385339565575123
+  ],
+  "cam_gain_mean": 0.6881007168956458
+ },
+ {
   "run": "S_arms_poolglobal",
   "label": "EG-SWM, arm actions not grounded",
   "action": "arms",
