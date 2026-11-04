@@ -51,6 +51,7 @@ SENS_RUNS = ("S_arms", "S_global", "S_slots", "S_global_vq", "S_arms_scene")
 SAMPLER = (("1.0", "20"), ("1.0", "50"), ("1.0", "100"), ("2.0", "50"))   # guidance scale, Euler steps
 CAM_RUNS, CAM_SCALES = ("S_arms", "S_global_vq", "S_state"), ("0.5", "1.0", "2.0")
 LONG_RUNS = ("S_arms", "S_global", "S_slots", "S_global_vq", "S_state", "S_none", "S_arms_scene")
+DROPS = ("0.25", "0.5", "1.0")       # share of the instrument detections removed at test time (job 335)
 COLS = [  # key, header, format, higher-is-better
     ("pred_psnr", "PSNR", "{:.2f}", True), ("pred_ssim", "SSIM", "{:.3f}", True),
     ("pred_lpips", "LPIPS", "{:.3f}", False), ("pred_fvd", "FVD", "{:.0f}", False),
@@ -416,6 +417,48 @@ def locality() -> None:
     write("e1_locality", table, lines, tabular("lccc", [head], rows_tex))
 
 
+def detector() -> None:
+    """EG-SWM with a weaker instrument detector at test time: a share of the detections removed at random, so that
+    the arm actions of the steps that lose their region are zero. Mean over cases with intervals, and the change
+    against all detections on the same windows, paired over cases."""
+    base = OUTPUTS / "eval" / "S_arms" / "replay.npz"
+    if not base.exists():
+        return
+    b = np.load(base)
+    cases = sorted(set(b["case"].tolist()))
+    pick = np.random.default_rng(0).integers(0, len(cases), (2000, len(cases)))
+
+    def per_case(d) -> np.ndarray:
+        x = d["pred_psnr"].mean(1)
+        return np.array([x[d["case"] == c].mean() for c in cases])
+
+    rows = []
+    for drop in ("0", *DROPS):
+        npz = base if drop == "0" else base.with_name(f"replay_drop{drop}.npz")
+        if not npz.exists() or not np.array_equal(np.load(npz)["window"], b["window"]):
+            continue
+        row = dict(drop=float(drop), kept=f"{100 * (1 - float(drop)):.0f} %", **by_case(npz, "pred"),
+                   delta_psnr=json.loads(npz.with_suffix(".json").read_text())["delta_psnr"])
+        if drop != "0":
+            diff = per_case(np.load(npz)) - per_case(b)
+            row.update(d_psnr=float(diff.mean()), d_psnr_ci=np.quantile(diff[pick].mean(1), [0.025, 0.975]).tolist(),
+                       cases_worse=f"{int((diff < 0).sum())}/{len(cases)}")
+        rows.append(row)
+    if len(rows) < 2:
+        return
+    cols = [("pred_psnr", "PSNR ↑", "{:.2f}"), ("pred_ssim", "SSIM ↑", "{:.3f}"), ("pred_lpips", "LPIPS ↓", "{:.3f}"),
+            ("delta_psnr", "ΔPSNR ↑", "{:.2f}"), ("d_psnr", "PSNR change", "{:.2f}")]
+    lines = ["| Detections kept | " + " | ".join(h for _, h, _ in cols) + " | Cases worse |",
+             "|" + "---|" * (len(cols) + 2)]
+    lines += [f"| {r['kept']} | " + " | ".join(cell(r, k, f) for k, _, f in cols) + f" | {r.get('cases_worse', '–')} |"
+              for r in rows]
+    rows_tex = [tex(r["kept"]) + " & " + " & ".join(cell(r, k, f, tex=True) for k, _, f in cols)
+                + f" & {r.get('cases_worse', '--')}" + r" \\" for r in rows]
+    head = ("Detections kept & " + " & ".join(tex(h).replace("↑", r"$\uparrow$").replace("↓", r"$\downarrow$")
+                                              for _, h, _ in cols) + r" & Cases worse \\")
+    write("e6_detector", rows, lines, tabular("l" + "c" * (len(cols) + 1), [head], rows_tex))
+
+
 def binding() -> None:
     """E1 fidelity by how many of a window's mounted instruments are bound to an arm region (detected and matched
     through the robot log) over the predicted steps; EG-SWM's arm actions only reach bound instruments."""
@@ -663,6 +706,7 @@ def main() -> None:
     paired()
     locality()
     binding()
+    detector()
     cost()
     e6()
     seeds()

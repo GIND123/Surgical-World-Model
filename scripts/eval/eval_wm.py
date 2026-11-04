@@ -72,6 +72,9 @@ def main() -> None:
     ap.add_argument("--limit", type=int)
     ap.add_argument("--fvd", action="store_true")
     ap.add_argument("--tag", default="replay")
+    ap.add_argument("--drop-detections", type=float, default=0.0,
+                    help="a weaker detector at test time: this share of the instrument detections (window, step, arm) "
+                         "is removed, drawn per window so that a lower share removes a subset of a higher one")
     args = ap.parse_args()
     torch.manual_seed(0)
     if args.data == "surgvu":
@@ -97,6 +100,10 @@ def main() -> None:
     for s in range(0, n, args.bs):
         items = [ds[i] for i in idx[s:s + args.bs]]
         b = {k: torch.stack([it[k] for it in items]).cuda() for k in items[0]}
+        if args.drop_detections:
+            keep = np.stack([np.random.default_rng(int(i)).random(b["boxes"].shape[1:3]) >= args.drop_detections
+                             for i in idx[s:s + args.bs]])                                       # B T arms
+            b["boxes"] = torch.where(torch.from_numpy(keep).cuda()[..., None], b["boxes"], float("nan"))
         b["region"] = region_from_boxes(b["boxes"], 14, 20, dilate=1)
         real = torch.from_numpy(np.ascontiguousarray(real_all[idx[s:s + args.bs]])).cuda().float() / 255  # B T H W 3
         outs = {}
@@ -131,7 +138,7 @@ def main() -> None:
         if s // args.bs % 25 == 0:
             print(f"{s + len(items)}/{n} windows, {time.time() - t0:.0f}s", flush=True)
     summary = dict(meta, data=args.data, split=args.split, n_windows=n, n_ctx=args.n_ctx, steps=args.steps,
-                   cfg=args.cfg, first_pred_frame=first)
+                   cfg=args.cfg, first_pred_frame=first, drop_detections=args.drop_detections)
     arrays = {"window": idx}                                       # positions in the fixed window list
     if args.data == "surgvu":                                      # for confidence intervals over test cases
         arrays["case"] = np.array([ds.parts[ds.index[i, 0]]["stem"].rsplit("_p", 1)[0] for i in idx])

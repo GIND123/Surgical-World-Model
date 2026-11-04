@@ -412,6 +412,7 @@ python scripts/docs/figure_horizon.py                     # PSNR over the horizo
 | 330–332 | sensitivity without `case_126`: Euler steps and guidance, 1–3 context latents, endoscope commands at 0.5–2× (EG-SWM and four other interfaces) |
 | 333 | H4: 14 s autoregressive rollouts (five 2.8 s chunks) on 95 clips of the test cases: fidelity and unmounted instruments over time |
 | 334 | test of the scene-action explanation: share of a learned action's effect in the content the moving endoscope reveals |
+| 335 | detector quality: EG-SWM with 25 / 50 / 100 % of the instrument detections removed at test time |
 | 390–392 | prepare JIGSAWS, SAR-RARP50, SRT-H (done by the `swm-external` service, next to training) |
 | 400–450 | E2: zero-shot kinematic probes; action-free adaptation to SutureBot, CRCD, JIGSAWS; probes after adaptation |
 | 499–508 | E3 on SutureBot: reference rows; kinematics-conditioned prediction from scratch / from `S_arms` / from `S_global`, 10 / 25 / 100 % of the training episodes |

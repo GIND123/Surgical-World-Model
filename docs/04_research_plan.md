@@ -125,7 +125,7 @@ Status on 4 Nov 2026 of a reviewer-oriented checklist: comparisons, standard dat
 | Tokenizer (FLUX.2 vs Wan2.2) | reconstruction benchmark only: FLUX.2 latents give 16× more tokens per window, so a world model on them does not fit the S budget |
 | Data scale (10 %, 30 % of the training cases) | queued `730`, `731` |
 | Model scale | the B flagship is designed once `300`–`320` are in |
-| Detector quality | open. EG-SWM's gap to the frame-wide actions sits in windows without bound instruments (`e1_binding`), so detector recall matters; degraded detections would quantify it |
+| Detector quality | queued `335`: EG-SWM evaluated with 25 / 50 / 100 % of the instrument detections removed at random at test time (`e6_detector`). EG-SWM's gap to the frame-wide actions sits in windows without bound instruments (`e1_binding`), so this measures what detector recall is worth; retraining with a weaker detector is not planned |
 | **Trustworthy numbers** | |
 | Seeds | queued: seeds 1 and 2 of EG-SWM, monolithic, slots and VQ (`710`–`717`) |
 | Case-bootstrap intervals; cases won | done (`e1_main`, `e1_paired`) |
