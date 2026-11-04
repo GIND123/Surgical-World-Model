@@ -136,7 +136,7 @@ Status on 4 Nov 2026 of a reviewer-oriented checklist: comparisons, standard dat
 | Bound vs unbound instruments | done (`e1_binding`) |
 | Rollouts of 8–16 s (H4) | queued `333`: 14 s in five 2.8 s chunks (the last 5 generated frames re-encoded as the next context, actions replayed on each chunk's grid) on 95 clips of the 19 test cases (`configs/eval/surgvu_test_long.json`); repeated for the B flagship |
 | **Own explanations** | |
-| The scene action's weaker endoscope control | worded as a hypothesis (README, paper); a direct test (where the scene action acts relative to newly revealed tissue) is open |
+| The scene action's weaker endoscope control | worded as a hypothesis (README, paper); direct test queued `334`: the share of the change caused by replacing the scene action (and, as controls, the arm, monolithic and slot actions) that lands in grid cells the moving endoscope reveals, over their area share |
 | Claims rest on fidelity, control and locality together | done |
 | Detector floor (5.3 %) shown with the hallucination rate | done |
 | **Cost** | parameters, training time and memory in `cost`; time and memory of one prediction from `302` |

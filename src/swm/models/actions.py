@@ -259,11 +259,12 @@ class ForwardDecoder(nn.Module):
         return z_prev + self.out(h)
 
 
-def stabilise(z_prev: torch.Tensor, cam: torch.Tensor, scale: torch.Tensor) -> torch.Tensor:
+def stabilise(z_prev: torch.Tensor, cam: torch.Tensor, scale: torch.Tensor, padding: str = "border") -> torch.Tensor:
     """Warp z_{t-1} onto z_t by the endoscope motion of the step. z_prev: (N, C, H, W); cam: (N, 20) camera input
     (signed-log parameters of the 4 frame transitions, then 4 validity flags); scale: (16,) its per-parameter scale.
     Each transition is the similarity prev -> next (dx / W, dy / H of the image centre, log scale, angle); the four
-    are composed additively (small motions), and unreliable transitions are zero, i.e. not compensated."""
+    are composed additively (small motions), and unreliable transitions are zero, i.e. not compensated. With
+    padding="zeros", a warped map of ones marks where z_t shows content that z_{t-1} did not."""
     n = cam[:, :16].float().view(-1, 4, 4)
     raw = torch.sign(n) * scale.view(4, 4) * torch.expm1(n.abs())
     dx, dy, log_s, angle = raw.sum(1)[..., None, None].unbind(1)                     # (N, 1, 1) each
@@ -274,7 +275,7 @@ def stabilise(z_prev: torch.Tensor, cam: torch.Tensor, scale: torch.Tensor) -> t
     inv, c, s = torch.exp(-log_s), torch.cos(angle), torch.sin(angle)
     px, py = inv * (c * qx + s * qy), inv * (c * qy - s * qx)                        # then the rotation and scale
     grid = torch.stack([px / (w / 2), py / (h / 2)], -1)
-    return F.grid_sample(z_prev, grid.to(z_prev.dtype), mode="bilinear", padding_mode="border", align_corners=False)
+    return F.grid_sample(z_prev, grid.to(z_prev.dtype), mode="bilinear", padding_mode=padding, align_corners=False)
 
 
 def hold_boxes(boxes: torch.Tensor) -> torch.Tensor:

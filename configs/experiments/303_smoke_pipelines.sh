@@ -17,9 +17,10 @@ T="--size S --steps 30 --bs 8 --warmup 10 --eval-every 15 --save-every 30"
 .venv/bin/python scripts/eval/eval_control.py --run S_arms --limit 8 --tag smoke_control_all
 .venv/bin/python scripts/eval/eval_long.py --run S_arms --limit 4 --chunks 2 --tag smoke_long
 .venv/bin/python scripts/eval/eval_long.py --reference --limit 4 --chunks 2 --tag smoke_long
+.venv/bin/python scripts/eval/test_scene_reveal.py --limit 16
 echo "### smoke test passed"
 rm -rf outputs/runs/smoke_sb_kin outputs/runs/smoke_srth_kin outputs/runs/smoke_sar_arms outputs/runs/smoke_crcd_vq \
   outputs/eval/smoke_sb_kin outputs/eval/smoke_srth_kin outputs/eval/smoke_sar_arms outputs/eval/probes/suturebot.json \
   outputs/eval/S_arms/smoke_ctx1.json outputs/eval/S_arms/smoke_ctx1.npz outputs/eval/S_arms/smoke_control.json \
   outputs/eval/S_arms/smoke_control_all.json outputs/eval/S_arms/smoke_long.json outputs/eval/S_arms/smoke_long.npz \
-  outputs/eval/reference/smoke_long.json outputs/eval/reference/smoke_long.npz
+  outputs/eval/reference/smoke_long.json outputs/eval/reference/smoke_long.npz outputs/eval/scene_reveal.json

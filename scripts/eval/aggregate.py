@@ -469,6 +469,26 @@ def long_rollouts() -> None:
     write("e1_long", table, lines, tabular("l" + "c" * len(cols), [head], rows_tex))
 
 
+def scene_reveal() -> None:
+    """Where a learned action's effect lands relative to the content the moving endoscope reveals
+    (scripts/eval/test_scene_reveal.py): share of the change in revealed grid cells over their area share."""
+    p = OUTPUTS / "eval" / "scene_reveal.json"
+    if not p.exists():
+        return
+    d = json.loads(p.read_text())
+    table = [dict(label=k, **v) for k, v in d["tests"].items()]
+    cols = [("n", "Windows", "{:d}"), ("ratio_median", "Revealed-cell ratio", "{:.2f}"),
+            ("ratio_median_small_motion", "smaller motion", "{:.2f}"),
+            ("ratio_median_large_motion", "larger motion", "{:.2f}")]
+    lines = ["| Action replaced | " + " | ".join(h for _, h, _ in cols) + " |", "|" + "---|" * (len(cols) + 1)]
+    lines += [f"| {r['label']} | " + " | ".join(cell(r, k, f) for k, _, f in cols) + " |" for r in table]
+    rows_tex = [tex(r["label"]) + " & " + " & ".join(cell(r, k, f, tex=True) for k, _, f in cols) + r" \\"
+                for r in table]
+    write("e1_scene_reveal", d, lines,
+          tabular("l" + "c" * len(cols), ["Action replaced & " + " & ".join(h for _, h, _ in cols) + r" \\"],
+                  rows_tex))
+
+
 def e2() -> None:
     """Kinematic grounding: R^2 of the linear probes on held-out episodes per target, averaged over the two arms
     (per arm in the JSON), for model-free features, frozen SurgVU models and models adapted without kinematics."""
@@ -583,6 +603,7 @@ def main() -> None:
     seeds()
     sensitivity()
     long_rollouts()
+    scene_reveal()
     e2()
     e3()
     e4()
