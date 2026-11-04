@@ -13,6 +13,9 @@
 \graphicspath{{../../docs/figures/}}
 \newcommand{\todo}[1]{\textcolor{red}{[#1]}}
 \newcommand{\method}{EG-SWM}
+% Result numbers in the text come from scripts/eval/aggregate.py (tables/numbers.tex); a missing key prints ??
+\newcommand{\val}[1]{\ifcsname val@#1\endcsname\csname val@#1\endcsname\else\textcolor{red}{\textbf{??}}\fi}
+\InputIfFileExists{tables/numbers}{}{}
 
 \begin{document}
 \title{Embodiment-Grounded Surgical World Models:\\ Learning Arm-Factorized, Camera-Aware Actions from Unlabeled Robotic Video}

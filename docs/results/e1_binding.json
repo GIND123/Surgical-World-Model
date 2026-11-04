@@ -4,6 +4,13 @@
   "one bound": 179,
   "two or more bound": 728
  },
+ "coverage": {
+  "steps": 0.7307499372962126,
+  "every": 0.6565086531226486,
+  "some": 0.13205417607223477,
+  "none": 0.21143717080511662,
+  "instruments": 2658
+ },
  "rows": [
   {
    "run": "copy_last",

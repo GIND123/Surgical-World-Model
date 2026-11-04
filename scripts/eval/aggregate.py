@@ -4,7 +4,9 @@
 E1 (action interfaces) and E6 (ablations of EG-SWM) read outputs/eval/<run>/{replay,control}.json and
 outputs/eval/reference/{reference,control}.json; PSNR, SSIM and LPIPS are means over test cases of the per-case
 means, with 95 % bootstrap intervals over cases (from the per-window arrays in <run>/replay.npz); locality has its
-interval and its difference to EG-SWM from <run>/{locality,control}_rows.json (e1_locality). Seeds: mean and
+interval and its difference to EG-SWM from <run>/{locality,control}_rows.json (e1_locality); e1_contrasts pairs
+other models the same way (CONTRASTS), and numbers() writes every number the manuscript's text quotes as a \\val{key}
+macro (paper/tmrb/tables/numbers.tex, docs/results/numbers.json). Seeds: mean and
 standard deviation over the runs trained with seeds 0-2. Sensitivity: sampler, context length and endoscope-command
 scale on 200 (100) of the test windows. E2 reads the kinematic probes outputs/eval/probes/<data>_{zeroshot,adapted}
 .json; E3 and E4 read outputs/eval/<run>/<data>/replay.json, with intervals over test episodes. Each table is
@@ -15,6 +17,7 @@ without any result is not written.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -52,6 +55,14 @@ SAMPLER = (("1.0", "20"), ("1.0", "50"), ("1.0", "100"), ("2.0", "50"))   # guid
 CAM_RUNS, CAM_SCALES = ("S_arms", "S_global_vq", "S_state"), ("0.5", "1.0", "2.0")
 LONG_RUNS = ("S_arms", "S_global", "S_slots", "S_global_vq", "S_state", "S_none", "S_arms_scene")
 DROPS = ("0.25", "0.5", "1.0")       # share of the instrument detections removed at test time (job 335)
+CONTRASTS = [  # (a, b): a minus b, paired over the test cases on the E1 windows (e1_contrasts; quoted in the text)
+    ("S_arms", "copy_last"), ("S_arms", "S_none"), ("S_slots", "S_arms"), ("S_global", "S_arms"),
+    ("S_global_nocam", "S_arms"), ("S_arms_scene", "S_arms"), ("S_arms", "S_global_vq"), ("S_arms", "S_state"),
+    ("S_global_vq", "copy_last"), ("S_arms", "S_arms_nocam"), ("S_arms_nocam", "S_state_nocam"),
+    ("S_state_nocam", "S_none"), ("S_state", "S_state_nocam"), ("S_global_nocam", "S_global"),
+    ("S_arms", "surgwm"), ("surgwm", "copy_last"),
+    *((run, "S_arms") for run, *_ in ABLATIONS),
+]
 COLS = [  # key, header, format, higher-is-better
     ("pred_psnr", "PSNR", "{:.2f}", True), ("pred_ssim", "SSIM", "{:.3f}", True),
     ("pred_lpips", "LPIPS", "{:.3f}", False), ("pred_fvd", "FVD", "{:.0f}", False),
@@ -369,6 +380,50 @@ def paired() -> None:
     write("e1_paired", table, lines, tabular("l" + "cc" * len(cols), [head], rows_tex))
 
 
+def contrasts() -> None:
+    """The pairs of CONTRASTS (a minus b) on the E1 windows: per-case differences, their mean with a 95 % bootstrap
+    interval over cases (the resampling of paired()), and the number of cases in which a is better."""
+    base = OUTPUTS / "eval" / "S_arms" / "replay.npz"
+    if not base.exists():
+        return
+    window = np.load(base)["window"]
+    src = {"copy_last": (OUTPUTS / "eval" / "reference" / "reference.npz", "copy_last")}
+    label = dict(LABEL, copy_last="Copy last context frame")
+    table, cases, pick = [], None, None
+    for a, b in CONTRASTS:
+        per = []
+        for run in (a, b):
+            npz, prefix = src.get(run, (OUTPUTS / "eval" / run / "replay.npz", "pred"))
+            d = np.load(npz) if npz.exists() else None
+            if d is None or "case" not in d or not np.array_equal(d["window"], window):
+                break
+            if cases is None:
+                cases = sorted(set(d["case"].tolist()))
+                pick = np.random.default_rng(0).integers(0, len(cases), (2000, len(cases)))
+            per.append({m: np.array([d[f"{prefix}_{m}"].mean(1)[d["case"] == c].mean() for c in cases])
+                        for m in PER_WINDOW})
+        if len(per) < 2:
+            continue
+        row = dict(a=a, b=b, label=f"{label[a]} − {label[b]}", n_cases=len(cases))
+        for m, sign in (("psnr", 1), ("ssim", 1), ("lpips", -1)):
+            diff = per[0][m] - per[1][m]
+            row[f"d_{m}"] = float(diff.mean())
+            row[f"d_{m}_ci"] = np.quantile(diff[pick].mean(1), [0.025, 0.975]).tolist()
+            row[f"a_better_{m}"] = int((sign * diff > 0).sum())
+        table.append(row)
+    if not table:
+        return
+    cols = [("d_psnr", "ΔPSNR", "{:.2f}"), ("d_ssim", "ΔSSIM", "{:.3f}"), ("d_lpips", "ΔLPIPS", "{:.3f}")]
+    lines = ["| a − b | " + " | ".join(f"{h} | a better ({h[1:]})" for _, h, _ in cols) + " |",
+             "|" + "---|" * (2 * len(cols) + 1)]
+    lines += [f"| {r['label']} | " + " | ".join(f"{cell(r, k, f)} | {r['a_better_' + k[2:]]}/{r['n_cases']}"
+                                               for k, _, f in cols) + " |" for r in table]
+    rows_tex = [tex(r["label"]) + " & " + " & ".join(f"{cell(r, k, f, tex=True)} & {r['a_better_' + k[2:]]}"
+                                                     for k, _, f in cols) + r" \\" for r in table]
+    head = r"$a - b$ & " + " & ".join(rf"{tex(h)} & $a$ better" for _, h, _ in cols) + r" \\"
+    write("e1_contrasts", table, lines, tabular("l" + "cc" * len(cols), [head], rows_tex))
+
+
 def locality() -> None:
     """Locality of each interface's learned actions (median over windows and instruments) with a 95 % interval from
     resampling test cases, all rows of a drawn case together; and paired against EG-SWM on the same windows and
@@ -468,12 +523,18 @@ def binding() -> None:
     ev = EvalWindows("test")
     idx = spread(len(ev), 1000)
     n_bound = np.zeros(len(idx), int)
+    bound = []                                       # per mounted instrument: share of the window's steps bound
     for j, i in enumerate(idx):
         p, w = ev.index[i]
         c = ev.parts[p]["cond"]
+        inst = (c["occupant"][w] >= 2).all(0)                            # instrument arms (not empty, not endoscope)
+        bound += np.isfinite(c["boxes"][w][..., 0]).mean(0)[inst].tolist()
         occ, box = c["occupant"][w][2:], c["boxes"][w][2:]               # predicted latent steps
-        inst = (occ >= 2).all(0)                                         # instrument arms (not empty, not endoscope)
-        n_bound[j] = int((inst & (np.isfinite(box[..., 0]).mean(0) >= 0.5)).sum())
+        n_bound[j] = int(((occ >= 2).all(0) & (np.isfinite(box[..., 0]).mean(0) >= 0.5)).sum())
+    bound = np.array(bound)
+    coverage = dict(steps=float(bound.mean()), every=float((bound == 1).mean()),
+                    some=float(((bound > 0) & (bound < 1)).mean()), none=float((bound == 0).mean()),
+                    instruments=len(bound))
     groups = [("none bound", n_bound == 0), ("one bound", n_bound == 1), ("two or more bound", n_bound >= 2)]
     srcs = [("copy_last", "Copy last context frame", OUTPUTS / "eval" / "reference" / "reference.npz", "copy_last")]
     srcs += [(run, label, OUTPUTS / "eval" / run / "replay.npz", "pred") for run, label, *_ in ROWS]
@@ -497,7 +558,7 @@ def binding() -> None:
             rf"\cmidrule(lr){{2-{len(groups) + 1}}}",
             "Model & " + " & ".join(f"{g.split()[0]} ({int(m.sum())})".replace("two", r"$\geq$2")
                                     for g, m in groups) + r" \\"]
-    data = dict(windows={g: int(m.sum()) for g, m in groups}, rows=table)
+    data = dict(windows={g: int(m.sum()) for g, m in groups}, coverage=coverage, rows=table)
     write("e1_binding", data, lines, tabular("l" + "c" * len(groups), head, rows_tex))
 
 
@@ -701,9 +762,134 @@ def e4() -> None:
     grouped("e4_clinical", ([("reference", refs)] if refs else []) + list(groups.items()), "Setting", "setting")
 
 
+def numbers() -> None:
+    """Every number the manuscript's text quotes, as \\val{key} (paper/tmrb/tables/numbers.tex, read by main.tex) and in
+    docs/results/numbers.json: main/<run>/<metric>[_ci], ctl/<run>/... (control and embodiment), diff/<a>-<b>/...
+    (e1_contrasts), use/<run>/... (action-use diagnostics on the validation windows: replay error and its rise in %
+    when the learned action (swap), the endoscope action (cam_swap) or both are replaced, inside and outside the arm
+    regions, and at noise level 0.9), bind/... (e1_binding) and horizon/... (EG-SWM minus the copied frame)."""
+    res, val = ROOT / "docs" / "results", {}
+
+    def f(x: float, nd: int) -> str:
+        return f"{x:.{nd}f}"
+
+    def pct(x: float) -> str:                                  # a percentage: no decimals from 10 % up
+        return f"{x:.0f}" if abs(x) >= 9.95 else f"{x:.1f}"
+
+    def put(key: str, x: float, nd: int, ci: list | None = None) -> None:
+        val[key] = f(x, nd)
+        if ci is not None:
+            val[f"{key}_ci"] = f"[{f(ci[0], nd)}, {f(ci[1], nd)}]"
+
+    rows = [r for name in ("e1_main", "e6_ablations") if (res / f"{name}.json").exists()
+            for r in json.loads((res / f"{name}.json").read_text())]
+    for r in rows:
+        for k, nd in (("pred_psnr", 2), ("pred_ssim", 3), ("pred_lpips", 3), ("pred_fvd", 0), ("delta_psnr", 2)):
+            if isinstance(r.get(k), (int, float)):
+                put(f"main/{r['run']}/{k.removeprefix('pred_')}", r[k], nd, r.get(f"{k}_ci"))
+    for run in sorted({r for r, *_ in ROWS + ABLATIONS} | {"reference"}):
+        d = load(run)
+        gains = [v for k, v in d.items() if k.startswith("cam_") and k.endswith("_gain")]
+        if gains:
+            put(f"ctl/{run}/gain", float(np.mean(gains)), 2)
+            val[f"ctl/{run}/gain_pct"] = f"{100 * np.mean(gains):.0f}"
+            val[f"ctl/{run}/gain_range"] = f"{100 * min(gains):.0f}--{100 * max(gains):.0f}"
+            val[f"ctl/{run}/sign_min"] = f(100 * min(v for k, v in d.items() if k.endswith("_sign_acc")
+                                                 and k != "cam_sign_acc_mean"), 1)
+        if "locality_ratio_median" in d:
+            put(f"ctl/{run}/locality", d["locality_ratio_median"], 2)
+        for k in ("locality_share_mean", "locality_area_mean"):
+            if k in d:
+                val[f"ctl/{run}/{k.split('_')[1]}"] = pct(100 * d[k])
+        for k, key in (("ecs_precision", "ecs_p"), ("ecs_recall", "ecs_r")):
+            if k in d:
+                put(f"ctl/{run}/{key}", d[k], 2)
+        for k, key in (("ecs_hallucination_rate", "halluc"), ("ecs_real_hallucination_rate", "real_halluc")):
+            if k in d:
+                put(f"ctl/{run}/{key}", 100 * d[k], 1)
+        step = d.get("step")
+        p = OUTPUTS / "eval" / "action_use" / f"{run}_{step}.json"
+        if not p.exists():
+            continue
+        u = json.loads(p.read_text())
+        rp, gap = u["replay"], u["replay_gap_pct"]
+        put(f"use/{run}/replay", rp["real"]["all"], 3)
+        for name, key in (("shuffled", "swap"), ("camera_shuffled", "cam_swap"), ("zero", "zeroed"),
+                          ("zero_camera_shuffled", "cam_swap_zeroed")):
+            if name not in gap:
+                continue
+            val[f"use/{run}/{key}"] = pct(gap[name])
+            for side, s in (("inside", "in"), ("outside", "out")):
+                val[f"use/{run}/{key}_{s}"] = pct(100 * (rp[name][side] / rp["real"][side] - 1))
+                if f"gap_{name}_{side}_pct" in u and u["taus"][-1] == 0.9:
+                    val[f"use/{run}/{key}_t9_{s}"] = pct(u[f"gap_{name}_{side}_pct"][-1])
+        if u.get("posterior", {}).get("kl_per_arm") is not None:
+            put(f"use/{run}/kl", u["posterior"]["kl_per_arm"], 1)
+    for run in ("S_arms",):
+        for name in ("replay", "control"):
+            p = OUTPUTS / "eval" / run / f"{name}.json"
+            if p.exists():
+                n = json.loads(p.read_text())["n_windows"]
+                val[f"{'main' if name == 'replay' else 'ctl'}/n_windows"] = f"{n:,}"
+    if (res / "e1_contrasts.json").exists():
+        for r in json.loads((res / "e1_contrasts.json").read_text()):
+            k = f"diff/{r['a']}-{r['b']}"
+            for m, nd in (("psnr", 2), ("ssim", 3), ("lpips", 3)):
+                put(f"{k}/{m}", r[f"d_{m}"], nd, r[f"d_{m}_ci"])
+            val[f"{k}/wins"], val[f"{k}/losses"] = str(r["a_better_psnr"]), str(r["n_cases"] - r["a_better_psnr"])
+            val["main/n_cases"] = str(r["n_cases"])
+    if (res / "e1_binding.json").exists():
+        d = json.loads((res / "e1_binding.json").read_text())
+        for k, v in d.get("coverage", {}).items():
+            if k != "instruments":
+                val[f"bind/{k}"] = f"{100 * v:.0f}"
+        by_run = {r["run"]: r for r in d["rows"]}
+        for g, n in d["windows"].items():
+            gk = g.split()[0]                                             # none, one, two (or more)
+            val[f"bind/n/{gk}"] = f"{n:,}"
+            for run, r in by_run.items():
+                if g in r:
+                    put(f"bind/{gk}/{run}", r[g], 2)
+                    if run != "S_arms" and g in by_run.get("S_arms", {}):
+                        put(f"bind/{gk}/{run}-S_arms", r[g] - by_run["S_arms"][g], 2)
+    a, c = OUTPUTS / "eval" / "S_arms" / "replay.json", OUTPUTS / "eval" / "reference" / "reference.json"
+    if a.exists() and c.exists():
+        d = (np.array(json.loads(a.read_text())["pred_psnr_by_frame"])
+             - np.array(json.loads(c.read_text())["copy_last_psnr_by_frame"]))
+        t = np.arange(1, len(d) + 1) / 10                                 # seconds after the last context frame
+        put("horizon/first", d[0], 1)
+        val["horizon/trail"] = f(t[d < 0].max(), 1) if (d < 0).any() else "0"
+        late = d[t >= 0.5]
+        val["horizon/lead"] = f"{f(late.min(), 1)}--{f(late.max(), 1)}"
+    if (res / "cost.json").exists():
+        cost = [r for r in json.loads((res / "cost.json").read_text()) if r["size"] == "S"]
+        for k, key, nd in (("train_h", "train_h", 1), ("win_per_s", "speed", 0), ("train_mem_gb", "mem", 0)):
+            v = [r[k] for r in cost]
+            val[f"cost/S/{key}"] = f"{f(min(v), nd)}--{f(max(v), nd)}" if v else "--"
+        for r in cost:
+            if "gen_s" in r:
+                put(f"cost/{r['run']}/gen_s", r["gen_s"], 2)
+                put(f"cost/{r['run']}/decode_s", r["decode_s"], 2)
+                put(f"cost/{r['run']}/infer_mem", r["infer_mem_gb"], 1)
+                put(f"cost/{r['run']}/realtime", 2.8 / (r["gen_s"] + r["decode_s"]), 1)   # predicted seconds per second
+    loc = {run: load(run).get("locality_ratio_median") for run in ("S_arms", "S_arms_poolglobal", "S_global")}
+    if all(isinstance(v, float) for v in loc.values()):                   # how far ungrounded pooling goes
+        way = (loc["S_arms"] - loc["S_arms_poolglobal"]) / (loc["S_arms"] - loc["S_global"])
+        val["derived/pool_way"] = pct(100 * way)
+    if not val:
+        return
+    lines = ["% Numbers quoted in the manuscript, generated by scripts/eval/aggregate.py (do not edit): \\val{key}"]
+    lines += [rf"\expandafter\def\csname val@{k}\endcsname{{{re.sub(r'(?<![0-9-])-(?=[0-9])', '$-$', v)}}}"
+              for k, v in sorted(val.items())]
+    (ROOT / "paper" / "tmrb" / "tables" / "numbers.tex").write_text("\n".join(lines) + "\n")
+    (res / "numbers.json").write_text(json.dumps(dict(sorted(val.items())), indent=1))
+    print(f"{len(val)} numbers -> paper/tmrb/tables/numbers.tex")
+
+
 def main() -> None:
     e1()
     paired()
+    contrasts()
     locality()
     binding()
     detector()
@@ -716,6 +902,7 @@ def main() -> None:
     e2()
     e3()
     e4()
+    numbers()
 
 
 if __name__ == "__main__":
