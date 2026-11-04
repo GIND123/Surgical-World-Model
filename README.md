@@ -184,6 +184,8 @@ The flow-matching loss at the highest noise level (τ = 0.9) separates the two m
 
 *Endoscope gain*: realised / commanded endoscope motion with the learned actions zeroed (median per command, mean over the six commands). *Locality*: one arm's action replaced → share of the pixel change in that arm's region over the region's share of the frame; \* no arm action of its own, so the whole learned action is replaced. *Unmounted*: generated instruments that the robot log does not mount, on the 278 windows with a usable log; the detector itself finds 5.3 % on the real frames and on VAE reconstructions (which keep 98 % of the instruments).
 
+**Cost** ([docs/results/cost.md](docs/results/cost.md)): an S model trains in 4.6–5.6 h on one RTX PRO 5000 (96–117 windows/s, 26–32 GB). One 2.8 s prediction (batch 1, 50 Euler steps, actions inferred from the clip) takes 0.29 s and its VAE decoding 0.37 s, in under 4 GB of GPU memory: four times faster than real time.
+
 ![PSNR over the prediction horizon](docs/figures/e1_horizon.png)
 
 *PSNR of each predicted frame, 0.1–2.8 s after the last context frame (mean over the 1,000 test windows). Paired per-case differences to EG-SWM, with intervals and the number of cases each model loses: [docs/results/e1_paired.md](docs/results/e1_paired.md).*

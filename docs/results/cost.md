@@ -4,10 +4,10 @@
 | Robot state | S | 60000 | 5.2 | 103 | 29.7 | – | – | – |
 | Robot state + camera | S | 60000 | 5.2 | 103 | 29.7 | – | – | – |
 | Monolithic latent (Genie) | S | 60000 | 5.6 | 96 | 31.4 | – | – | – |
-| Monolithic latent + camera | S | 60000 | 5.6 | 96 | 31.8 | – | – | – |
+| Monolithic latent + camera | S | 60000 | 5.6 | 96 | 31.8 | 0.29 | 0.37 | 3.7 |
 | Monolithic VQ + camera (SurgWM-style) | S | 60000 | 5.6 | 96 | 31.4 | – | – | – |
 | Slots + camera (FLAM-style) | S | 60000 | 5.6 | 96 | 31.5 | – | – | – |
 | EG-SWM, no camera action | S | 60000 | 5.6 | 96 | 31.4 | – | – | – |
-| EG-SWM | S | 60000 | 5.6 | 96 | 31.4 | – | – | – |
+| EG-SWM | S | 60000 | 5.6 | 96 | 31.4 | 0.29 | 0.37 | 3.7 |
 | EG-SWM + scene action | S | 60000 | 5.6 | 96 | 31.4 | – | – | – |
 | EG-SWM, arm actions not grounded | S | 60000 | 5.6 | 96 | 31.4 | – | – | – |

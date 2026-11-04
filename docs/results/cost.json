@@ -42,7 +42,11 @@
   "steps": 60000,
   "train_h": 5.559202671051025,
   "win_per_s": 95.93701918993018,
-  "train_mem_gb": 31.839873024
+  "train_mem_gb": 31.839873024,
+  "parameters": 50129424,
+  "gen_s": 0.287034273147583,
+  "decode_s": 0.3684096336364746,
+  "infer_mem_gb": 3.7
  },
  {
   "run": "S_global_vq",
@@ -78,7 +82,11 @@
   "steps": 60000,
   "train_h": 5.56365350881548,
   "win_per_s": 95.86027104101272,
-  "train_mem_gb": 31.433165824
+  "train_mem_gb": 31.433165824,
+  "parameters": 50137328,
+  "gen_s": 0.28791260719299316,
+  "decode_s": 0.3680763244628906,
+  "infer_mem_gb": 3.7
  },
  {
   "run": "S_arms_scene",
