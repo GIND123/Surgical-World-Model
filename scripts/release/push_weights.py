@@ -52,9 +52,10 @@ def export_surgwm(run: str) -> tuple[Path, int]:
         meta["step"][stage], meta["train"][stage] = st["step"], conf["train"]
         meta["parameters"][stage] = sum(p.numel() for p in model.parameters())
     (out / "config.json").write_text(json.dumps(meta, indent=1))
-    src = OUTPUTS / "eval" / run / "replay.json"
-    if src.exists():
-        (out / "replay.json").write_text(src.read_text())
+    for name in ("replay.json", "control.json"):
+        src = OUTPUTS / "eval" / run / name
+        if src.exists():
+            (out / name).write_text(src.read_text())
     return out, meta["step"]["dynamics"]
 
 

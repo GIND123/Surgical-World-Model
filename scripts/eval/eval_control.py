@@ -84,6 +84,62 @@ def to_detector_canvas(frames: np.ndarray) -> list[np.ndarray]:
     return out
 
 
+def where_change_lands(diff: np.ndarray, boxes: np.ndarray, occupant: np.ndarray, arms, n_ctx: int) -> list[dict]:
+    """One window's change map (predicted frames, H, W) after an action was replaced -> for each instrument arm of
+    `arms` detected in a predicted step: the share of the change inside its dilated boxes over their area share."""
+    h, w = diff.shape[-2:]
+    dm = diff.sum(0)
+    rows = []
+    for k in arms:
+        bx = boxes[n_ctx:, k]
+        bx = bx[np.isfinite(bx[:, 0])]
+        if not len(bx) or occupant[-1, k] < 2:
+            continue
+        m = np.zeros((h, w), np.float32)
+        for x0, y0, x1, y1 in bx:
+            m[int(y0 * h):int(np.ceil(y1 * h)), int(x0 * w):int(np.ceil(x1 * w))] = 1
+        m = cv2.dilate(m, np.ones((9, 9), np.uint8))
+        share, area = float((dm * m).sum() / max(dm.sum(), 1e-8)), float(m.mean())
+        rows.append(dict(arm=int(k), share=share, area=area, ratio=share / max(area, 1e-6), change=float(dm.mean())))
+    return rows
+
+
+def embodiment(det, gen: np.ndarray, real: np.ndarray, occ: list[int]) -> list[dict] | None:
+    """The detector on one window's generated and real future frames -> per frame: classes found in both, in either,
+    generated but not mounted per the robot log, missing; None if the window has no usable robot log."""
+    if OCC_INDEX[CAMERA] not in occ or OCC_INDEX[UNKNOWN] in occ:
+        return None
+    kw = dict(imgsz=640, conf=0.3, quantize=16, verbose=False)                   # FP16 inference
+    gen_dets = det.predict(to_detector_canvas(gen), **kw)
+    real_dets = det.predict(to_detector_canvas(real), **kw)
+    mounted = {o - 2 for o in occ if 2 <= o < 2 + len(DETECTOR_CLASSES)}      # detector class indices
+    rows = []
+    for g, r in zip(gen_dets, real_dets, strict=True):
+        gc = {int(c) for c in g.boxes.cls.tolist()}
+        rc = {int(c) for c in r.boxes.cls.tolist()}
+        rows.append(dict(tp=len(gc & rc), gen=len(gc), real=len(rc), halluc=len(gc - mounted),
+                         missing=len(rc - gc), real_halluc=len(rc - mounted)))
+    return rows
+
+
+def summarise(res: dict) -> dict:
+    """Locality and embodiment-consistency summary of the per-window rows."""
+    out = {}
+    if res["locality"]:
+        loc = res["locality"]
+        out["locality_ratio_median"] = float(np.median([x["ratio"] for x in loc]))
+        out["locality_share_mean"] = float(np.mean([x["share"] for x in loc]))
+        out["locality_area_mean"] = float(np.mean([x["area"] for x in loc]))
+    if "ecs_windows" in res:
+        e = res["ecs"]
+        tp, ng, nr = sum(x["tp"] for x in e), sum(x["gen"] for x in e), sum(x["real"] for x in e)
+        out.update(ecs_windows=res["ecs_windows"], ecs_precision=tp / max(ng, 1),
+                   ecs_recall=tp / max(nr, 1), ecs_hallucination_rate=sum(x["halluc"] for x in e) / max(ng, 1),
+                   ecs_missing_rate=sum(x["missing"] for x in e) / max(nr, 1),
+                   ecs_real_hallucination_rate=sum(x["real_halluc"] for x in e) / max(nr, 1))
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run")
@@ -148,7 +204,7 @@ def main() -> None:
                     res["camera"][name].append(dict(commanded=cmd[:3].tolist(), realised=r.tolist(), **where[i]))
         # ---- locality: replace one action, measure where the change lands
         alt = {k: v.roll(1, 0) for k, v in acts.items() if k.startswith("u_")}
-        boxes = b["boxes"].cpu().numpy()
+        boxes, occ = b["boxes"].cpu().numpy(), b["occupant"].cpu().numpy()
         targets = []
         if "locality" not in tests:
             pass
@@ -170,38 +226,18 @@ def main() -> None:
             with torch.autocast("cuda", dtype=torch.bfloat16):                          # the reference's noise
                 out = model.generate(b, args.n_ctx, args.steps, actions=a2,
                                      generator=torch.Generator(device="cuda").manual_seed(s))
-            diff = (decode(vae, out, mean, std) - ref_px).abs().mean(-1)[:, first:]       # B T H W
-            h, w = diff.shape[-2:]
+            diff = (decode(vae, out, mean, std) - ref_px).abs().mean(-1)[:, first:].cpu().numpy()   # B T H W
             for i in range(bsz):
-                for k in ([arm] if arm is not None else range(4)):
-                    bx = boxes[i, args.n_ctx:, k]
-                    bx = bx[np.isfinite(bx[:, 0])]
-                    if not len(bx) or b["occupant"][i, -1, k] < 2:
-                        continue
-                    m = np.zeros((h, w), np.float32)
-                    for x0, y0, x1, y1 in bx:
-                        m[int(y0 * h):int(np.ceil(y1 * h)), int(x0 * w):int(np.ceil(x1 * w))] = 1
-                    m = cv2.dilate(m, np.ones((9, 9), np.uint8))
-                    dm = diff[i].sum(0).cpu().numpy()
-                    share = float((dm * m).sum() / max(dm.sum(), 1e-8))
-                    area = float(m.mean())
-                    res["locality"].append(dict(arm=int(k), share=share, area=area, ratio=share / max(area, 1e-6),
-                                                change=float(dm.mean()), **where[i]))
+                rows = where_change_lands(diff[i], boxes[i], occ[i], [arm] if arm is not None else range(4),
+                                          args.n_ctx)
+                res["locality"] += [dict(r, **where[i]) for r in rows]
         # ---- embodiment consistency
         for i in range(bsz if "ecs" in tests else 0):
-            occ = b["occupant"][i, -1].tolist()
-            if OCC_INDEX[CAMERA] not in occ or OCC_INDEX[UNKNOWN] in occ:
+            rows = embodiment(det, base_px[i][first:], real[i][first:], b["occupant"][i, -1].tolist())
+            if rows is None:
                 continue                                              # no usable robot log for this window
-            kw = dict(imgsz=640, conf=0.3, quantize=16, verbose=False)                   # FP16 inference
-            gen_dets = det.predict(to_detector_canvas(base_px[i][first:]), **kw)
-            real_dets = det.predict(to_detector_canvas(real[i][first:]), **kw)
-            mounted = {o - 2 for o in occ if 2 <= o < 2 + len(DETECTOR_CLASSES)}      # detector class indices
             res["ecs_windows"] = res.get("ecs_windows", 0) + 1
-            for g, r in zip(gen_dets, real_dets, strict=True):
-                gc = {int(c) for c in g.boxes.cls.tolist()}
-                rc = {int(c) for c in r.boxes.cls.tolist()}
-                res["ecs"].append(dict(tp=len(gc & rc), gen=len(gc), real=len(rc), halluc=len(gc - mounted),
-                                       missing=len(rc - gc), real_halluc=len(rc - mounted), **where[i]))
+            res["ecs"] += [dict(r, **where[i]) for r in rows]
         print(f"{s + bsz}/{n}", flush=True)
     summary = dict(meta, run=run, n_windows=n, tests=sorted(tests), command_scale=args.scale)
     if cfg is not None and cfg.camera and "camera" in tests:
@@ -213,18 +249,9 @@ def main() -> None:
             summary[f"cam_{name}_gain"] = float(np.median(r[ok, ax] / c[ok, ax]))
             summary[f"cam_{name}_sign_acc"] = float((np.sign(r[ok, ax]) == np.sign(c[ok, ax])).mean())
         summary["cam_sign_acc_mean"] = float(np.mean([summary[f"cam_{k}_sign_acc"] for k in COMMANDS]))
-    if res["locality"]:
-        loc = res["locality"]
-        summary["locality_ratio_median"] = float(np.median([x["ratio"] for x in loc]))
-        summary["locality_share_mean"] = float(np.mean([x["share"] for x in loc]))
-        summary["locality_area_mean"] = float(np.mean([x["area"] for x in loc]))
-    e = res["ecs"]
-    tp, ng, nr = sum(x["tp"] for x in e), sum(x["gen"] for x in e), sum(x["real"] for x in e)
     if "ecs" in tests:
-        summary.update(ecs_windows=res.get("ecs_windows", 0), ecs_precision=tp / max(ng, 1),
-                       ecs_recall=tp / max(nr, 1), ecs_hallucination_rate=sum(x["halluc"] for x in e) / max(ng, 1),
-                       ecs_missing_rate=sum(x["missing"] for x in e) / max(nr, 1),
-                       ecs_real_hallucination_rate=sum(x["real_halluc"] for x in e) / max(nr, 1))
+        res.setdefault("ecs_windows", 0)
+    summary.update(summarise(res))
     out = OUTPUTS / "eval" / run
     out.mkdir(parents=True, exist_ok=True)
     (out / f"{args.tag}.json").write_text(json.dumps(summary, indent=1))
