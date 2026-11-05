@@ -14,3 +14,4 @@
 | EG-SWM, arm actions not grounded | S | 60000 | 5.6 | 96 | 31.4 | – | – | – |
 | EG-SWM, wrong arm binding | S | 60000 | 5.6 | 96 | 31.4 | – | – | – |
 | EG-SWM + console readout | S | 60000 | 5.6 | 96 | 31.4 | – | – | – |
+| EG-SWM, boxes held across detector gaps | S | 60000 | 5.6 | 96 | 31.4 | – | – | – |

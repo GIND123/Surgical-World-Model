@@ -143,5 +143,34 @@
    0.17488792613148688
   ],
   "cam_gain_mean": 0.6960646844816937
+ },
+ {
+  "run": "S_arms_hold",
+  "label": "EG-SWM, boxes held across detector gaps",
+  "action": "arms",
+  "camera": true,
+  "step": 60000,
+  "pred_psnr": 22.057798385620117,
+  "pred_ssim": 0.6923966407775879,
+  "pred_lpips": 0.16277462244033813,
+  "pred_fvd": 184.91851275281982,
+  "delta_psnr": 2.819643020629883,
+  "locality_ratio_median": 2.4732431493727614,
+  "ecs_precision": 0.9343108504398827,
+  "ecs_recall": 0.8165043567401332,
+  "ecs_hallucination_rate": 0.08064516129032258,
+  "pred_psnr_ci": [
+   21.482586288452147,
+   22.662365770339964
+  ],
+  "pred_ssim_ci": [
+   0.6762315407395363,
+   0.7091027066111565
+  ],
+  "pred_lpips_ci": [
+   0.15209837965667247,
+   0.17353290021419523
+  ],
+  "cam_gain_mean": 0.6539828287528442
  }
 ]

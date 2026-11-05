@@ -320,5 +320,28 @@
   ],
   "egswm_better_lpips": 10,
   "n_cases": 19
+ },
+ {
+  "run": "S_arms_hold",
+  "label": "EG-SWM, boxes held across detector gaps",
+  "d_psnr": 0.052850622683763504,
+  "d_psnr_ci": [
+   0.03604258503764868,
+   0.06930746175348758
+  ],
+  "egswm_better_psnr": 1,
+  "d_ssim": 0.0013868369860574603,
+  "d_ssim_ci": [
+   0.0007987071934621781,
+   0.001954891288187355
+  ],
+  "egswm_better_ssim": 2,
+  "d_lpips": -0.0012712996685877442,
+  "d_lpips_ci": [
+   -0.0017691278422717004,
+   -0.0007469951771781781
+  ],
+  "egswm_better_lpips": 3,
+  "n_cases": 19
  }
 ]

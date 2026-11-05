@@ -178,5 +178,22 @@
   ],
   "egswm_better": 12,
   "n_cases": 19
+ },
+ {
+  "run": "S_arms_hold",
+  "label": "EG-SWM, boxes held across detector gaps",
+  "n_rows": 630,
+  "locality": 2.4732431493727614,
+  "locality_ci": [
+   2.3101817435656016,
+   2.743154538484563
+  ],
+  "d_locality": 0.05452226259423343,
+  "d_locality_ci": [
+   -0.06399335931815475,
+   0.14804377872036964
+  ],
+  "egswm_better": 10,
+  "n_cases": 19
  }
 ]

@@ -92,6 +92,18 @@
 \expandafter\def\csname val@ctl/S_arms/real_halluc\endcsname{5.3}
 \expandafter\def\csname val@ctl/S_arms/share\endcsname{18}
 \expandafter\def\csname val@ctl/S_arms/sign_min\endcsname{99.7}
+\expandafter\def\csname val@ctl/S_arms_hold/area\endcsname{7.2}
+\expandafter\def\csname val@ctl/S_arms_hold/ecs_p\endcsname{0.93}
+\expandafter\def\csname val@ctl/S_arms_hold/ecs_r\endcsname{0.82}
+\expandafter\def\csname val@ctl/S_arms_hold/gain\endcsname{0.65}
+\expandafter\def\csname val@ctl/S_arms_hold/gain_pct\endcsname{65}
+\expandafter\def\csname val@ctl/S_arms_hold/gain_range\endcsname{45--82}
+\expandafter\def\csname val@ctl/S_arms_hold/halluc\endcsname{8.1}
+\expandafter\def\csname val@ctl/S_arms_hold/locality\endcsname{2.47}
+\expandafter\def\csname val@ctl/S_arms_hold/locality_ci\endcsname{[2.31, 2.74]}
+\expandafter\def\csname val@ctl/S_arms_hold/real_halluc\endcsname{5.3}
+\expandafter\def\csname val@ctl/S_arms_hold/share\endcsname{18}
+\expandafter\def\csname val@ctl/S_arms_hold/sign_min\endcsname{100.0}
 \expandafter\def\csname val@ctl/S_arms_nocam/area\endcsname{7.2}
 \expandafter\def\csname val@ctl/S_arms_nocam/ecs_p\endcsname{0.93}
 \expandafter\def\csname val@ctl/S_arms_nocam/ecs_r\endcsname{0.81}
@@ -226,6 +238,10 @@
 \expandafter\def\csname val@ctl/reference/halluc\endcsname{5.3}
 \expandafter\def\csname val@ctl/reference/real_halluc\endcsname{5.3}
 \expandafter\def\csname val@derived/pool_way\endcsname{60}
+\expandafter\def\csname val@diff/S_arms-S_arms_hold/locality\endcsname{$-$0.05}
+\expandafter\def\csname val@diff/S_arms-S_arms_hold/locality_ci\endcsname{[$-$0.15, 0.06]}
+\expandafter\def\csname val@diff/S_arms-S_arms_hold/locality_losses\endcsname{9}
+\expandafter\def\csname val@diff/S_arms-S_arms_hold/locality_wins\endcsname{10}
 \expandafter\def\csname val@diff/S_arms-S_arms_nocam/locality\endcsname{0.40}
 \expandafter\def\csname val@diff/S_arms-S_arms_nocam/locality_ci\endcsname{[0.31, 0.62]}
 \expandafter\def\csname val@diff/S_arms-S_arms_nocam/locality_losses\endcsname{2}
@@ -314,6 +330,14 @@
 \expandafter\def\csname val@diff/S_arms-copy_last/ssim\endcsname{0.010}
 \expandafter\def\csname val@diff/S_arms-copy_last/ssim_ci\endcsname{[0.005, 0.015]}
 \expandafter\def\csname val@diff/S_arms-copy_last/wins\endcsname{17}
+\expandafter\def\csname val@diff/S_arms_hold-S_arms/losses\endcsname{1}
+\expandafter\def\csname val@diff/S_arms_hold-S_arms/lpips\endcsname{$-$0.001}
+\expandafter\def\csname val@diff/S_arms_hold-S_arms/lpips_ci\endcsname{[$-$0.002, $-$0.001]}
+\expandafter\def\csname val@diff/S_arms_hold-S_arms/psnr\endcsname{0.05}
+\expandafter\def\csname val@diff/S_arms_hold-S_arms/psnr_ci\endcsname{[0.04, 0.07]}
+\expandafter\def\csname val@diff/S_arms_hold-S_arms/ssim\endcsname{0.001}
+\expandafter\def\csname val@diff/S_arms_hold-S_arms/ssim_ci\endcsname{[0.001, 0.002]}
+\expandafter\def\csname val@diff/S_arms_hold-S_arms/wins\endcsname{18}
 \expandafter\def\csname val@diff/S_arms_nocam-S_state_nocam/losses\endcsname{0}
 \expandafter\def\csname val@diff/S_arms_nocam-S_state_nocam/lpips\endcsname{$-$0.060}
 \expandafter\def\csname val@diff/S_arms_nocam-S_state_nocam/lpips_ci\endcsname{[$-$0.065, $-$0.056]}
@@ -429,6 +453,14 @@
 \expandafter\def\csname val@main/S_arms/psnr_ci\endcsname{[21.43, 22.62]}
 \expandafter\def\csname val@main/S_arms/ssim\endcsname{0.691}
 \expandafter\def\csname val@main/S_arms/ssim_ci\endcsname{[0.675, 0.708]}
+\expandafter\def\csname val@main/S_arms_hold/delta_psnr\endcsname{2.82}
+\expandafter\def\csname val@main/S_arms_hold/fvd\endcsname{185}
+\expandafter\def\csname val@main/S_arms_hold/lpips\endcsname{0.163}
+\expandafter\def\csname val@main/S_arms_hold/lpips_ci\endcsname{[0.152, 0.174]}
+\expandafter\def\csname val@main/S_arms_hold/psnr\endcsname{22.06}
+\expandafter\def\csname val@main/S_arms_hold/psnr_ci\endcsname{[21.48, 22.66]}
+\expandafter\def\csname val@main/S_arms_hold/ssim\endcsname{0.692}
+\expandafter\def\csname val@main/S_arms_hold/ssim_ci\endcsname{[0.676, 0.709]}
 \expandafter\def\csname val@main/S_arms_nocam/delta_psnr\endcsname{2.27}
 \expandafter\def\csname val@main/S_arms_nocam/fvd\endcsname{215}
 \expandafter\def\csname val@main/S_arms_nocam/lpips\endcsname{0.176}
@@ -572,6 +604,29 @@
 \expandafter\def\csname val@use/S_arms/zeroed_out\endcsname{42}
 \expandafter\def\csname val@use/S_arms/zeroed_t9_in\endcsname{29}
 \expandafter\def\csname val@use/S_arms/zeroed_t9_out\endcsname{12}
+\expandafter\def\csname val@use/S_arms_hold/active\endcsname{8}
+\expandafter\def\csname val@use/S_arms_hold/cam_swap\endcsname{27}
+\expandafter\def\csname val@use/S_arms_hold/cam_swap_in\endcsname{13}
+\expandafter\def\csname val@use/S_arms_hold/cam_swap_out\endcsname{30}
+\expandafter\def\csname val@use/S_arms_hold/cam_swap_t9_in\endcsname{14}
+\expandafter\def\csname val@use/S_arms_hold/cam_swap_t9_out\endcsname{46}
+\expandafter\def\csname val@use/S_arms_hold/cam_swap_zeroed\endcsname{21}
+\expandafter\def\csname val@use/S_arms_hold/cam_swap_zeroed_in\endcsname{63}
+\expandafter\def\csname val@use/S_arms_hold/cam_swap_zeroed_out\endcsname{67}
+\expandafter\def\csname val@use/S_arms_hold/cam_swap_zeroed_t9_in\endcsname{15}
+\expandafter\def\csname val@use/S_arms_hold/cam_swap_zeroed_t9_out\endcsname{47}
+\expandafter\def\csname val@use/S_arms_hold/kl\endcsname{14.4}
+\expandafter\def\csname val@use/S_arms_hold/replay\endcsname{0.327}
+\expandafter\def\csname val@use/S_arms_hold/swap\endcsname{34}
+\expandafter\def\csname val@use/S_arms_hold/swap_in\endcsname{50}
+\expandafter\def\csname val@use/S_arms_hold/swap_out\endcsname{31}
+\expandafter\def\csname val@use/S_arms_hold/swap_t9_in\endcsname{69}
+\expandafter\def\csname val@use/S_arms_hold/swap_t9_out\endcsname{34}
+\expandafter\def\csname val@use/S_arms_hold/zeroed\endcsname{37}
+\expandafter\def\csname val@use/S_arms_hold/zeroed_in\endcsname{46}
+\expandafter\def\csname val@use/S_arms_hold/zeroed_out\endcsname{35}
+\expandafter\def\csname val@use/S_arms_hold/zeroed_t9_in\endcsname{31}
+\expandafter\def\csname val@use/S_arms_hold/zeroed_t9_out\endcsname{13}
 \expandafter\def\csname val@use/S_arms_nocam/active\endcsname{8}
 \expandafter\def\csname val@use/S_arms_nocam/cam_swap\endcsname{0.0}
 \expandafter\def\csname val@use/S_arms_nocam/cam_swap_in\endcsname{0.0}

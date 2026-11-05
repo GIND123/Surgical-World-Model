@@ -11,3 +11,4 @@
 | EG-SWM, arm actions not grounded | 1.84 [1.71, 2.03] | -0.58 [-0.76, -0.48] | 19/19 |
 | EG-SWM, wrong arm binding | 0.90 [0.80, 0.99] | -1.52 [-1.87, -1.34] | 19/19 |
 | EG-SWM + console readout | 2.40 [2.22, 2.63] | -0.01 [-0.16, 0.07] | 12/19 |
+| EG-SWM, boxes held across detector gaps | 2.47 [2.31, 2.74] | 0.05 [-0.06, 0.15] | 10/19 |
