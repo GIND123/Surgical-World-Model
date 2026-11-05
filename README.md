@@ -265,6 +265,18 @@ Two evaluation problems surfaced on the way, and both are fixed:
 
 Fifty steps have converged: 100 change PSNR by at most 0.03 dB. Twenty steps cost EG-SWM 0.29 dB (0.77 dB at 2.8 s) and VQ 0.44 dB, but the frame-wide actions at most 0.07 dB. Guidance (scale 2 on the actions) adds 0.05–0.17 dB for every interface and strengthens action following (EG-SWM's ΔPSNR 3.49 instead of 2.94), but it is kept out of the protocol so that every interface is sampled the same way. No setting changes the order of the interfaces. The remaining LPIPS gap to a frozen frame is perceptual detail: a sampled future draws its own fine texture. The size-B flagship repeats these tests (`341`).
 
+**Context length** (job `331`, the same 200 windows; [e1_context](docs/results/e1_context.md)), PSNR over the frames that every setting predicts:
+
+| PSNR (dB) over 0.9–3.2 s | 1 latent (0.1 s) | 2 latents (0.5 s, protocol) | 3 latents (0.9 s) |
+|---|---:|---:|---:|
+| EG-SWM | 20.30 | 21.56 | 22.87 |
+| EG-SWM + scene action | 20.53 | 21.81 | 23.16 |
+| Monolithic latent + camera | 20.73 | 21.91 | 23.20 |
+| Slots + camera (FLAM-style) | 21.05 | 22.25 | 23.52 |
+| Monolithic VQ + camera (SurgWM-style) | 19.45 | 20.75 | 22.08 |
+
+Each added latent raises PSNR by 1.2–1.3 dB for every interface (it also brings the last context frame 0.4 s nearer). The order of the interfaces stays the same: EG-SWM trails the monolithic latent by 0.42, 0.34 and 0.34 dB and the slots by 0.74, 0.69 and 0.65 dB with one, two and three latents.
+
 ### E2b — the camera action measures real endoscope motion (CRCD, dVRK ECM kinematics)
 
 | | value |

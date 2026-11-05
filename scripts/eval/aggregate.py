@@ -989,6 +989,18 @@ def numbers() -> None:
                       for s in ((20, 1.0), (50, 1.0), (100, 1.0), (50, 2.0))}
             if len(orders) > 1:
                 print("### the order of the interfaces depends on the sampler (text: it does not)")
+    if (res / "e1_context.json").exists():                     # 1-3 context latents: PSNR over the frames all predict
+        ctx = {r["run"]: r for r in json.loads((res / "e1_context.json").read_text())}
+        inter = [r for r in SENS_RUNS if r.startswith("S_") and all(f"ctx{n}" in ctx.get(r, {}) for n in (1, 2, 3))]
+        if inter:
+            step = [(ctx[r]["ctx3"] - ctx[r]["ctx1"]) / 2 for r in inter]
+            val["ctx/per_latent"] = f"{f(min(step), 1)}--{f(max(step), 1)}"
+            for other in ("S_global", "S_slots"):
+                if "S_arms" in inter and other in inter:
+                    for n in (1, 2, 3):
+                        put(f"ctx/{other}-S_arms/{n}", ctx[other][f"ctx{n}"] - ctx["S_arms"][f"ctx{n}"], 2)
+            if len({tuple(sorted(inter, key=lambda r, n=n: -ctx[r][f"ctx{n}"])) for n in (1, 2, 3)}) > 1:
+                print("### the order of the interfaces depends on the context length (text: it does not)")
     if (res / "e1_binding.json").exists():
         d = json.loads((res / "e1_binding.json").read_text())
         for k, v in d.get("coverage", {}).items():
