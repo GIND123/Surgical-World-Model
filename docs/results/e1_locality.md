@@ -9,3 +9,4 @@
 | EG-SWM + scene action | 3.50 [3.06, 3.82] | 1.09 [0.71, 1.25] | 0/19 |
 | EG-SWM, diffusion loss only | 2.21 [2.09, 2.40] | -0.21 [-0.42, -0.10] | 10/19 |
 | EG-SWM, arm actions not grounded | 1.84 [1.71, 2.03] | -0.58 [-0.76, -0.48] | 19/19 |
+| EG-SWM, wrong arm binding | 0.90 [0.80, 0.99] | -1.52 [-1.87, -1.34] | 19/19 |

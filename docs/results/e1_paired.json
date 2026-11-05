@@ -274,5 +274,28 @@
   ],
   "egswm_better_lpips": 9,
   "n_cases": 19
+ },
+ {
+  "run": "S_arms_shuffled",
+  "label": "EG-SWM, wrong arm binding",
+  "d_psnr": -0.024393383413553238,
+  "d_psnr_ci": [
+   -0.044828896038234235,
+   -0.0029338937427383096
+  ],
+  "egswm_better_psnr": 12,
+  "d_ssim": -0.0005738452891819179,
+  "d_ssim_ci": [
+   -0.0012543703749543055,
+   0.00016939529887167733
+  ],
+  "egswm_better_ssim": 14,
+  "d_lpips": 0.0008352324366569519,
+  "d_lpips_ci": [
+   8.305577739520231e-05,
+   0.0015452409657882523
+  ],
+  "egswm_better_lpips": 17,
+  "n_cases": 19
  }
 ]

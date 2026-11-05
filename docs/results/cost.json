@@ -114,5 +114,14 @@
   "train_h": 5.5702395836507,
   "win_per_s": 95.74692889309978,
   "train_mem_gb": 31.433165824
+ },
+ {
+  "run": "S_arms_shuffled",
+  "label": "EG-SWM, wrong arm binding",
+  "size": "S",
+  "steps": 60000,
+  "train_h": 5.569287498791216,
+  "win_per_s": 95.76329709125099,
+  "train_mem_gb": 31.433165824
  }
 ]

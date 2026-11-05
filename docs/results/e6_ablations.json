@@ -85,5 +85,34 @@
    0.17420049384236336
   ],
   "cam_gain_mean": 0.6532289490715973
+ },
+ {
+  "run": "S_arms_shuffled",
+  "label": "EG-SWM, wrong arm binding",
+  "action": "arms",
+  "camera": true,
+  "step": 60000,
+  "pred_psnr": 21.980554580688477,
+  "pred_ssim": 0.6904359459877014,
+  "pred_lpips": 0.16488116979599,
+  "pred_fvd": 186.1461207125197,
+  "delta_psnr": 2.758563995361328,
+  "locality_ratio_median": 0.9024548640370256,
+  "ecs_precision": 0.9389463318562284,
+  "ecs_recall": 0.8145395523663079,
+  "ecs_hallucination_rate": 0.07602166420482522,
+  "pred_psnr_ci": [
+   21.4065203666687,
+   22.587464237213133
+  ],
+  "pred_ssim_ci": [
+   0.6741611033678054,
+   0.7073271811008454
+  ],
+  "pred_lpips_ci": [
+   0.15380009524524213,
+   0.17597695514559744
+  ],
+  "cam_gain_mean": 0.7045145164584654
  }
 ]

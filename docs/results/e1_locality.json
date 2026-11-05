@@ -144,5 +144,22 @@
   ],
   "egswm_better": 19,
   "n_cases": 19
+ },
+ {
+  "run": "S_arms_shuffled",
+  "label": "EG-SWM, wrong arm binding",
+  "n_rows": 630,
+  "locality": 0.9024548640370256,
+  "locality_ci": [
+   0.7993755504002591,
+   0.9938091193610886
+  ],
+  "d_locality": -1.5162660227415024,
+  "d_locality_ci": [
+   -1.8666090939947202,
+   -1.3408643468623744
+  ],
+  "egswm_better": 19,
+  "n_cases": 19
  }
 ]
