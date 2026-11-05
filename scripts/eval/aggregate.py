@@ -623,13 +623,14 @@ def binding() -> None:
 
     ev = EvalWindows("test")
     idx = spread(len(ev), 1000)
-    n_bound = np.zeros(len(idx), int)
+    n_bound, seen = np.zeros(len(idx), int), np.zeros(len(idx), bool)
     bound = []                                       # per mounted instrument: share of the window's steps bound
     for j, i in enumerate(idx):
         p, w = ev.index[i]
         c = ev.parts[p]["cond"]
         inst = (c["occupant"][w] >= 2).all(0)                            # instrument arms (not empty, not endoscope)
         bound += np.isfinite(c["boxes"][w][..., 0]).mean(0)[inst].tolist()
+        seen[j] = bool(np.isfinite(c["boxes"][w][..., 0]).any(0)[inst].any())   # some instrument detected at all
         occ, box = c["occupant"][w][2:], c["boxes"][w][2:]               # predicted latent steps
         n_bound[j] = int(((occ >= 2).all(0) & (np.isfinite(box[..., 0]).mean(0) >= 0.5)).sum())
     bound = np.array(bound)
@@ -659,7 +660,8 @@ def binding() -> None:
             rf"\cmidrule(lr){{2-{len(groups) + 1}}}",
             "Model & " + " & ".join(f"{g.split()[0]} ({int(m.sum())})".replace("two", r"$\geq$2")
                                     for g, m in groups) + r" \\"]
-    data = dict(windows={g: int(m.sum()) for g, m in groups}, coverage=coverage, rows=table)
+    data = dict(windows={g: int(m.sum()) for g, m in groups}, coverage=coverage, rows=table,
+                none_undetected=int((~seen & (n_bound == 0)).sum()))     # no box to hold across detector gaps
     write("e1_binding", data, lines, tabular("l" + "c" * len(groups), head, rows_tex))
 
 
@@ -968,6 +970,8 @@ def numbers() -> None:
         for k, v in d.get("coverage", {}).items():
             if k != "instruments":
                 val[f"bind/{k}"] = f"{100 * v:.0f}"
+        if "none_undetected" in d:
+            val["bind/n/none_undetected"] = str(d["none_undetected"])
         if "none" in d.get("coverage", {}):           # steps with a region when boxes are held across detector gaps
             val["bind/held"] = f"{100 * (1 - d['coverage']['none']):.0f}"
         by_run = {r["run"]: r for r in d["rows"]}
