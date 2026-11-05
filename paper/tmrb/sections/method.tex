@@ -28,7 +28,10 @@ where $p_j$ and $\hat y_j$ are the detection's confidence and class, $\mathbf{m}
 \subsection{Per-arm latent actions}
 An inverse-dynamics model (IDM) infers each arm's action from the latents it moves. A small transformer encodes every latent position of the transition, $F=\mathrm{Trunk}([z_{t-1},z_t,z_t-z_{t-1}])$. A query built from the arm's identity and logged instrument attends to $F$ \emph{only inside} $R^k_t$, and a head outputs a diagonal Gaussian:
 \begin{equation}
-(\boldsymbol\mu^k_t,\log\boldsymbol\sigma^{2,k}_t)=g\big(\mathrm{Attn}(q(k,o^k_t),F;\,R^k_t)\big),\quad u^k_t\sim\mathcal{N}(\boldsymbol\mu^k_t,\boldsymbol\sigma^{2,k}_t),
+\begin{split}
+(\boldsymbol\mu^k_t,\log\boldsymbol\sigma^{2,k}_t)&=g\big(\mathrm{Attn}(q(k,o^k_t),F;\,R^k_t)\big),\\
+u^k_t&\sim\mathcal{N}(\boldsymbol\mu^k_t,\boldsymbol\sigma^{2,k}_t),
+\end{split}
 \end{equation}
 with $u^k_t\in\mathbb{R}^{8}$. A Kullback--Leibler penalty towards $\mathcal{N}(0,I)$ bounds the information each action carries; arms without a visible instrument receive $u^k_t=0$. Restricting the evidence to the arm's own region prevents an arm's action from describing endoscope motion or another instrument, and binding through the log gives every action a fixed physical meaning across cases.
 
@@ -41,9 +44,10 @@ with $o^k_t$ the occupant from the robot log. Adding the driving hand and energy
 
 \subsection{Training objective}
 We train with rectified flow \cite{rectflow,flowmatching}. Every latent frame has its own noise level $\tau_t\in[0,1]$, $x_t=(1-\tau_t)z_t+\tau_t\epsilon_t$, and the network predicts the velocity $\epsilon_t-z_t$:
-\begin{equation}
-\mathcal{L}=\mathbb{E}\Big[\sum_{t}w_t\big\lVert v_\theta(x,\tau,a,s)_t-(\epsilon_t-z_t)\big\rVert^2\Big]+\lambda\,\mathcal{L}_{\mathrm{fwd}}+\beta\sum_{t,k}\mathrm{KL}\big(q(u^k_t)\,\Vert\,\mathcal{N}(0,I)\big).
-\end{equation}
+\begin{multline}
+\mathcal{L}=\mathbb{E}\Big[\sum_{t}w_t\big\lVert v_\theta(x,\tau,a,s)_t-(\epsilon_t-z_t)\big\rVert^2\Big]\\
++\lambda\,\mathcal{L}_{\mathrm{fwd}}+\beta\sum_{t,k}\mathrm{KL}\big(q(u^k_t)\,\Vert\,\mathcal{N}(0,I)\big).
+\end{multline}
 Trained on the diffusion loss alone, the learned actions collapse to the prior: in a pilot run with $\beta=10^{-3}$, all eight action dimensions became inactive (KL $0.004$\,nats per arm) and replacing every arm's action with another clip's changed the loss by less than $0.01$\,\%, while replacing the explicit endoscope action raised it by up to 14\,\%. Presumably the diffusion model explains most of a transition from its context frames and the noisy target, so the few nats an action carries are not worth their KL cost. We therefore add a latent-action-model objective as in \cite{genie,lapa,adaworld}, grounded like the actions themselves: a small convolutional decoder $f$ with a $9\times9$-cell receptive field predicts each latent from its predecessor, the endoscope action and the arm actions placed on their regions,
 \begin{equation}
 \mathcal{L}_{\mathrm{fwd}}=\sum_t\big\lVert f\big(z_{t-1},c_t,\textstyle\sum_k R^k_t\otimes u^k_t\big)-z_t\big\rVert^2,

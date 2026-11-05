@@ -45,7 +45,7 @@ class LatentWindows(Dataset):
                  stems: list[str] | None = None, drop_no_signal: bool = False):
         """``stems`` restricts the parts (e.g. case_012_p002) so that runs started at different times of the
         encoding see the same data. ``drop_no_signal`` leaves out windows showing the recorder's colour bars
-        (scripts/data/flag_no_signal.py); the S-size interface comparison keeps them (0.44 % of training)."""
+        (scripts/data/flag_no_signal.py); the S-size interface comparison keeps them (0.45 % of training)."""
         sp = json.loads((ROOT / "configs" / "splits" / "surgvu_v1.json").read_text())
         allowed = set(cases if cases is not None else sp[split])
         self.mean, self.std = latent_stats()

@@ -16,7 +16,8 @@ control   docs/figures/rollouts_control.png: EG-SWM on the first of these window
 failures  docs/figures/rollouts_failures.png: the four test windows (from different cases) where EG-SWM's PSNR is
           lowest, real and predicted.
 timing    outputs/eval/timing.json: seconds and peak GPU memory for one 2.8 s prediction (batch 1, 50 Euler steps),
-          the world model and the VAE decoder separately.
+          the world model and the VAE decoder separately, for each of --timing-runs with only it and the VAE on the
+          GPU; runs timed before are kept.
 Frames are from the SurgVU dataset (Zia et al., 2025), endoscope field only.
 """
 
@@ -101,23 +102,29 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--steps", type=int, default=50)
     ap.add_argument("--only", default="sample,compare,control,failures,timing")
+    ap.add_argument("--timing-runs", default="S_arms,S_global", help="runs timed (added to timing.json)")
     args = ap.parse_args()
     parts = set(args.only.split(","))
     torch.manual_seed(0)
     vae = diffusers.AutoencoderKLWan.from_pretrained(CHECKPOINTS / "vae/wan22/vae", torch_dtype=torch.bfloat16)
     vae = vae.cuda().eval()
     mean, std = (torch.from_numpy(a).cuda()[None, None, :, None, None] for a in latent_stats())
-    models = {run: load_model(run, None)[0] for run, _ in INTERFACES + [("S_arms_scene", "")]}
+    models = {}
+
+    def model(run: str):                                                  # loaded when first used
+        if run not in models:
+            models[run] = load_model(run, None)[0]
+        return models[run]
 
     def gen(run: str, b: dict, n_ctx: int = 2, actions: dict | None = None, seed: int = 0) -> np.ndarray:
         g = torch.Generator(device="cuda").manual_seed(seed)
         with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16):
-            z = models[run].generate(b, n_ctx, args.steps, actions=actions, generator=g)
+            z = model(run).generate(b, n_ctx, args.steps, actions=actions, generator=g)
         return decode(vae, z, mean, std).cpu().numpy()                   # B T H W 3 in [0, 1]
 
     def acts(run: str, b: dict) -> dict:
         with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16):
-            return models[run].infer_actions(b["z"], b, stochastic=False)
+            return model(run).infer_actions(b["z"], b, stochastic=False)
 
     if "sample" in parts:
         meta = json.loads((SAMPLES / "sample.json").read_text())
@@ -217,15 +224,17 @@ def main() -> None:
 
     if "timing" in parts:
         b = batch([ev[int(idx[0])]])
-        out = {}
-        for run in ("S_arms", "S_global"):
+        path = OUTPUTS / "eval" / "timing.json"
+        out = json.loads(path.read_text()) if path.exists() else {}
+        models.clear()                                  # peak memory: the timed model and the VAE only
+        for run in args.timing_runs.split(","):
             ts, td = [], []
             for rep_i in range(6):
                 torch.cuda.synchronize()
                 torch.cuda.reset_peak_memory_stats()
                 t0 = time.time()
                 with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16):
-                    z = models[run].generate(b, 2, args.steps)
+                    z = model(run).generate(b, 2, args.steps)
                 torch.cuda.synchronize()
                 t1 = time.time()
                 decode(vae, z, mean, std)
@@ -236,7 +245,9 @@ def main() -> None:
             out[run] = dict(generate_s=float(np.median(ts)), decode_s=float(np.median(td)), euler_steps=args.steps,
                             peak_gb=round(torch.cuda.max_memory_allocated() / 1e9, 2),
                             parameters=sum(p.numel() for p in models[run].parameters()))
-        (OUTPUTS / "eval" / "timing.json").write_text(json.dumps(out, indent=1))
+            models.clear()
+            torch.cuda.empty_cache()
+        path.write_text(json.dumps(out, indent=1))
         print(json.dumps(out, indent=1))
 
 

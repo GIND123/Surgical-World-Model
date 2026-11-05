@@ -4,7 +4,8 @@
 E1 (action interfaces) and E6 (ablations of EG-SWM) read outputs/eval/<run>/{replay,control}.json and
 outputs/eval/reference/{reference,control}.json; PSNR, SSIM and LPIPS are means over test cases of the per-case
 means, with 95 % bootstrap intervals over cases (from the per-window arrays in <run>/replay.npz); locality has its
-interval and its difference to EG-SWM from <run>/{locality,control}_rows.json (e1_locality); e1_contrasts pairs
+interval and its difference to EG-SWM from <run>/{locality,control}_rows.json (e1_locality), endoscope gain and
+embodiment consistency theirs from <run>/{control,camera_ecs}_rows.json (e1_control); e1_contrasts pairs
 other models the same way (CONTRASTS), and numbers() writes every number the manuscript's text quotes as a \\val{key}
 macro (paper/tmrb/tables/numbers.tex, docs/results/numbers.json). Seeds: mean and
 standard deviation over the runs trained with seeds 0-2. Sensitivity: sampler, context length and endoscope-command
@@ -49,11 +50,14 @@ ABLATIONS = [  # E6: EG-SWM (S, 60k steps) with one part changed
     ("S_arms_data0.1", "EG-SWM, 10 % of the training cases", "arms", True),
     ("S_arms_data0.3", "EG-SWM, 30 % of the training cases", "arms", True),
 ]
+SCALE = [  # E6: EG-SWM at a larger size, the recipe of size S without the colour-bar windows
+    ("B_arms", "EG-SWM, size B", "arms", True),
+]
 SEEDS = ("S_arms", "S_global", "S_slots", "S_global_vq")    # also trained with seeds 1 and 2 (<run>_seed<n>)
-SENS_RUNS = ("S_arms", "S_global", "S_slots", "S_global_vq", "S_arms_scene")
+SENS_RUNS = ("S_arms", "S_global", "S_slots", "S_global_vq", "S_arms_scene", "B_arms")
 SAMPLER = (("1.0", "20"), ("1.0", "50"), ("1.0", "100"), ("2.0", "50"))   # guidance scale, Euler steps
-CAM_RUNS, CAM_SCALES = ("S_arms", "S_global_vq", "S_state"), ("0.5", "1.0", "2.0")
-LONG_RUNS = ("S_arms", "S_global", "S_slots", "S_global_vq", "S_state", "S_none", "S_arms_scene")
+CAM_RUNS, CAM_SCALES = ("S_arms", "S_global_vq", "S_state", "B_arms"), ("0.5", "1.0", "2.0")
+LONG_RUNS = ("S_arms", "S_global", "S_slots", "S_global_vq", "S_state", "S_none", "S_arms_scene", "B_arms")
 DROPS = ("0.25", "0.5", "1.0")       # share of the instrument detections removed at test time (job 335)
 CONTRASTS = [  # (a, b): a minus b, paired over the test cases on the E1 windows (e1_contrasts; quoted in the text)
     ("S_arms", "copy_last"), ("S_arms", "S_none"), ("S_slots", "S_arms"), ("S_global", "S_arms"),
@@ -62,7 +66,9 @@ CONTRASTS = [  # (a, b): a minus b, paired over the test cases on the E1 windows
     ("S_arms_nocam", "S_state_nocam"), ("S_state_nocam", "S_none"), ("S_state", "S_state_nocam"),
     ("S_global_nocam", "S_global"),
     ("S_arms", "surgwm"), ("surgwm", "copy_last"),
-    *((run, "S_arms") for run, *_ in ABLATIONS),
+    *((run, "S_arms") for run, *_ in ABLATIONS + SCALE),
+    ("B_arms", "copy_last"), ("S_global", "B_arms"), ("S_slots", "B_arms"), ("B_arms", "S_global_vq"),
+    ("B_arms", "surgwm"),
 ]
 COLS = [  # key, header, format, higher-is-better
     ("pred_psnr", "PSNR", "{:.2f}", True), ("pred_ssim", "SSIM", "{:.3f}", True),
@@ -71,13 +77,13 @@ COLS = [  # key, header, format, higher-is-better
     ("locality_ratio_median", "Locality", "{:.2f}", True), ("ecs_precision", "ECS-P", "{:.3f}", True),
     ("ecs_recall", "ECS-R", "{:.3f}", True), ("ecs_hallucination_rate", "Halluc.", "{:.3f}", False),
 ]
-LABEL = {run: label for run, label, *_ in ROWS + ABLATIONS}
+LABEL = {run: label for run, label, *_ in ROWS + ABLATIONS + SCALE}
 E2_DATA = [("suturebot", "SutureBot"), ("crcd", "CRCD"), ("jigsaws", "JIGSAWS")]
 E2_ROWS = [  # probe name ({d}: dataset), probe file, label, setting
     ("dz_region", "zeroshot", "Latent change in the arm region", "model-free"),
     ("dz_frame", "zeroshot", "Latent change over the frame", "model-free"),
     ("camera", "zeroshot", "Endoscope action", "model-free"),
-    *((run, "zeroshot", label, "zero-shot") for run, label, *_ in ROWS + ABLATIONS),
+    *((run, "zeroshot", label, "zero-shot") for run, label, *_ in ROWS + ABLATIONS + SCALE),
     *((f"{{d}}_adapt_{a}", "adapted", LABEL[f"S_{a}"], "adapted") for a in ("global", "global_vq", "slots", "arms")),
 ]
 TARGETS = ("pos", "rot", "jaw")                     # end-effector translation, rotation, jaw of the same arm
@@ -86,7 +92,7 @@ E3_INITS = [("scratch", "None (from scratch)"), ("arms", LABEL["S_arms"]), ("glo
 E3_FRACTIONS = ("0.1", "0.25", "1.0")               # share of the training episodes with kinematics
 E4_ROWS = [  # SAR-RARP50: run, label, setting
     *((run, LABEL[run], "zero-shot") for run in ("S_none", "S_global", "S_global_vq", "S_slots", "S_arms",
-                                                 "S_arms_scene")),
+                                                 "S_arms_scene", "B_arms")),
     *((f"SAR_adapt_{a}", LABEL[f"S_{a}"], "adapted") for a in ("global", "global_vq", "slots", "arms")),
     ("SAR_scratch_arms", LABEL["S_arms"], "from scratch"),
 ]
@@ -131,21 +137,28 @@ def cell(row: dict, key: str, fmt: str, tex: bool = False) -> str:
     return v.replace("-", "$-$") if tex else v
 
 
-def locality_rows(run: str) -> list[dict] | None:
-    """Per (window, arm) locality results with the test case: from the locality-only re-evaluation of the runs
-    evaluated before eval_control.py recorded them (job 306), else from the control evaluation."""
-    for tag in ("locality", "control"):
+def test_rows(run: str, test: str) -> list | dict | None:
+    """Per-window results of one test of eval_control.py (camera: per command; locality: per window and arm; ecs: per
+    window and frame) with the test case: from the control evaluation, else from the re-evaluations of the runs
+    evaluated before eval_control.py recorded them (job 306: locality; job 336: camera and ecs, whose noise draws
+    are those of the full evaluation)."""
+    for tag in ("control", "locality", "camera_ecs"):
         p = OUTPUTS / "eval" / run / f"{tag}_rows.json"
         if p.exists():
-            rows = json.loads(p.read_text())["locality"]
-            if rows and "case" in rows[0]:
+            rows = json.loads(p.read_text())[test]
+            first = next(iter(rows.values())) if isinstance(rows, dict) else rows
+            if first and "case" in first[0]:
                 return rows
     return None
 
 
+def locality_rows(run: str) -> list[dict] | None:
+    return test_rows(run, "locality")
+
+
 def load(run: str) -> dict:
     out = {}
-    for name in ("replay", "control"):
+    for name in ("replay", "control", "camera_ecs"):         # camera_ecs: the re-evaluation with rows (job 336)
         p = OUTPUTS / "eval" / run / f"{name}.json"
         if p.exists():
             out.update(json.loads(p.read_text()))
@@ -225,8 +238,8 @@ def e1() -> None:
 
 def e6() -> None:
     """Ablations: EG-SWM with one part changed, next to EG-SWM itself."""
-    if any(load(run) for run, *_ in ABLATIONS):
-        interface_table("e6_ablations", [r for r in ROWS if r[0] == "S_arms"] + ABLATIONS, [])
+    if any(load(run) for run, *_ in ABLATIONS + SCALE):
+        interface_table("e6_ablations", [r for r in ROWS if r[0] == "S_arms"] + ABLATIONS + SCALE, [])
 
 
 def seeds() -> None:
@@ -348,7 +361,7 @@ def paired() -> None:
         return np.array([x[d["case"] == c].mean() for c in cases])
 
     srcs = [("copy_last", "Copy last context frame", OUTPUTS / "eval" / "reference" / "reference.npz", "copy_last")]
-    srcs += [(run, label, OUTPUTS / "eval" / run / "replay.npz", "pred") for run, label, *_ in ROWS + ABLATIONS
+    srcs += [(run, label, OUTPUTS / "eval" / run / "replay.npz", "pred") for run, label, *_ in ROWS + ABLATIONS + SCALE
              if run != "S_arms"]
     table = []
     for run, label, npz, prefix in srcs:
@@ -445,7 +458,7 @@ def locality() -> None:
     b_per = per_case(base)
     b_med, b_boot = float(np.median(np.concatenate(b_per))), boot(b_per)
     table = []
-    for run, label, *_ in ROWS + ABLATIONS:
+    for run, label, *_ in ROWS + ABLATIONS + SCALE:
         rows = locality_rows(run)
         if rows is None:
             continue
@@ -471,6 +484,93 @@ def locality() -> None:
                 for r in table]
     head = r"Model & Locality$\uparrow$ & $\Delta$ vs EG-SWM & EG-SWM more local \\"
     write("e1_locality", table, lines, tabular("lccc", [head], rows_tex))
+
+
+def control_intervals() -> None:
+    """Endoscope gain and embodiment consistency with 95 % intervals from resampling test cases (all windows of a
+    drawn case together, as in locality()), and paired against EG-SWM on the same windows: the difference over the
+    same resampled cases and the number of cases in which EG-SWM is better. The gain is the mean over the six
+    commands of the median realised/commanded motion along the commanded axis (eval_control.py); the embodiment
+    rates are ratios of counts summed over the frames of the drawn cases."""
+    base_cam, base_ecs = test_rows("S_arms", "camera"), test_rows("S_arms", "ecs")
+    if base_cam is None or base_ecs is None:
+        return
+    cases = sorted({r["case"] for rows in base_cam.values() for r in rows})
+    draws = np.concatenate([np.arange(len(cases))[None],                  # row 0: every case once
+                            np.random.default_rng(0).integers(0, len(cases), (2000, len(cases)))])
+
+    def ci(x: np.ndarray) -> list:
+        return np.quantile(x[1:], [0.025, 0.975]).tolist()
+
+    def gains(cam: dict) -> tuple[np.ndarray, np.ndarray]:
+        """-> the gain over each draw of cases, and per case."""
+        per = []                                                          # per command: the ratios of each case
+        for rows in cam.values():
+            c, r = np.array([x["commanded"] for x in rows]), np.array([x["realised"] for x in rows])
+            ax = int(np.argmax(np.abs(c[0])))
+            ratio, case = r[:, ax] / c[:, ax], np.array([x["case"] for x in rows])
+            per.append([ratio[(case == k) & np.isfinite(ratio)] for k in cases])
+        draw = np.array([np.mean([np.median(np.concatenate([p[j] for j in d])) for p in per]) for d in draws])
+        return draw, np.array([np.mean([np.median(p[j]) for p in per]) for j in range(len(cases))])
+
+    def rates(ecs: list) -> tuple[dict, np.ndarray]:
+        """-> each rate over each draw of cases, and the hallucination rate per case (NaN without detections)."""
+        n = np.zeros((len(cases), 5))
+        at = {k: j for j, k in enumerate(cases)}
+        for x in ecs:
+            n[at[x["case"]]] += [x["tp"], x["gen"], x["real"], x["halluc"], x["real_halluc"]]
+        tp, gen, real, hal, real_hal = n[draws].sum(1).T
+        with np.errstate(invalid="ignore", divide="ignore"):
+            return (dict(ecs_p=tp / gen, ecs_r=tp / real, halluc=100 * hal / gen, real_halluc=100 * real_hal / real),
+                    100 * n[:, 3] / n[:, 1])
+
+    b_gain, b_gain_case = gains(base_cam)
+    b_rate, b_hal_case = rates(base_ecs)
+    table = []
+    for run, label, *_ in ROWS + ABLATIONS + SCALE:
+        cam, ecs = test_rows(run, "camera"), test_rows(run, "ecs")
+        if cam is None and ecs is None:
+            continue
+        row = dict(run=run, label=label, n_cases=len(cases))
+        if cam:
+            g, g_case = gains(cam)
+            row.update(gain=float(g[0]), gain_ci=ci(g))
+            if run != "S_arms":
+                row.update(d_gain=float(b_gain[0] - g[0]), d_gain_ci=ci(b_gain - g),
+                           egswm_higher=int((b_gain_case > g_case).sum()))
+        if ecs:
+            rate, hal_case = rates(ecs)
+            for k, x in rate.items():
+                row.update({k: float(x[0]), f"{k}_ci": ci(x)})
+            if run != "S_arms":
+                d, ok = b_rate["halluc"] - rate["halluc"], np.isfinite(b_hal_case) & np.isfinite(hal_case)
+                row.update(d_halluc=float(d[0]), d_halluc_ci=ci(d), n_halluc=int(ok.sum()),
+                           egswm_fewer=int((b_hal_case[ok] < hal_case[ok]).sum()))
+        summary = load(run)                               # the same windows and noise: the summaries must reproduce
+        for k, s, scale in (("gain", "cam_gain_mean", 1), ("halluc", "ecs_hallucination_rate", 100)):
+            if k in row and s in summary and abs(row[k] - scale * summary[s]) > 1e-6 * scale:
+                print(f"### {run}: {k} {row[k]:.4f} from the rows, {scale * summary[s]:.4f} in the summary")
+        table.append(row)
+
+    def vs(r: dict, k: str, n: str, of: str, tex_: bool = False) -> str:
+        if n not in r:
+            return "--" if tex_ else "–"
+        return f"{cell(r, k, '{:.2f}' if k == 'd_gain' else '{:.1f}', tex=tex_)} ({r[n]}/{r[of]})"
+
+    cols = [("gain", "Cam. gain ↑", "{:.2f}"), ("ecs_p", "ECS-P ↑", "{:.2f}"), ("ecs_r", "ECS-R ↑", "{:.2f}"),
+            ("halluc", "Halluc. % ↓", "{:.1f}")]
+    lines = ["| Model | " + " | ".join(h for _, h, _ in cols) + " | EG-SWM minus model: gain (cases higher) "
+             "| halluc. (cases fewer) |", "|" + "---|" * (len(cols) + 3)]
+    lines += [f"| {r['label']} | " + " | ".join(cell(r, k, f) for k, _, f in cols)
+              + f" | {vs(r, 'd_gain', 'egswm_higher', 'n_cases')} | {vs(r, 'd_halluc', 'egswm_fewer', 'n_halluc')} |"
+              for r in table]
+    rows_tex = [tex(r["label"]) + " & " + " & ".join(cell(r, k, f, tex=True) for k, _, f in cols)
+                + f" & {vs(r, 'd_gain', 'egswm_higher', 'n_cases', True)}"
+                + f" & {vs(r, 'd_halluc', 'egswm_fewer', 'n_halluc', True)}" + r" \\" for r in table]
+    head = ("Model & " + " & ".join(tex(h).replace("↑", r"$\uparrow$").replace("↓", r"$\downarrow$")
+                                    for _, h, _ in cols) + r" & $\Delta$gain & $\Delta$halluc. \\")
+    write("e1_control", dict(cases=cases, rows=table), lines,
+          tabular("l" + "c" * (len(cols) + 2), [head], rows_tex))
 
 
 def detector() -> None:
@@ -538,7 +638,7 @@ def binding() -> None:
                     instruments=len(bound))
     groups = [("none bound", n_bound == 0), ("one bound", n_bound == 1), ("two or more bound", n_bound >= 2)]
     srcs = [("copy_last", "Copy last context frame", OUTPUTS / "eval" / "reference" / "reference.npz", "copy_last")]
-    srcs += [(run, label, OUTPUTS / "eval" / run / "replay.npz", "pred") for run, label, *_ in ROWS]
+    srcs += [(run, label, OUTPUTS / "eval" / run / "replay.npz", "pred") for run, label, *_ in ROWS + SCALE]
     table = []
     for run, label, npz, prefix in srcs:
         if not npz.exists():
@@ -569,7 +669,7 @@ def cost() -> None:
     timing = OUTPUTS / "eval" / "timing.json"
     timing = json.loads(timing.read_text()) if timing.exists() else {}
     table = []
-    for run, label, *_ in ROWS + ABLATIONS:
+    for run, label, *_ in ROWS + ABLATIONS + SCALE:
         log, cfg = OUTPUTS / "runs" / run / "log.jsonl", OUTPUTS / "runs" / run / "config.json"
         if not (log.exists() and cfg.exists() and (OUTPUTS / "eval" / run / "replay.json").exists()):
             continue
@@ -768,8 +868,9 @@ def numbers() -> None:
     docs/results/numbers.json: main/<run>/<metric>[_ci], ctl/<run>/... (control and embodiment), diff/<a>-<b>/...
     (e1_contrasts), use/<run>/... (action-use diagnostics on the validation windows: replay error and its rise in %
     when the learned action (swap), the endoscope action (cam_swap) or both are replaced, inside and outside the arm
-    regions, and at noise level 0.9), diff/S_arms-<run>/locality[_ci, _wins, _losses] (e1_locality), bind/...
-    (e1_binding) and horizon/... (EG-SWM minus the copied frame)."""
+    regions, and at noise level 0.9), diff/S_arms-<run>/locality[_ci, _wins, _losses] (e1_locality),
+    ctl/<run>/{gain,ecs_p,ecs_r,halluc,real_halluc}_ci and diff/S_arms-<run>/{gain,halluc}[_ci, _wins, _of]
+    (e1_control), bind/... (e1_binding), cost/<size>/... and horizon/... (EG-SWM minus the copied frame)."""
     res, val = ROOT / "docs" / "results", {}
 
     def f(x: float, nd: int) -> str:
@@ -789,7 +890,7 @@ def numbers() -> None:
         for k, nd in (("pred_psnr", 2), ("pred_ssim", 3), ("pred_lpips", 3), ("pred_fvd", 0), ("delta_psnr", 2)):
             if isinstance(r.get(k), (int, float)):
                 put(f"main/{r['run']}/{k.removeprefix('pred_')}", r[k], nd, r.get(f"{k}_ci"))
-    for run in sorted({r for r, *_ in ROWS + ABLATIONS} | {"reference"}):
+    for run in sorted({r for r, *_ in ROWS + ABLATIONS + SCALE} | {"reference"}):
         d = load(run)
         gains = [v for k, v in d.items() if k.startswith("cam_") and k.endswith("_gain")]
         if gains:
@@ -848,11 +949,27 @@ def numbers() -> None:
                 k = f"diff/S_arms-{r['run']}/locality"
                 put(k, -r["d_locality"], 2, [-x for x in r["d_locality_ci"][::-1]])
                 val[f"{k}_wins"], val[f"{k}_losses"] = str(r["egswm_better"]), str(r["n_cases"] - r["egswm_better"])
+    if (res / "e1_control.json").exists():                     # intervals of gain and ECS; EG-SWM minus each run
+        for r in json.loads((res / "e1_control.json").read_text())["rows"]:
+            run = r["run"]
+            if "gain" in r:
+                put(f"ctl/{run}/gain", r["gain"], 2, r["gain_ci"])
+                val[f"ctl/{run}/gain_pct_ci"] = "[{:.0f}, {:.0f}]".format(*(100 * x for x in r["gain_ci"]))
+            for k, nd in (("ecs_p", 2), ("ecs_r", 2), ("halluc", 1), ("real_halluc", 1)):
+                if k in r:
+                    put(f"ctl/{run}/{k}", r[k], nd, r[f"{k}_ci"])
+            for k, n, of, nd in (("gain", "egswm_higher", "n_cases", 2), ("halluc", "egswm_fewer", "n_halluc", 1)):
+                if f"d_{k}" in r:
+                    key = f"diff/S_arms-{run}/{k}"
+                    put(key, r[f"d_{k}"], nd, r[f"d_{k}_ci"])
+                    val[f"{key}_wins"], val[f"{key}_of"] = str(r[n]), str(r[of])
     if (res / "e1_binding.json").exists():
         d = json.loads((res / "e1_binding.json").read_text())
         for k, v in d.get("coverage", {}).items():
             if k != "instruments":
                 val[f"bind/{k}"] = f"{100 * v:.0f}"
+        if "none" in d.get("coverage", {}):           # steps with a region when boxes are held across detector gaps
+            val["bind/held"] = f"{100 * (1 - d['coverage']['none']):.0f}"
         by_run = {r["run"]: r for r in d["rows"]}
         for g, n in d["windows"].items():
             gk = g.split()[0]                                             # none, one, two (or more)
@@ -872,10 +989,11 @@ def numbers() -> None:
         late = d[t >= 0.5]
         val["horizon/lead"] = f"{f(late.min(), 1)}--{f(late.max(), 1)}"
     if (res / "cost.json").exists():
-        cost = [r for r in json.loads((res / "cost.json").read_text()) if r["size"] == "S"]
-        for k, key, nd in (("train_h", "train_h", 1), ("win_per_s", "speed", 0), ("train_mem_gb", "mem", 0)):
-            v = [r[k] for r in cost]
-            val[f"cost/S/{key}"] = f"{f(min(v), nd)}--{f(max(v), nd)}" if v else "--"
+        cost = json.loads((res / "cost.json").read_text())
+        for size in sorted({r["size"] for r in cost}):
+            for k, key, nd in (("train_h", "train_h", 1), ("win_per_s", "speed", 0), ("train_mem_gb", "mem", 0)):
+                lo, hi = (f(g(r[k] for r in cost if r["size"] == size), nd) for g in (min, max))
+                val[f"cost/{size}/{key}"] = lo if lo == hi else f"{lo}--{hi}"
         for r in cost:
             if "gen_s" in r:
                 put(f"cost/{r['run']}/gen_s", r["gen_s"], 2)
@@ -901,6 +1019,7 @@ def main() -> None:
     paired()
     contrasts()
     locality()
+    control_intervals()
     binding()
     detector()
     cost()
