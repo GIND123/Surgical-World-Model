@@ -253,16 +253,17 @@ Two evaluation problems surfaced on the way, and both are fixed:
 * **Too few cases.** `--limit` took the first windows of a case-ordered list, so the first numbers came from 10 (fidelity) and 3 (control) of the 20 test cases. It now spreads the windows evenly over all cases.
 * **A test case with no surgery.** With all cases included, copying the last frame scored 23.8 dB, ahead of the model. One test case (`case_126`) is 78 % recorder colour bars (no video input) and otherwise shows no surgery, and copying it scores 63 dB. It is now excluded (Data facts below).
 
-**Sampler** (`S_arms`, 200 test windows spread over the 20 test cases, so still including `case_126`; job `204`, repeated without it for EG-SWM and four other interfaces by job `330`):
+**Sampler** (job `330`: 200 test windows spread over the 19 test cases; [e1_sampler](docs/results/e1_sampler.md)):
 
-| Euler steps, guidance | PSNR ↑ | SSIM ↑ | LPIPS ↓ | PSNR at 2.8 s | ΔPSNR |
-|---|---:|---:|---:|---:|---:|
-| 20, none | 22.33 | 0.712 | 0.164 | 19.45 | 2.87 |
-| **50, none (protocol)** | 23.30 | 0.721 | 0.149 | 21.32 | 2.72 |
-| 100, none | 23.35 | 0.721 | 0.148 | 21.43 | 2.73 |
-| 50, scale 2 on actions | 23.45 | 0.725 | 0.145 | 21.50 | 3.20 |
+| PSNR (dB) | 20 steps | 50 steps (protocol) | 100 steps | 50 steps, guidance 2 |
+|---|---:|---:|---:|---:|
+| EG-SWM | 21.98 | 22.27 | 22.28 | 22.33 |
+| EG-SWM + scene action | 22.43 | 22.51 | 22.49 | 22.61 |
+| Monolithic latent + camera | 22.58 | 22.59 | 22.56 | 22.66 |
+| Slots + camera (FLAM-style) | 22.98 | 22.93 | 22.90 | 22.98 |
+| Monolithic VQ + camera (SurgWM-style) | 21.03 | 21.47 | 21.49 | 21.65 |
 
-At 20 steps the prediction drifts towards the end of the horizon (−1.9 dB at 2.8 s); 50 steps recover nearly all of it, and 100 add 0.05 dB. Guidance adds 0.15 dB and strengthens action following (ΔPSNR 3.2), but it is kept out of the protocol so that every interface is sampled the same way. The remaining LPIPS gap to a frozen frame is perceptual detail: a sampled future draws its own fine texture. Size B and longer training follow the interface comparison.
+Fifty steps have converged: 100 change PSNR by at most 0.03 dB. Twenty steps cost EG-SWM 0.29 dB (0.77 dB at 2.8 s) and VQ 0.44 dB, but the frame-wide actions at most 0.07 dB. Guidance (scale 2 on the actions) adds 0.05–0.17 dB for every interface and strengthens action following (EG-SWM's ΔPSNR 3.49 instead of 2.94), but it is kept out of the protocol so that every interface is sampled the same way. No setting changes the order of the interfaces. The remaining LPIPS gap to a frozen frame is perceptual detail: a sampled future draws its own fine texture. The size-B flagship repeats these tests (`341`).
 
 ### E2b — the camera action measures real endoscope motion (CRCD, dVRK ECM kinematics)
 

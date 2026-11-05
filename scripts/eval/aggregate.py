@@ -965,6 +965,30 @@ def numbers() -> None:
                     key = f"diff/S_arms-{run}/{k}"
                     put(key, r[f"d_{k}"], nd, r[f"d_{k}_ci"])
                     val[f"{key}_wins"], val[f"{key}_of"] = str(r[n]), str(r[of])
+    if (res / "e1_sampler.json").exists():                     # Euler steps and guidance on 200 test windows
+        at = {(r["run"], r["steps"], r["guidance"]): r for r in json.loads((res / "e1_sampler.json").read_text())}
+        runs = sorted({run for run, *_ in at})
+        for run in runs:
+            if (run, 50, 1.0) not in at:
+                continue
+            b = at[(run, 50, 1.0)]
+            put(f"sens/{run}/delta_g1", b["delta_psnr"], 2)
+            if (run, 20, 1.0) in at:                          # what 20 steps lose, over the horizon and at 2.8 s
+                put(f"sens/{run}/s20_loss", b["pred_psnr"] - at[(run, 20, 1.0)]["pred_psnr"], 2)
+                put(f"sens/{run}/end20_loss", b["psnr_end"] - at[(run, 20, 1.0)]["psnr_end"], 2)
+            if (run, 50, 2.0) in at:
+                put(f"sens/{run}/delta_g2", at[(run, 50, 2.0)]["delta_psnr"], 2)
+        inter = [r for r in SENS_RUNS if r.startswith("S_") and all((r, *s) in at for s in ((50, 1.0), (100, 1.0),
+                                                                                        (20, 1.0), (50, 2.0)))]
+        if inter:                                                   # across the size-S interfaces
+            val["sens/s100_max"] = f(max(abs(at[(r, 100, 1.0)]["pred_psnr"] - at[(r, 50, 1.0)]["pred_psnr"])
+                                         for r in inter), 2)
+            g2 = [at[(r, 50, 2.0)]["pred_psnr"] - at[(r, 50, 1.0)]["pred_psnr"] for r in inter]
+            val["sens/g2_range"] = f"{f(min(g2), 2)}--{f(max(g2), 2)}"
+            orders = {tuple(sorted(inter, key=lambda r, s=s: -at[(r, *s)]["pred_psnr"]))
+                      for s in ((20, 1.0), (50, 1.0), (100, 1.0), (50, 2.0))}
+            if len(orders) > 1:
+                print("### the order of the interfaces depends on the sampler (text: it does not)")
     if (res / "e1_binding.json").exists():
         d = json.loads((res / "e1_binding.json").read_text())
         for k, v in d.get("coverage", {}).items():
