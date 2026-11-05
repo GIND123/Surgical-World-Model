@@ -10,3 +10,4 @@
 | EG-SWM, diffusion loss only | 2.21 [2.09, 2.40] | -0.21 [-0.42, -0.10] | 10/19 |
 | EG-SWM, arm actions not grounded | 1.84 [1.71, 2.03] | -0.58 [-0.76, -0.48] | 19/19 |
 | EG-SWM, wrong arm binding | 0.90 [0.80, 0.99] | -1.52 [-1.87, -1.34] | 19/19 |
+| EG-SWM + console readout | 2.40 [2.22, 2.63] | -0.01 [-0.16, 0.07] | 12/19 |

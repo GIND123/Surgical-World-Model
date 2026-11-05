@@ -161,5 +161,22 @@
   ],
   "egswm_better": 19,
   "n_cases": 19
+ },
+ {
+  "run": "S_arms_ui",
+  "label": "EG-SWM + console readout",
+  "n_rows": 630,
+  "locality": 2.4046908294901916,
+  "locality_ci": [
+   2.2156102840070364,
+   2.6274482332185594
+  ],
+  "d_locality": -0.014030057288336284,
+  "d_locality_ci": [
+   -0.15817548910947685,
+   0.07142753998194352
+  ],
+  "egswm_better": 12,
+  "n_cases": 19
  }
 ]

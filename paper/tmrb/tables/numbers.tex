@@ -148,6 +148,18 @@
 \expandafter\def\csname val@ctl/S_arms_shuffled/real_halluc\endcsname{5.3}
 \expandafter\def\csname val@ctl/S_arms_shuffled/share\endcsname{8.3}
 \expandafter\def\csname val@ctl/S_arms_shuffled/sign_min\endcsname{99.7}
+\expandafter\def\csname val@ctl/S_arms_ui/area\endcsname{7.2}
+\expandafter\def\csname val@ctl/S_arms_ui/ecs_p\endcsname{0.94}
+\expandafter\def\csname val@ctl/S_arms_ui/ecs_r\endcsname{0.82}
+\expandafter\def\csname val@ctl/S_arms_ui/gain\endcsname{0.70}
+\expandafter\def\csname val@ctl/S_arms_ui/gain_pct\endcsname{70}
+\expandafter\def\csname val@ctl/S_arms_ui/gain_range\endcsname{55--84}
+\expandafter\def\csname val@ctl/S_arms_ui/halluc\endcsname{7.4}
+\expandafter\def\csname val@ctl/S_arms_ui/locality\endcsname{2.40}
+\expandafter\def\csname val@ctl/S_arms_ui/locality_ci\endcsname{[2.22, 2.63]}
+\expandafter\def\csname val@ctl/S_arms_ui/real_halluc\endcsname{5.3}
+\expandafter\def\csname val@ctl/S_arms_ui/share\endcsname{18}
+\expandafter\def\csname val@ctl/S_arms_ui/sign_min\endcsname{99.7}
 \expandafter\def\csname val@ctl/S_global/area\endcsname{7.2}
 \expandafter\def\csname val@ctl/S_global/ecs_p\endcsname{0.94}
 \expandafter\def\csname val@ctl/S_global/ecs_r\endcsname{0.82}
@@ -250,6 +262,10 @@
 \expandafter\def\csname val@diff/S_arms-S_arms_shuffled/locality_ci\endcsname{[1.34, 1.87]}
 \expandafter\def\csname val@diff/S_arms-S_arms_shuffled/locality_losses\endcsname{0}
 \expandafter\def\csname val@diff/S_arms-S_arms_shuffled/locality_wins\endcsname{19}
+\expandafter\def\csname val@diff/S_arms-S_arms_ui/locality\endcsname{0.01}
+\expandafter\def\csname val@diff/S_arms-S_arms_ui/locality_ci\endcsname{[$-$0.07, 0.16]}
+\expandafter\def\csname val@diff/S_arms-S_arms_ui/locality_losses\endcsname{7}
+\expandafter\def\csname val@diff/S_arms-S_arms_ui/locality_wins\endcsname{12}
 \expandafter\def\csname val@diff/S_arms-S_global/locality\endcsname{0.96}
 \expandafter\def\csname val@diff/S_arms-S_global/locality_ci\endcsname{[0.83, 1.22]}
 \expandafter\def\csname val@diff/S_arms-S_global/locality_losses\endcsname{0}
@@ -338,6 +354,14 @@
 \expandafter\def\csname val@diff/S_arms_shuffled-S_arms/ssim\endcsname{$-$0.001}
 \expandafter\def\csname val@diff/S_arms_shuffled-S_arms/ssim_ci\endcsname{[$-$0.001, 0.000]}
 \expandafter\def\csname val@diff/S_arms_shuffled-S_arms/wins\endcsname{7}
+\expandafter\def\csname val@diff/S_arms_ui-S_arms/losses\endcsname{11}
+\expandafter\def\csname val@diff/S_arms_ui-S_arms/lpips\endcsname{$-$0.000}
+\expandafter\def\csname val@diff/S_arms_ui-S_arms/lpips_ci\endcsname{[$-$0.001, 0.001]}
+\expandafter\def\csname val@diff/S_arms_ui-S_arms/psnr\endcsname{$-$0.02}
+\expandafter\def\csname val@diff/S_arms_ui-S_arms/psnr_ci\endcsname{[$-$0.05, $-$0.00]}
+\expandafter\def\csname val@diff/S_arms_ui-S_arms/ssim\endcsname{$-$0.000}
+\expandafter\def\csname val@diff/S_arms_ui-S_arms/ssim_ci\endcsname{[$-$0.001, 0.000]}
+\expandafter\def\csname val@diff/S_arms_ui-S_arms/wins\endcsname{8}
 \expandafter\def\csname val@diff/S_global-S_arms/losses\endcsname{0}
 \expandafter\def\csname val@diff/S_global-S_arms/lpips\endcsname{$-$0.010}
 \expandafter\def\csname val@diff/S_global-S_arms/lpips_ci\endcsname{[$-$0.012, $-$0.007]}
@@ -445,6 +469,14 @@
 \expandafter\def\csname val@main/S_arms_shuffled/psnr_ci\endcsname{[21.41, 22.59]}
 \expandafter\def\csname val@main/S_arms_shuffled/ssim\endcsname{0.690}
 \expandafter\def\csname val@main/S_arms_shuffled/ssim_ci\endcsname{[0.674, 0.707]}
+\expandafter\def\csname val@main/S_arms_ui/delta_psnr\endcsname{2.78}
+\expandafter\def\csname val@main/S_arms_ui/fvd\endcsname{184}
+\expandafter\def\csname val@main/S_arms_ui/lpips\endcsname{0.164}
+\expandafter\def\csname val@main/S_arms_ui/lpips_ci\endcsname{[0.153, 0.175]}
+\expandafter\def\csname val@main/S_arms_ui/psnr\endcsname{21.98}
+\expandafter\def\csname val@main/S_arms_ui/psnr_ci\endcsname{[21.41, 22.58]}
+\expandafter\def\csname val@main/S_arms_ui/ssim\endcsname{0.691}
+\expandafter\def\csname val@main/S_arms_ui/ssim_ci\endcsname{[0.675, 0.707]}
 \expandafter\def\csname val@main/S_global/delta_psnr\endcsname{3.17}
 \expandafter\def\csname val@main/S_global/fvd\endcsname{180}
 \expandafter\def\csname val@main/S_global/lpips\endcsname{0.154}
@@ -655,6 +687,29 @@
 \expandafter\def\csname val@use/S_arms_shuffled/zeroed_out\endcsname{41}
 \expandafter\def\csname val@use/S_arms_shuffled/zeroed_t9_in\endcsname{28}
 \expandafter\def\csname val@use/S_arms_shuffled/zeroed_t9_out\endcsname{12}
+\expandafter\def\csname val@use/S_arms_ui/active\endcsname{8}
+\expandafter\def\csname val@use/S_arms_ui/cam_swap\endcsname{27}
+\expandafter\def\csname val@use/S_arms_ui/cam_swap_in\endcsname{13}
+\expandafter\def\csname val@use/S_arms_ui/cam_swap_out\endcsname{30}
+\expandafter\def\csname val@use/S_arms_ui/cam_swap_t9_in\endcsname{15}
+\expandafter\def\csname val@use/S_arms_ui/cam_swap_t9_out\endcsname{48}
+\expandafter\def\csname val@use/S_arms_ui/cam_swap_zeroed\endcsname{18}
+\expandafter\def\csname val@use/S_arms_ui/cam_swap_zeroed_in\endcsname{66}
+\expandafter\def\csname val@use/S_arms_ui/cam_swap_zeroed_out\endcsname{74}
+\expandafter\def\csname val@use/S_arms_ui/cam_swap_zeroed_t9_in\endcsname{16}
+\expandafter\def\csname val@use/S_arms_ui/cam_swap_zeroed_t9_out\endcsname{47}
+\expandafter\def\csname val@use/S_arms_ui/kl\endcsname{15.4}
+\expandafter\def\csname val@use/S_arms_ui/replay\endcsname{0.338}
+\expandafter\def\csname val@use/S_arms_ui/swap\endcsname{33}
+\expandafter\def\csname val@use/S_arms_ui/swap_in\endcsname{46}
+\expandafter\def\csname val@use/S_arms_ui/swap_out\endcsname{30}
+\expandafter\def\csname val@use/S_arms_ui/swap_t9_in\endcsname{68}
+\expandafter\def\csname val@use/S_arms_ui/swap_t9_out\endcsname{33}
+\expandafter\def\csname val@use/S_arms_ui/zeroed\endcsname{46}
+\expandafter\def\csname val@use/S_arms_ui/zeroed_in\endcsname{50}
+\expandafter\def\csname val@use/S_arms_ui/zeroed_out\endcsname{44}
+\expandafter\def\csname val@use/S_arms_ui/zeroed_t9_in\endcsname{30}
+\expandafter\def\csname val@use/S_arms_ui/zeroed_t9_out\endcsname{12}
 \expandafter\def\csname val@use/S_global/cam_swap\endcsname{12}
 \expandafter\def\csname val@use/S_global/cam_swap_in\endcsname{5.2}
 \expandafter\def\csname val@use/S_global/cam_swap_out\endcsname{13}

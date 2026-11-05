@@ -123,5 +123,14 @@
   "train_h": 5.569287498791216,
   "win_per_s": 95.76329709125099,
   "train_mem_gb": 31.433165824
+ },
+ {
+  "run": "S_arms_ui",
+  "label": "EG-SWM + console readout",
+  "size": "S",
+  "steps": 60000,
+  "train_h": 5.565215349196151,
+  "win_per_s": 95.83336849855573,
+  "train_mem_gb": 31.433169408
  }
 ]
