@@ -334,8 +334,7 @@ def sensitivity() -> None:
                 d = json.loads(p.read_text())
                 gains = [v for k, v in d.items() if k.startswith("cam_") and k.endswith("_gain")]
                 cam.append(dict(run=run, label=LABEL[run], scale=float(sc), cam_gain_mean=float(np.mean(gains)),
-                                cam_sign_acc_mean=d["cam_sign_acc_mean"],
-                                **{k: v for k, v in d.items() if k.startswith("cam_") and k.endswith("_gain")}))
+                                **{k: v for k, v in d.items() if k.startswith("cam_")}))     # gain, direction
     if cam:
         lines = ["| Model | Command scale | Mean gain | Right direction |", "|---|---|---|---|"]
         lines += [f"| {r['label']} | ×{r['scale']:g} | {r['cam_gain_mean']:.2f} | {r['cam_sign_acc_mean']:.1%} |"
@@ -989,6 +988,18 @@ def numbers() -> None:
                       for s in ((20, 1.0), (50, 1.0), (100, 1.0), (50, 2.0))}
             if len(orders) > 1:
                 print("### the order of the interfaces depends on the sampler (text: it does not)")
+    if (res / "e1_camera_scale.json").exists():                # endoscope commands at 0.5-2x the protocol's size
+        rows = json.loads((res / "e1_camera_scale.json").read_text())
+        for run in sorted({r["run"] for r in rows}):
+            mine = [r for r in rows if r["run"] == run]
+            for r in mine:
+                put(f"scale/{run}/{r['scale']:g}", r["cam_gain_mean"], 2)
+            sign = [v for r in mine for k, v in r.items() if k.endswith("_sign_acc")]
+            val[f"scale/{run}/sign_min"] = f(100 * min(sign), 1)
+            for name, keys in (("zoom", ("zoom_in", "zoom_out")), ("pantilt", ("pan_left", "pan_right", "tilt_up",
+                                                                                "tilt_down"))):
+                g = [r[f"cam_{k}_gain"] for r in mine for k in keys]
+                val[f"scale/{run}/{name}_range"] = f"{100 * min(g):.0f}--{100 * max(g):.0f}"
     if (res / "e1_context.json").exists():                     # 1-3 context latents: PSNR over the frames all predict
         ctx = {r["run"]: r for r in json.loads((res / "e1_context.json").read_text())}
         inter = [r for r in SENS_RUNS if r.startswith("S_") and all(f"ctx{n}" in ctx.get(r, {}) for n in (1, 2, 3))]
