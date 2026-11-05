@@ -1,7 +1,7 @@
 """EG-SWM and its baselines: one dynamics transformer, different action interfaces.
 
 action = "none"    no tokens at all (unconditional video prediction)
-         "state"   robot-state tokens only (arm id + occupant + hand), no learned action
+         "state"   robot-state tokens only (arm id + occupant; + driving hand and energy with use_ui), no learned action
          "global"  robot-state tokens + one monolithic latent action per transition (continuous)
          "global_vq" as "global" but a discrete action from a 12-entry codebook (Genie / SurgWM style)
          "slots"   robot-state tokens + K unsupervised slot actions (FLAM style)

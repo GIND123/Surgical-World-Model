@@ -31,7 +31,7 @@
 \node[learn, minimum width=96mm, minimum height=27mm, anchor=north] (dyn) at (97.5, -33) {};
 \node[anchor=north west, font=\sffamily\small\bfseries] at ($(dyn.north west)+(1.5,-0.5)$) {dynamics transformer $\times N$};
 \node[box, draw=cam, fill=cam!8, minimum width=90mm, font=\sffamily\scriptsize, anchor=north] (ada) at (97.5, -39.5)
-  {AdaLN-zero on every sub-layer: camera action $c_t$, noise level $\tau_t$, task/robot context};
+  {adaLN-single on every sub-layer: camera action $c_t$, noise level $\tau_t$};
 \node[box, font=\sffamily\scriptsize, minimum width=20mm, minimum height=9mm, anchor=north west] (sa) at (51.5, -47) {spatial\\ self-attn};
 \node[box, font=\sffamily\scriptsize, minimum width=20mm, minimum height=9mm, right=3mm of sa] (ta) {causal temporal\\ self-attn};
 \node[box, font=\sffamily\scriptsize, minimum width=20mm, minimum height=9mm, right=3mm of ta, draw=armB, line width=0.8pt] (xa) {cross-attn\\ to arm tokens};
@@ -54,11 +54,11 @@
 \node[token, fill=armA!25, draw=armA, left=2mm of u3] (u1) {$u^1_t$};
 
 \node[token, fill=armC!25, draw=armC, right=2mm of u3] (u4) {$u^4_t$};
-\node[note, right=2mm of u4, align=left, anchor=west] (tok) {arm token $=\ u^k_t$ + arm id\\ + instrument + driving hand (L/R)};
+\node[note, right=2mm of u4, align=left, anchor=west] (tok) {arm token $=\ u^k_t$ + arm id\\ + instrument (from the log)};
 \draw[flow, draw=armB] (u3.north) -- (xa.south);
 
 \node[box, draw=armB, dashed, font=\sffamily\scriptsize, align=left, anchor=north] (idm) at (97.5, -80)
-  {\textbf{inverse dynamics} (training only): pool $(z_t, z_{t+1})$ inside arm region $R^k_t$ $\to$
+  {\textbf{inverse dynamics}: pool $(z_t, z_{t+1})$ inside arm region $R^k_t$ $\to$
    $\mu^k,\sigma^k$ $\to$ $u^k_t\!\sim\!\mathcal{N}(\mu^k,\sigma^k)$, KL bottleneck};
 \draw[flow, draw=armB, dashed] (u3.south |- idm.north) -- (u3.south);
 \node[box, draw=armB, dashed, font=\sffamily\scriptsize, align=left, anchor=north] (fwd) at (97.5, -91.5)
@@ -68,9 +68,9 @@
 
 \node[box, align=left, font=\sffamily\scriptsize, anchor=north west, inner sep=3pt] (state) at (0, -66) {%
   \textbf{robot state} $s_t$ (system logs)\\
-  \textcolor{armA}{$\blacksquare$} USM1 needle driver (L)\\
+  \textcolor{armA}{$\blacksquare$} USM1 needle driver\\
   \textcolor{cam}{$\blacksquare$} USM2 endoscope\\
-  \textcolor{armB}{$\blacksquare$} USM3 needle driver (R)\\
+  \textcolor{armB}{$\blacksquare$} USM3 needle driver\\
   \textcolor{armC}{$\blacksquare$} USM4 Cadiere forceps};
 \draw[flow] (state.east) -- ++(4,0) |- (u1.west);
 

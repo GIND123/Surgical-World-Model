@@ -35,9 +35,9 @@ with $u^k_t\in\mathbb{R}^{8}$. A Kullback--Leibler penalty towards $\mathcal{N}(
 \subsection{Dynamics transformer}
 The dynamics model is a latent spatio-temporal diffusion transformer. Latent positions become tokens; each block applies self-attention within a frame with 2-D rotary embeddings \cite{rope}, causal self-attention across frames at each position, cross-attention to the arm tokens of the frame, and a SwiGLU MLP. Arm $k$ at step $t$ contributes the token
 \begin{equation}
-e^k_t=W_u u^k_t+E_{\mathrm{arm}}[k]+E_{\mathrm{occ}}[o^k_t]+E_{\mathrm{hand}}[h^k_t],
+e^k_t=W_u u^k_t+E_{\mathrm{arm}}[k]+E_{\mathrm{occ}}[o^k_t],
 \end{equation}
-where $h^k_t$ is the driving hand when the overlay shows it. The noise level and the endoscope action modulate every sub-layer through adaptive normalization with a shared projection and per-block offsets \cite{pixartalpha}.
+with $o^k_t$ the occupant from the robot log. Adding the driving hand and energy activation read from the console overlay changes neither prediction nor control (Section~\ref{sec:parts}), so \method{} does without them. The noise level and the endoscope action modulate every sub-layer through adaptive normalization with a shared projection and per-block offsets \cite{pixartalpha}.
 
 \subsection{Training objective}
 We train with rectified flow \cite{rectflow,flowmatching}. Every latent frame has its own noise level $\tau_t\in[0,1]$, $x_t=(1-\tau_t)z_t+\tau_t\epsilon_t$, and the network predicts the velocity $\epsilon_t-z_t$:

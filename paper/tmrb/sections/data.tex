@@ -12,7 +12,7 @@ The logs record part-relative times; converted to a single case timeline they gi
 \end{figure*}
 
 \subsection{Console overlay}
-The surgeon console renders a status band over the recorded video on 81\,\% of usable frames. Per arm it shows the mounted instrument, the endoscope, the hand (left/right) that currently drives the arm, and energy activation. We crop the band away before the model sees any pixel, so that the model cannot read instrument identities from the screen, and use the overlay only as a source of conditioning and evaluation labels.
+The surgeon console renders a status band over the recorded video on 81\,\% of usable frames. Per arm it shows the mounted instrument, the endoscope, the hand (left/right) that currently drives the arm, and energy activation. We crop the band away before the model sees any pixel, so that the model cannot read instrument identities from the screen. The driving hand and energy activation of each arm, read from the band, are tested as additional conditioning (Section~\ref{sec:parts}).
 
 \begin{figure*}[t]
 \centering
