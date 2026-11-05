@@ -1,0 +1,26 @@
+\begin{tabular}{lccccccc}
+\toprule
+Model & Euler steps & Guidance & PSNR $\uparrow$ & SSIM $\uparrow$ & LPIPS $\downarrow$ & PSNR at 2.8 s $\uparrow$ & $\Delta$PSNR $\uparrow$ \\
+\midrule
+EG-SWM & 20 & 1 & 21.98 & 0.699 & 0.163 & 19.49 & 2.94 \\
+EG-SWM & 50 & 1 & 22.27 & 0.702 & 0.154 & 20.26 & 2.94 \\
+EG-SWM & 100 & 1 & 22.28 & 0.702 & 0.152 & 20.32 & 2.94 \\
+EG-SWM & 50 & 2 & 22.33 & 0.707 & 0.150 & 20.25 & 3.49 \\
+Monolithic latent + camera & 20 & 1 & 22.58 & 0.714 & 0.148 & 20.51 & 3.14 \\
+Monolithic latent + camera & 50 & 1 & 22.59 & 0.712 & 0.146 & 20.69 & 3.14 \\
+Monolithic latent + camera & 100 & 1 & 22.56 & 0.711 & 0.146 & 20.70 & 3.13 \\
+Monolithic latent + camera & 50 & 2 & 22.66 & 0.718 & 0.142 & 20.75 & 3.66 \\
+Slots + camera (FLAM-style) & 20 & 1 & 22.98 & 0.725 & 0.142 & 20.94 & 3.69 \\
+Slots + camera (FLAM-style) & 50 & 1 & 22.93 & 0.722 & 0.141 & 21.03 & 3.65 \\
+Slots + camera (FLAM-style) & 100 & 1 & 22.90 & 0.721 & 0.141 & 21.03 & 3.63 \\
+Slots + camera (FLAM-style) & 50 & 2 & 22.98 & 0.727 & 0.137 & 21.07 & 4.20 \\
+Monolithic VQ + camera (SurgWM-style) & 20 & 1 & 21.03 & 0.673 & 0.187 & 18.54 & 2.09 \\
+Monolithic VQ + camera (SurgWM-style) & 50 & 1 & 21.47 & 0.681 & 0.174 & 19.52 & 2.19 \\
+Monolithic VQ + camera (SurgWM-style) & 100 & 1 & 21.49 & 0.681 & 0.173 & 19.60 & 2.20 \\
+Monolithic VQ + camera (SurgWM-style) & 50 & 2 & 21.65 & 0.686 & 0.170 & 19.73 & 2.76 \\
+EG-SWM + scene action & 20 & 1 & 22.43 & 0.710 & 0.152 & 20.23 & 3.08 \\
+EG-SWM + scene action & 50 & 1 & 22.51 & 0.709 & 0.148 & 20.58 & 3.05 \\
+EG-SWM + scene action & 100 & 1 & 22.49 & 0.709 & 0.148 & 20.60 & 3.04 \\
+EG-SWM + scene action & 50 & 2 & 22.61 & 0.715 & 0.143 & 20.61 & 3.64 \\
+\bottomrule
+\end{tabular}

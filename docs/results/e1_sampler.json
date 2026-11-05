@@ -1,0 +1,222 @@
+[
+ {
+  "run": "S_arms",
+  "label": "EG-SWM",
+  "guidance": 1.0,
+  "steps": 20,
+  "pred_psnr": 21.97694969177246,
+  "pred_ssim": 0.6989898681640625,
+  "pred_lpips": 0.16272667050361633,
+  "psnr_end": 19.491300582885742,
+  "delta_psnr": 2.9368934631347656
+ },
+ {
+  "run": "S_arms",
+  "label": "EG-SWM",
+  "guidance": 1.0,
+  "steps": 50,
+  "pred_psnr": 22.269014358520508,
+  "pred_ssim": 0.7024885416030884,
+  "pred_lpips": 0.15355725586414337,
+  "psnr_end": 20.258100509643555,
+  "delta_psnr": 2.9444522857666016
+ },
+ {
+  "run": "S_arms",
+  "label": "EG-SWM",
+  "guidance": 1.0,
+  "steps": 100,
+  "pred_psnr": 22.281476974487305,
+  "pred_ssim": 0.7022227048873901,
+  "pred_lpips": 0.1524704247713089,
+  "psnr_end": 20.322500228881836,
+  "delta_psnr": 2.936250686645508
+ },
+ {
+  "run": "S_arms",
+  "label": "EG-SWM",
+  "guidance": 2.0,
+  "steps": 50,
+  "pred_psnr": 22.333484649658203,
+  "pred_ssim": 0.7065173983573914,
+  "pred_lpips": 0.14997129142284393,
+  "psnr_end": 20.248899459838867,
+  "delta_psnr": 3.486602783203125
+ },
+ {
+  "run": "S_global",
+  "label": "Monolithic latent + camera",
+  "guidance": 1.0,
+  "steps": 20,
+  "pred_psnr": 22.582008361816406,
+  "pred_ssim": 0.71399986743927,
+  "pred_lpips": 0.1482550948858261,
+  "psnr_end": 20.511699676513672,
+  "delta_psnr": 3.1371498107910156
+ },
+ {
+  "run": "S_global",
+  "label": "Monolithic latent + camera",
+  "guidance": 1.0,
+  "steps": 50,
+  "pred_psnr": 22.58940887451172,
+  "pred_ssim": 0.7122855186462402,
+  "pred_lpips": 0.14614056050777435,
+  "psnr_end": 20.694700241088867,
+  "delta_psnr": 3.1407833099365234
+ },
+ {
+  "run": "S_global",
+  "label": "Monolithic latent + camera",
+  "guidance": 1.0,
+  "steps": 100,
+  "pred_psnr": 22.564149856567383,
+  "pred_ssim": 0.7112131118774414,
+  "pred_lpips": 0.14615172147750854,
+  "psnr_end": 20.70039939880371,
+  "delta_psnr": 3.1330833435058594
+ },
+ {
+  "run": "S_global",
+  "label": "Monolithic latent + camera",
+  "guidance": 2.0,
+  "steps": 50,
+  "pred_psnr": 22.661514282226562,
+  "pred_ssim": 0.7177999019622803,
+  "pred_lpips": 0.14175891876220703,
+  "psnr_end": 20.746999740600586,
+  "delta_psnr": 3.656187057495117
+ },
+ {
+  "run": "S_slots",
+  "label": "Slots + camera (FLAM-style)",
+  "guidance": 1.0,
+  "steps": 20,
+  "pred_psnr": 22.981830596923828,
+  "pred_ssim": 0.7246730327606201,
+  "pred_lpips": 0.1417229324579239,
+  "psnr_end": 20.938499450683594,
+  "delta_psnr": 3.6949405670166016
+ },
+ {
+  "run": "S_slots",
+  "label": "Slots + camera (FLAM-style)",
+  "guidance": 1.0,
+  "steps": 50,
+  "pred_psnr": 22.92829704284668,
+  "pred_ssim": 0.7221584320068359,
+  "pred_lpips": 0.14068664610385895,
+  "psnr_end": 21.028099060058594,
+  "delta_psnr": 3.6499061584472656
+ },
+ {
+  "run": "S_slots",
+  "label": "Slots + camera (FLAM-style)",
+  "guidance": 1.0,
+  "steps": 100,
+  "pred_psnr": 22.896459579467773,
+  "pred_ssim": 0.720973014831543,
+  "pred_lpips": 0.1407892256975174,
+  "psnr_end": 21.02519989013672,
+  "delta_psnr": 3.631122589111328
+ },
+ {
+  "run": "S_slots",
+  "label": "Slots + camera (FLAM-style)",
+  "guidance": 2.0,
+  "steps": 50,
+  "pred_psnr": 22.981603622436523,
+  "pred_ssim": 0.7268118858337402,
+  "pred_lpips": 0.1369970738887787,
+  "psnr_end": 21.065200805664062,
+  "delta_psnr": 4.196413040161133
+ },
+ {
+  "run": "S_global_vq",
+  "label": "Monolithic VQ + camera (SurgWM-style)",
+  "guidance": 1.0,
+  "steps": 20,
+  "pred_psnr": 21.034448623657227,
+  "pred_ssim": 0.6732159852981567,
+  "pred_lpips": 0.18660500645637512,
+  "psnr_end": 18.53700065612793,
+  "delta_psnr": 2.0923385620117188
+ },
+ {
+  "run": "S_global_vq",
+  "label": "Monolithic VQ + camera (SurgWM-style)",
+  "guidance": 1.0,
+  "steps": 50,
+  "pred_psnr": 21.47396469116211,
+  "pred_ssim": 0.6807825565338135,
+  "pred_lpips": 0.1736336350440979,
+  "psnr_end": 19.515199661254883,
+  "delta_psnr": 2.194978713989258
+ },
+ {
+  "run": "S_global_vq",
+  "label": "Monolithic VQ + camera (SurgWM-style)",
+  "guidance": 1.0,
+  "steps": 100,
+  "pred_psnr": 21.48805046081543,
+  "pred_ssim": 0.6808244585990906,
+  "pred_lpips": 0.17252972722053528,
+  "psnr_end": 19.601699829101562,
+  "delta_psnr": 2.1957340240478516
+ },
+ {
+  "run": "S_global_vq",
+  "label": "Monolithic VQ + camera (SurgWM-style)",
+  "guidance": 2.0,
+  "steps": 50,
+  "pred_psnr": 21.646469116210938,
+  "pred_ssim": 0.6856003999710083,
+  "pred_lpips": 0.1695302128791809,
+  "psnr_end": 19.73040008544922,
+  "delta_psnr": 2.7561988830566406
+ },
+ {
+  "run": "S_arms_scene",
+  "label": "EG-SWM + scene action",
+  "guidance": 1.0,
+  "steps": 20,
+  "pred_psnr": 22.43256950378418,
+  "pred_ssim": 0.7096928358078003,
+  "pred_lpips": 0.15183675289154053,
+  "psnr_end": 20.22760009765625,
+  "delta_psnr": 3.0784072875976562
+ },
+ {
+  "run": "S_arms_scene",
+  "label": "EG-SWM + scene action",
+  "guidance": 1.0,
+  "steps": 50,
+  "pred_psnr": 22.505647659301758,
+  "pred_ssim": 0.7094977498054504,
+  "pred_lpips": 0.14819064736366272,
+  "psnr_end": 20.57979965209961,
+  "delta_psnr": 3.052806854248047
+ },
+ {
+  "run": "S_arms_scene",
+  "label": "EG-SWM + scene action",
+  "guidance": 1.0,
+  "steps": 100,
+  "pred_psnr": 22.491987228393555,
+  "pred_ssim": 0.7088800668716431,
+  "pred_lpips": 0.1477176398038864,
+  "psnr_end": 20.601699829101562,
+  "delta_psnr": 3.044942855834961
+ },
+ {
+  "run": "S_arms_scene",
+  "label": "EG-SWM + scene action",
+  "guidance": 2.0,
+  "steps": 50,
+  "pred_psnr": 22.608417510986328,
+  "pred_ssim": 0.7147042155265808,
+  "pred_lpips": 0.14341266453266144,
+  "psnr_end": 20.612899780273438,
+  "delta_psnr": 3.635953903198242
+ }
+]

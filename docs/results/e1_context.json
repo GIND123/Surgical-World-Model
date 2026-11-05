@@ -1,0 +1,27 @@
+[
+ {
+  "run": "S_arms",
+  "label": "EG-SWM",
+  "ctx2": 21.56205415725708
+ },
+ {
+  "run": "S_global",
+  "label": "Monolithic latent + camera",
+  "ctx2": 21.905083338419598
+ },
+ {
+  "run": "S_slots",
+  "label": "Slots + camera (FLAM-style)",
+  "ctx2": 22.250129222869873
+ },
+ {
+  "run": "S_global_vq",
+  "label": "Monolithic VQ + camera (SurgWM-style)",
+  "ctx2": 20.7468417485555
+ },
+ {
+  "run": "S_arms_scene",
+  "label": "EG-SWM + scene action",
+  "ctx2": 21.80647087097168
+ }
+]
