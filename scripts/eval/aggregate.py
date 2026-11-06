@@ -96,7 +96,8 @@ E4_ROWS = [  # SAR-RARP50: run, label, setting
     *((f"SAR_adapt_{a}", LABEL[f"S_{a}"], "adapted") for a in ("global", "global_vq", "slots", "arms")),
     ("SAR_scratch_arms", LABEL["S_arms"], "from scratch"),
 ]
-TEX = {"Δ": r"$\Delta$", "β": r"$\beta$", "10⁻³": r"$10^{-3}$", "10⁻⁵": r"$10^{-5}$", " %": r"\,\%", "±": r"$\pm$"}
+TEX = {"Δ": r"$\Delta$", "−": r"$-$", "β": r"$\beta$", "10⁻³": r"$10^{-3}$", "10⁻⁵": r"$10^{-5}$", " %": r"\,\%",
+       "±": r"$\pm$"}
 
 
 def tex(s: str) -> str:
@@ -125,6 +126,22 @@ def by_case(npz: Path, prefix: str, n_boot: int = 2000) -> dict:
         out[f"pred_{m}"] = float(per.mean())
         out[f"pred_{m}_ci"] = np.quantile(per[pick].mean(1), [0.025, 0.975]).tolist()
     return out
+
+
+def paired_psnr(a: Path, b: Path, pa: str = "pred", pb: str = "pred", n_boot: int = 2000) -> dict:
+    """PSNR of a minus b on the same windows: mean over test cases (episodes) of the per-case difference, its 95 %
+    interval from resampling cases, and the number of cases in which a is better."""
+    if not (a.exists() and b.exists()):
+        return {}
+    da, db = np.load(a), np.load(b)
+    if "case" not in da or "case" not in db or not np.array_equal(da["window"], db["window"]):
+        return {}
+    cases = sorted(set(da["case"].tolist()))
+    x = da[f"{pa}_psnr"].mean(1) - db[f"{pb}_psnr"].mean(1)
+    d = np.array([x[da["case"] == c].mean() for c in cases])
+    pick = np.random.default_rng(0).integers(0, len(cases), (n_boot, len(cases)))
+    return dict(d_psnr=float(d.mean()), d_psnr_ci=np.quantile(d[pick].mean(1), [0.025, 0.975]).tolist(),
+                wins=int((d > 0).sum()), n_cases=len(cases))
 
 
 def cell(row: dict, key: str, fmt: str, tex: bool = False) -> str:
@@ -839,8 +856,17 @@ def e3() -> None:
             for f in E3_FRACTIONS:
                 d = external(f"{prefix}_kin_{init}_f{f}", data)
                 if d:
-                    rows.append(dict(run=f"{prefix}_kin_{init}_f{f}", data=data, label=label, fraction=float(f),
-                                     share=f"{dname}, {float(f):.0%}", **d))
+                    rows.append(dict(run=f"{prefix}_kin_{init}_f{f}", data=data, init=init, f=f, label=label,
+                                     fraction=float(f), share=f"{dname}, {float(f):.0%}", **d))
+        ev = OUTPUTS / "eval"                       # paired on the same test windows, over test episodes
+        for r in rows:
+            npz = ev / r["run"] / data / "replay.npz"
+            others = {"arms": ("scratch", "global"), "global": ("scratch",)}.get(r["init"], ())
+            for other in others:
+                pr = paired_psnr(npz, ev / f"{prefix}_kin_{other}_f{r['f']}" / data / "replay.npz")
+                r.update({f"vs_{other}_{k}": v for k, v in pr.items()})
+            pr = paired_psnr(npz, ev / "reference" / data / "reference.npz", pb="copy_last")
+            r.update({f"vs_copy_{k}": v for k, v in pr.items()})
         if rows:
             ref = OUTPUTS / "eval" / "reference" / data / "reference.json"
             refs = [dict(r, data=data, share=f"{dname}, –") for r in (reference(ref) if ref.exists() else [])]
@@ -1012,6 +1038,32 @@ def numbers() -> None:
                         put(f"ctx/{other}-S_arms/{n}", ctx[other][f"ctx{n}"] - ctx["S_arms"][f"ctx{n}"], 2)
             if len({tuple(sorted(inter, key=lambda r, n=n: -ctx[r][f"ctx{n}"])) for n in (1, 2, 3)}) > 1:
                 print("### the order of the interfaces depends on the context length (text: it does not)")
+    if (res / "e2_probes.json").exists():                      # R^2 of the linear probes, mean over the two arms
+        for r in json.loads((res / "e2_probes.json").read_text())["rows"]:
+            name = r["probe"].replace("<data>_", "")                  # a run, a model-free feature or adapt_<action>
+            got = {d: r[d]["mean"] for d, _ in E2_DATA if d in r}
+            for d, m in got.items():
+                for t in TARGETS:
+                    put(f"kin/{d}/{name}/{t}", m[t], 2)
+            if len(got) == len(E2_DATA):
+                for t in TARGETS:
+                    put(f"kin/mean/{name}/{t}", float(np.mean([m[t] for m in got.values()])), 2)
+    if (res / "e3_kinematics.json").exists():                  # kinematics-conditioned prediction, test episodes
+        for r in json.loads((res / "e3_kinematics.json").read_text()):
+            if "init" not in r:                                       # copied frame, VAE reconstruction
+                put(f"e3/{r['data']}/{r['run']}/psnr", r["pred_psnr"], 2, r.get("pred_psnr_ci"))
+                continue
+            k = f"e3/{r['data']}/{r['init']}/{r['f']}"
+            put(f"{k}/psnr", r["pred_psnr"], 2, r.get("pred_psnr_ci"))
+            for other in ("scratch", "global", "copy"):
+                if f"vs_{other}_d_psnr" in r:
+                    put(f"{k}/vs_{other}", r[f"vs_{other}_d_psnr"], 2, r[f"vs_{other}_d_psnr_ci"])
+                    val[f"{k}/vs_{other}_wins"] = str(r[f"vs_{other}_wins"])
+                    val[f"{k}/vs_{other}_of"] = str(r[f"vs_{other}_n_cases"])
+    if (res / "e4_clinical.json").exists():                    # SAR-RARP50 test videos
+        for r in json.loads((res / "e4_clinical.json").read_text()):
+            if isinstance(r.get("pred_psnr"), float):
+                put(f"e4/{r['run']}/psnr", r["pred_psnr"], 2, r.get("pred_psnr_ci"))
     if (res / "e1_binding.json").exists():
         d = json.loads((res / "e1_binding.json").read_text())
         for k, v in d.get("coverage", {}).items():

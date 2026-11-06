@@ -41,6 +41,12 @@ def tex_escape(s: str) -> str:
     return s
 
 
+def author(name: str) -> str:
+    """One author; an organisation is braced so that BibTeX keeps it whole ("Team Wan", not "T. Wan")."""
+    name = " ".join(name.split())
+    return f"{{{name}}}" if set(name.split()) & {"Consortium", "Collaboration", "Team"} else name
+
+
 def main() -> None:
     specs = []
     for arg in sys.argv[1:]:
@@ -54,7 +60,8 @@ def main() -> None:
             print(f"% MISSING {key} {aid}", file=sys.stderr)
             continue
         title = tex_escape(e.find("a:title", NS).text)
-        authors = " and ".join(a.find("a:name", NS).text.strip() for a in e.findall("a:author", NS))
+        authors = " and ".join(author(a.find("a:name", NS).text) for a in e.findall("a:author", NS)
+                               if any(c.isalpha() for c in a.find("a:name", NS).text))   # not a ":" separator
         year = e.find("a:published", NS).text[:4]
         note = f",\n  note = {{{{{tex_escape(venue)}}}}}" if venue else ""   # braced, or IEEEtran lowercases it
         print(f"@article{{{key},\n  title = {{{{{title}}}}},\n  author = {{{tex_escape(authors)}}},\n"

@@ -1,0 +1,165 @@
+\documentclass[journal]{IEEEtran}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{siunitx}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+\graphicspath{{../../docs/figures/}}
+\newcommand{\method}{EG-SWM}
+% Result numbers come from scripts/eval/aggregate.py (tables/numbers.tex), as in the main paper; a missing key prints ??
+\newcommand{\val}[1]{\ifcsname val@#1\endcsname\csname val@#1\endcsname\else\textcolor{red}{\textbf{??}}\fi}
+\InputIfFileExists{tables/numbers}{}{}
+\renewcommand{\thesection}{S\arabic{section}}
+\renewcommand{\thetable}{S\arabic{table}}
+\renewcommand{\thefigure}{S\arabic{figure}}
+
+\begin{document}
+\title{Supplementary Material for\\ Embodiment-Grounded Surgical World Models}
+\author{Ajo~Babu~George}
+\markboth{IEEE Transactions on Medical Robotics and Bionics, supplementary material}{}
+\maketitle
+
+\section{Pilot experiments}\label{sec:pilots}
+The design of \method{}'s objective and the scene-action variant were chosen in pilots of size S, trained for 12k steps on 213,985 windows of a subset of the training parts (the first pilot of Table~\ref{tab:pilot-objective} on an earlier subset of 181,585 windows) and diagnosed on the same 256 validation windows. \emph{Replay} generates the 7 future latents from 2 context latents (10 Euler steps, the same noise for every model) with the actions inferred from the real clip and reports the mean squared error to the real latents. The pilots use another budget and other validation windows than the full runs, so their numbers are not comparable with those of the main paper.
+
+\textbf{Objective.} Trained on the diffusion loss alone with $\beta=10^{-3}$, all eight dimensions of each arm action became inactive (Table~\ref{tab:pilot-objective}): replacing every arm's action with another window's changed the replay error by 0.001\,\%, while replacing the explicit endoscope action raised the loss by up to 14\,\% across noise levels. With $\beta=10^{-4}$, six dimensions stay active but the diffusion model hardly uses them. Adding the forward decoder (same data and $\beta$) lowers the replay error by 12\,\% (17\,\% inside the instrument regions) and makes the arm actions matter three times as much, mainly inside the regions where they are written. The forward decoder, not the weaker bottleneck, therefore makes the arm actions useful; the full-scale ablation without it is in the main paper.
+
+\begin{table}[h]
+\centering
+\caption{Pilots: the objective of the learned actions (step 12k, the same 256 validation windows). Increase: rise of the replay error when the learned or the endoscope action of another window is used.}
+\label{tab:pilot-objective}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lcccc}
+\toprule
+ & \multicolumn{2}{c}{Arms, diffusion loss only} & Arms & Monolithic \\
+ & $\beta=10^{-3}$ & $\beta=10^{-4}$ & + decoder & + decoder \\
+\midrule
+Active arm-action dimensions & 0/8 & 6/8 & 8/8 & -- \\
+KL per arm (nats) & 0.004 & 1.41 & 14.2 & 27.3$^\ast$ \\
+Replay error, all positions & 0.609 & 0.605 & 0.534 & 0.445 \\
+\quad inside instrument regions & 0.734 & 0.702 & 0.584 & 0.560 \\
+\quad outside & 0.587 & 0.588 & 0.526 & 0.425 \\
+Increase, learned actions (\%) & 0.001 & 3.1 & 10.7 & 24.3 \\
+\quad inside / outside (\%) & 0.0 / 0.0 & 4.0 / 3.0 & 20.5 / 8.8 & 23.3 / 24.5 \\
+Increase, endoscope action (\%) & 7.1 & 7.2 & 8.2 & 3.1 \\
+\bottomrule
+\multicolumn{5}{l}{\footnotesize $^\ast$ per transition, for one 24-D action}
+\end{tabular}}
+\end{table}
+
+\textbf{Frame-wide learned actions and the endoscope.} The monolithic action replays 17\,\% more accurately than the arm actions, almost all of it outside the instrument regions, and takes over part of the explicit endoscope action (Table~\ref{tab:pilot-scene}). A fifth, scene action, pooled and written only outside every arm's region, closes the gap while the arm actions stay local, but it too weakens the endoscope action, even with every learned action zeroed, the condition under which endoscope control is evaluated. Dropping the learned actions alone during training (probability 0.2) restored the endoscope action only in part and cost replay accuracy. Inferring every learned action from camera-stabilised latents, $z_{t-1}$ warped onto $z_t$ by the measured endoscope motion, did not help, and the scene action then carried as much endoscope information as without stabilisation, so it does not simply copy the motion it sees. Neither variant was run at full scale.
+
+\begin{table}[h]
+\centering
+\caption{Pilots: frame-wide learned actions and the endoscope action (step 12k, the same 256 validation windows). Swap: rise of the replay error with another window's action; for the endoscope with the learned actions zeroed.}
+\label{tab:pilot-scene}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lccccc}
+\toprule
+ & Arms & Monolithic & Arms & + learned-only & + stabilised \\
+ & + decoder & + decoder & + scene & dropout & inference \\
+\midrule
+Replay error & 0.534 & 0.445 & 0.444 & 0.479 & 0.458 \\
+Endoscope swap (\%) & 7.4 & 3.0 & 3.2 & 4.7 & 3.4 \\
+Arm swap, inside / outside (\%) & 20.5 / 8.8 & -- & 14.9 / 5.2 & 12.8 / 4.5 & -- \\
+Endoscope motion from the scene action, $R^2$ & -- & -- & 0.16 / 0.22 / 0.04 & -- & 0.17 / 0.22 / 0.03 \\
+\bottomrule
+\multicolumn{6}{l}{\footnotesize $R^2$ of ridge regression to the measured $\Delta x$ / $\Delta y$ / $\log s$}
+\end{tabular}}
+\end{table}
+
+\section{Sensitivity}\label{sec:sensitivity}
+\textbf{Sampler.} The main paper samples with 50 Euler steps without guidance. On 200 of the test windows, spread over the \val{main/n_cases} test cases, 100 steps change PSNR by at most \val{sens/s100_max}\,dB for any interface, whereas 20 steps cost \method{} \val{sens/S_arms/s20_loss}\,dB (\val{sens/S_arms/end20_loss}\,dB at 2.8\,s, Table~\ref{tab:sampler}). Guidance on the actions (scale 2) adds \val{sens/g2_range}\,dB for every interface and strengthens action following (\method{}'s $\Delta$PSNR \val{sens/S_arms/delta_g2} instead of \val{sens/S_arms/delta_g1}\,dB), but it is left out so that all interfaces are sampled alike. Neither choice changes the order of the interfaces.
+
+\IfFileExists{tables/e1_sampler.tex}{%
+\begin{table}[h]
+\centering
+\caption{Sampler: Euler steps and guidance scale on the actions (200 test windows).}
+\label{tab:sampler}
+\resizebox{\columnwidth}{!}{\input{tables/e1_sampler}}
+\end{table}}{}
+
+\textbf{Context length.} With one or three context latents instead of two, on the same 200 windows, the frames that all three settings predict (0.9--3.2\,s) gain \val{ctx/per_latent}\,dB PSNR per added latent for every interface; each added latent also brings the last context frame 0.4\,s nearer. The order of the interfaces stays the same, and \method{} trails the monolithic latent by \val{ctx/S_global-S_arms/1}, \val{ctx/S_global-S_arms/2} and \val{ctx/S_global-S_arms/3}\,dB with one, two and three latents (Table~\ref{tab:context}).
+
+\IfFileExists{tables/e1_context.tex}{%
+\begin{table}[h]
+\centering
+\caption{Context length: PSNR over the frames that every setting predicts (0.9--3.2\,s; 200 test windows).}
+\label{tab:context}
+\resizebox{\columnwidth}{!}{\input{tables/e1_context}}
+\end{table}}{}
+
+\textbf{Command size.} Endoscope commands in the main paper are the 99th percentile of the real frame-to-frame motion. On 100 of the control windows, commands of half, one and two times this size are realised at \val{scale/S_arms/0.5}, \val{scale/S_arms/1} and \val{scale/S_arms/2} of their magnitude (mean over the six commands), in the commanded direction in at least \val{scale/S_arms/sign_min}\,\% of the windows for every command and size (Table~\ref{tab:command}). Twice the 99th percentile lies outside almost all real endoscope motion, and the models conditioned on robot state or on twelve discrete latent actions fall short there alike (\val{scale/S_state/2} and \val{scale/S_global_vq/2}). Zooms are realised at \val{scale/S_arms/zoom_range}\,\% of their magnitude at every size, pans and tilts at \val{scale/S_arms/pantilt_range}\,\%.
+
+\IfFileExists{tables/e1_camera_scale.tex}{%
+\begin{table}[h]
+\centering
+\caption{Command size: mean endoscope gain over the six commands and the share of windows moving in the commanded direction (100 control windows).}
+\label{tab:command}
+\resizebox{0.8\columnwidth}{!}{\input{tables/e1_camera_scale}}
+\end{table}}{}
+
+\section{Additional results}\label{sec:more}
+The tables below are generated with those of the main paper and appear as their experiments finish: fidelity by the number of instruments bound to an arm; intervals over test cases for locality and for endoscope control and embodiment consistency, paired against \method{}; the paired differences quoted in the text; 14\,s autoregressive rollouts; \method{} with fewer instrument detections at test time; run-to-run variation over seeds; and the cost of training and prediction.
+
+\IfFileExists{tables/e1_binding.tex}{%
+\begin{table}[h]
+\centering
+\caption{PSNR on the \val{main/n_windows} test windows grouped by how many mounted instruments are bound to an arm region for most of the predicted steps.}
+\resizebox{\columnwidth}{!}{\input{tables/e1_binding}}
+\end{table}}{}
+
+\IfFileExists{tables/e1_locality.tex}{%
+\begin{table}[h]
+\centering
+\caption{Locality of the learned actions with 95\,\% intervals over test cases, and paired against \method{} (cases in which \method{}'s arm actions are the more local).}
+\resizebox{\columnwidth}{!}{\input{tables/e1_locality}}
+\end{table}}{}
+
+\IfFileExists{tables/e1_control.tex}{%
+\begin{table*}[t]
+\centering
+\caption{Endoscope gain and embodiment consistency with 95\,\% intervals over test cases; $\Delta$: \method{} minus the model, paired over the same windows (cases in which \method{} is better).}
+\resizebox{\textwidth}{!}{\input{tables/e1_control}}
+\end{table*}}{}
+
+\IfFileExists{tables/e1_contrasts.tex}{%
+\begin{table*}[t]
+\centering
+\caption{Paired differences on the E1 windows ($a-b$, means over test cases with 95\,\% intervals, and cases in which $a$ is better).}
+\resizebox{\textwidth}{!}{\input{tables/e1_contrasts}}
+\end{table*}}{}
+
+\IfFileExists{tables/e1_long.tex}{%
+\begin{table*}[t]
+\centering
+\caption{14\,s autoregressive rollouts: PSNR per 2.8\,s chunk and generated instruments that the robot log does not mount, early and late.}
+\resizebox{\textwidth}{!}{\input{tables/e1_long}}
+\end{table*}}{}
+
+\IfFileExists{tables/e6_detector.tex}{%
+\begin{table}[h]
+\centering
+\caption{\method{} with 25, 50 and 100\,\% of the instrument detections removed at test time.}
+\resizebox{\columnwidth}{!}{\input{tables/e6_detector}}
+\end{table}}{}
+
+\IfFileExists{tables/e1_seeds.tex}{%
+\begin{table*}[t]
+\centering
+\caption{Run-to-run variation: mean and standard deviation over training seeds.}
+\resizebox{\textwidth}{!}{\input{tables/e1_seeds}}
+\end{table*}}{}
+
+\IfFileExists{tables/cost.tex}{%
+\begin{table*}[t]
+\centering
+\caption{Cost: training time, throughput and memory, and the time and memory of one 2.8\,s prediction.}
+\resizebox{\textwidth}{!}{\input{tables/cost}}
+\end{table*}}{}
+
+\end{document}
