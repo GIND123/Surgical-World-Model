@@ -723,8 +723,10 @@ def cost() -> None:
 
 
 def long_rollouts() -> None:
-    """H4: 14 s autoregressive rollouts (scripts/eval/eval_long.py): fidelity per 2.8 s chunk and the share of
-    generated instruments that the robot log does not mount, early and late."""
+    """H4: 14 s autoregressive rollouts (scripts/eval/eval_long.py): fidelity per 2.8 s chunk, and over the first and
+    the last chunk the share of generated instruments that the robot log does not mount and the share of real
+    instruments not found in the generated frames (per-second rates averaged; for the copied frame, the detector on
+    real frames)."""
     srcs = [("reference", "Copy last context frame")] + [(r, LABEL[r]) for r in LONG_RUNS]
     table = []
     for run, label in srcs:
@@ -737,17 +739,20 @@ def long_rollouts() -> None:
         for c in range(0, len(x) // 28):
             row[f"psnr_c{c}"] = float(x[28 * c:28 * c + 28].mean())
             row[f"lpips_c{c}"] = float(lp_[28 * c:28 * c + 28].mean())
-        if run != "reference":
-            row["halluc_first"], row["halluc_last"] = d["halluc_rate_by_second"][0], d["halluc_rate_by_second"][-1]
-            first_s, last_s = d["detector_seconds"][0], d["detector_seconds"][-1]
+        sec = np.array(d["detector_seconds"])
+        for name, key in (("halluc", "halluc_rate_by_second"), ("missing", "missing_rate_by_second")):
+            rate = np.array(d[key])
+            row[f"{name}_first"] = float(rate[sec < 2.8].mean())
+            row[f"{name}_last"] = float(rate[sec >= 2.8 * (len(x) // 28 - 1)].mean())
         table.append(row)
     if not table or len(table) == 1 and table[0]["run"] == "reference":
         return
     n = max(int(k[6:]) for k in table[0] if k.startswith("psnr_c")) + 1
     cols = [(f"psnr_c{c}", f"PSNR {2.8 * c:.1f}–{2.8 * (c + 1):.1f} s", "{:.2f}") for c in range(n)]
     cols += [(f"lpips_c{n - 1}", f"LPIPS {2.8 * (n - 1):.1f}–{2.8 * n:.1f} s", "{:.3f}"),
-             ("halluc_first", f"Unmounted at {first_s:.1f} s", "{:.3f}"),
-             ("halluc_last", f"Unmounted at {last_s:.1f} s", "{:.3f}")]
+             ("halluc_first", "Unmounted 0–2.8 s", "{:.3f}"),
+             ("halluc_last", f"Unmounted {2.8 * (n - 1):.1f}–{2.8 * n:.1f} s", "{:.3f}"),
+             ("missing_last", f"Missing {2.8 * (n - 1):.1f}–{2.8 * n:.1f} s", "{:.3f}")]
     lines = ["| Model | " + " | ".join(h for _, h, _ in cols) + " |", "|" + "---|" * (len(cols) + 1)]
     lines += [f"| {r['label']} | " + " | ".join(cell(r, k, f) for k, _, f in cols) + " |" for r in table]
     rows_tex = [tex(r["label"]) + " & " + " & ".join(cell(r, k, f, tex=True) for k, _, f in cols) + r" \\"
@@ -1014,6 +1019,13 @@ def numbers() -> None:
                       for s in ((20, 1.0), (50, 1.0), (100, 1.0), (50, 2.0))}
             if len(orders) > 1:
                 print("### the order of the interfaces depends on the sampler (text: it does not)")
+    if (res / "e1_long.json").exists():                        # 14 s rollouts: PSNR per chunk, instruments early, late
+        for r in json.loads((res / "e1_long.json").read_text()):
+            for k, v in r.items():
+                if k.startswith("psnr_c"):
+                    put(f"long/{r['run']}/{k}", v, 2)
+                elif k.startswith(("halluc_", "missing_")):
+                    put(f"long/{r['run']}/{k}", 100 * v, 0)
     if (res / "e1_camera_scale.json").exists():                # endoscope commands at 0.5-2x the protocol's size
         rows = json.loads((res / "e1_camera_scale.json").read_text())
         for run in sorted({r["run"] for r in rows}):

@@ -12,7 +12,11 @@
   "psnr_c3": 18.267353670937673,
   "lpips_c3": 0.27396428478615625,
   "psnr_c4": 18.13401072365897,
-  "lpips_c4": 0.2855285736066954
+  "lpips_c4": 0.2855285736066954,
+  "halluc_first": 0.0592,
+  "halluc_last": 0.0658,
+  "missing_first": 0.05453333333333334,
+  "missing_last": 0.1603
  },
  {
   "run": "S_arms",
@@ -28,8 +32,10 @@
   "lpips_c3": 0.32754285633563995,
   "psnr_c4": 17.204167774745397,
   "lpips_c4": 0.35169642737933565,
-  "halluc_first": 0.0992,
-  "halluc_last": 0.1522
+  "halluc_first": 0.12156666666666667,
+  "halluc_last": 0.1633,
+  "missing_first": 0.2523,
+  "missing_last": 0.49996666666666667
  },
  {
   "run": "S_global",
@@ -45,8 +51,10 @@
   "lpips_c3": 0.31873571446963717,
   "psnr_c4": 17.555835723876953,
   "lpips_c4": 0.3417071412716593,
-  "halluc_first": 0.1203,
-  "halluc_last": 0.2174
+  "halluc_first": 0.1427,
+  "halluc_last": 0.1842,
+  "missing_first": 0.2363666666666667,
+  "missing_last": 0.5022333333333333
  },
  {
   "run": "S_slots",
@@ -62,8 +70,10 @@
   "lpips_c3": 0.31174642805542263,
   "psnr_c4": 17.839407103402273,
   "lpips_c4": 0.333089285663196,
-  "halluc_first": 0.0977,
-  "halluc_last": 0.1845
+  "halluc_first": 0.11580000000000001,
+  "halluc_last": 0.16710000000000003,
+  "missing_first": 0.24316666666666667,
+  "missing_last": 0.47669999999999996
  },
  {
   "run": "S_global_vq",
@@ -79,8 +89,10 @@
   "lpips_c3": 0.35634285317999975,
   "psnr_c4": 16.72352491106306,
   "lpips_c4": 0.3795964281473841,
-  "halluc_first": 0.084,
-  "halluc_last": 0.1798
+  "halluc_first": 0.11263333333333332,
+  "halluc_last": 0.20166666666666666,
+  "missing_first": 0.24993333333333334,
+  "missing_last": 0.5631666666666667
  },
  {
   "run": "S_state",
@@ -96,8 +108,10 @@
   "lpips_c3": 0.40169285769973484,
   "psnr_c4": 15.557289259774345,
   "lpips_c4": 0.4269392852272306,
-  "halluc_first": 0.075,
-  "halluc_last": 0.2667
+  "halluc_first": 0.10866666666666668,
+  "halluc_last": 0.2579666666666667,
+  "missing_first": 0.34779999999999994,
+  "missing_last": 0.7173000000000002
  },
  {
   "run": "S_none",
@@ -113,8 +127,10 @@
   "lpips_c3": 0.4768571438533919,
   "psnr_c4": 14.261975049972534,
   "lpips_c4": 0.5049714254481452,
-  "halluc_first": 0.084,
-  "halluc_last": 0.6571
+  "halluc_first": 0.15780000000000002,
+  "halluc_last": 0.5519666666666667,
+  "missing_first": 0.4273666666666666,
+  "missing_last": 0.8967
  },
  {
   "run": "S_arms_scene",
@@ -130,7 +146,9 @@
   "lpips_c3": 0.3240464297788484,
   "psnr_c4": 17.438706942967006,
   "lpips_c4": 0.34879285416432787,
-  "halluc_first": 0.1212,
-  "halluc_last": 0.1868
+  "halluc_first": 0.1073,
+  "halluc_last": 0.1536,
+  "missing_first": 0.23863333333333334,
+  "missing_last": 0.48956666666666665
  }
 ]

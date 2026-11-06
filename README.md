@@ -271,6 +271,21 @@ Two evaluation problems surfaced on the way, and both are fixed:
 
 Fifty steps have converged: 100 change PSNR by at most 0.03 dB. Twenty steps cost EG-SWM 0.29 dB (0.77 dB at 2.8 s) and VQ 0.44 dB, but the frame-wide actions at most 0.07 dB. Guidance (scale 2 on the actions) adds 0.05–0.17 dB for every interface and strengthens action following (EG-SWM's ΔPSNR 3.49 instead of 2.94), but it is kept out of the protocol so that every interface is sampled the same way. No setting changes the order of the interfaces. The remaining LPIPS gap to a frozen frame is perceptual detail: a sampled future draws its own fine texture. The size-B flagship repeats these tests (`341`).
 
+**14 s rollouts** (job `333`, H4; 95 clips from the 19 test cases, five 2.8 s chunks, each continuing from the last 5 generated frames with the actions of its own stretch of the clip; [e1_long](docs/results/e1_long.md)):
+
+| | PSNR 0–2.8 s | 2.8–5.6 s | 5.6–8.4 s | 8.4–11.2 s | 11.2–14 s | unmounted, last chunk | missing, last chunk |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Copy last context frame | 22.34 | 20.02 | 18.92 | 18.27 | 18.13 | 7 % | 16 % |
+| EG-SWM | 22.56 | 19.38 | 18.17 | 17.64 | 17.20 | 16 % | 50 % |
+| EG-SWM + scene action | 22.94 | 19.62 | 18.49 | 17.88 | 17.44 | 15 % | 49 % |
+| Monolithic latent + camera | 22.95 | 19.78 | 18.57 | 17.97 | 17.56 | 18 % | 50 % |
+| Slots + camera (FLAM-style) | 23.29 | 20.11 | 18.89 | 18.26 | 17.84 | 17 % | 48 % |
+| Monolithic VQ + camera (SurgWM-style) | 21.81 | 18.60 | 17.63 | 17.07 | 16.72 | 20 % | 56 % |
+| Robot state + camera | 20.41 | 17.04 | 16.15 | 15.82 | 15.56 | 26 % | 72 % |
+| None (unconditional) | 18.76 | 15.44 | 14.68 | 14.42 | 14.26 | 55 % | 90 % |
+
+Beyond the 2.8 s of training, every interface drifts. The size-S models fall behind the copied frame after the first chunk (the slots after the second), and in the last chunk every one is below it (EG-SWM 17.20 against 18.13 dB). Instruments are lost: in the last chunk the models with learned actions no longer show 48–56 % of the real instruments (the copied frame 16 %), and 15–20 % of their generated instruments are not mounted (EG-SWM 16 %; the detector finds 7 % on real frames; 55 % without actions). The size-B flagship repeats the test (`341`).
+
 **Context length** (job `331`, the same 200 windows; [e1_context](docs/results/e1_context.md)), PSNR over the frames that every setting predicts:
 
 | PSNR (dB) over 0.9–3.2 s | 1 latent (0.1 s) | 2 latents (0.5 s, protocol) | 3 latents (0.9 s) |
