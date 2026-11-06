@@ -137,7 +137,7 @@ Status on 6 Nov 2026 of a reviewer-oriented checklist: comparisons, standard dat
 | Bound vs unbound instruments | done (`e1_binding`) |
 | Rollouts of 8–16 s (H4) | queued `333`: 14 s in five 2.8 s chunks (the last 5 generated frames re-encoded as the next context, actions replayed on each chunk's grid) on 95 clips of the 19 test cases (`configs/eval/surgvu_test_long.json`); repeated for the B flagship (`341`) |
 | **Own explanations** | |
-| The scene action's weaker endoscope control | worded as a hypothesis (README, paper); direct test queued `334`: the share of the change caused by replacing the scene action (and, as controls, the arm, monolithic and slot actions) that lands in grid cells the moving endoscope reveals, over their area share |
+| The scene action's weaker endoscope control | tested (`334`, 6 Nov) and not supported: on the 121 test windows in which the endoscope reveals at least 2 % of the frame, replacing the scene action changes the revealed cells no more than the rest of the frame (ratio 1.03; monolithic 1.01, slots 0.99; EG-SWM's arm actions 0.91). Paper and README now say that how frame-wide actions take over the endoscope motion remains open |
 | Claims rest on fidelity, control and locality together | done |
 | Detector floor (5.3 %) shown with the hallucination rate | done |
 | **Cost** | parameters, training time and memory in `cost`; time and memory of one prediction from `302`, again in `341` for B and the S models with only the timed model on the GPU (`302` had every S model loaded, so its 3.7 GB overstates one model) |

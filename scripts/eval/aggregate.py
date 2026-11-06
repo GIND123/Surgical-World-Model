@@ -1019,6 +1019,12 @@ def numbers() -> None:
                       for s in ((20, 1.0), (50, 1.0), (100, 1.0), (50, 2.0))}
             if len(orders) > 1:
                 print("### the order of the interfaces depends on the sampler (text: it does not)")
+    if (res / "e1_scene_reveal.json").exists():                # change in the content the moving endoscope reveals
+        d = json.loads((res / "e1_scene_reveal.json").read_text())
+        for t in d["tests"].values():
+            put(f"reveal/{t['run']}/{t['action']}", t["ratio_median"], 2)
+            val["reveal/n"] = str(t["n"])
+        val["reveal/min_area"] = f"{100 * d['min_area']:.0f}"
     if (res / "e1_long.json").exists():                        # 14 s rollouts: PSNR per chunk, instruments early, late
         for r in json.loads((res / "e1_long.json").read_text()):
             for k, v in r.items():

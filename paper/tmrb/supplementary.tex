@@ -104,7 +104,14 @@ Endoscope motion from the scene action, $R^2$ & -- & -- & 0.16 / 0.22 / 0.04 & -
 \end{table}}{}
 
 \section{Additional results}\label{sec:more}
-The tables below are generated with those of the main paper and appear as their experiments finish: fidelity by the number of instruments bound to an arm; intervals over test cases for locality and for endoscope control and embodiment consistency, paired against \method{}; the paired differences quoted in the text; 14\,s autoregressive rollouts; \method{} with fewer instrument detections at test time; run-to-run variation over seeds; and the cost of training and prediction.
+The tables below are generated with those of the main paper and appear as their experiments finish: whether a learned action describes what the moving endoscope reveals; fidelity by the number of instruments bound to an arm; intervals over test cases for locality and for endoscope control and embodiment consistency, paired against \method{}; the paired differences quoted in the text; 14\,s autoregressive rollouts; \method{} with fewer instrument detections at test time; run-to-run variation over seeds; and the cost of training and prediction.
+
+\IfFileExists{tables/e1_scene_reveal.tex}{%
+\begin{table}[h]
+\centering
+\caption{Does a learned action describe what the moving endoscope reveals? Share of the change caused by replacing the action that falls in the grid cells the endoscope motion reveals, over their share of the grid (median over the \val{reveal/n} test windows in which they cover at least \val{reveal/min_area}\,\% of it; smaller and larger endoscope motion separately). Near 1: the effect ignores the revealed content.}
+\resizebox{\columnwidth}{!}{\input{tables/e1_scene_reveal}}
+\end{table}}{}
 
 \IfFileExists{tables/e1_binding.tex}{%
 \begin{table}[h]
