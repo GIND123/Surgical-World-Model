@@ -1,0 +1,71 @@
+{
+ "windows": 1000,
+ "min_area": 0.02,
+ "tests": {
+  "EG-SWM + scene: scene action": {
+   "run": "S_arms_scene",
+   "action": "u_extra",
+   "n": 121,
+   "ratio_median": 1.0302367274402446,
+   "ratio_iqr": [
+    0.9110030179582446,
+    1.148503309657384
+   ],
+   "area_median": 0.0704081580042839,
+   "ratio_median_large_motion": 1.0263700919754852,
+   "ratio_median_small_motion": 1.0464922599340536
+  },
+  "EG-SWM + scene: arm actions": {
+   "run": "S_arms_scene",
+   "action": "u_arms",
+   "n": 121,
+   "ratio_median": 0.8616400481355975,
+   "ratio_iqr": [
+    0.6338071909870888,
+    1.1456163967251716
+   ],
+   "area_median": 0.0704081580042839,
+   "ratio_median_large_motion": 0.8996187823090138,
+   "ratio_median_small_motion": 0.8127686856906202
+  },
+  "EG-SWM: arm actions": {
+   "run": "S_arms",
+   "action": "u_arms",
+   "n": 121,
+   "ratio_median": 0.9130639583686433,
+   "ratio_iqr": [
+    0.702894647695039,
+    1.1402095720176697
+   ],
+   "area_median": 0.0704081580042839,
+   "ratio_median_large_motion": 0.962955805426193,
+   "ratio_median_small_motion": 0.8866923140543396
+  },
+  "Monolithic latent + camera": {
+   "run": "S_global",
+   "action": "u_extra",
+   "n": 121,
+   "ratio_median": 1.0066358251275624,
+   "ratio_iqr": [
+    0.8963421785454526,
+    1.1141970022358652
+   ],
+   "area_median": 0.0704081580042839,
+   "ratio_median_large_motion": 1.0227106926812968,
+   "ratio_median_small_motion": 1.0024623676940745
+  },
+  "Slots + camera": {
+   "run": "S_slots",
+   "action": "u_extra",
+   "n": 121,
+   "ratio_median": 0.9945990318522748,
+   "ratio_iqr": [
+    0.8881917493965593,
+    1.1091146549129332
+   ],
+   "area_median": 0.0704081580042839,
+   "ratio_median_large_motion": 1.0225799466573677,
+   "ratio_median_small_motion": 0.9759399764600478
+  }
+ }
+}
