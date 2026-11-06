@@ -271,6 +271,8 @@ Two evaluation problems surfaced on the way, and both are fixed:
 
 Fifty steps have converged: 100 change PSNR by at most 0.03 dB. Twenty steps cost EG-SWM 0.29 dB (0.77 dB at 2.8 s) and VQ 0.44 dB, but the frame-wide actions at most 0.07 dB. Guidance (scale 2 on the actions) adds 0.05–0.17 dB for every interface and strengthens action following (EG-SWM's ΔPSNR 3.49 instead of 2.94), but it is kept out of the protocol so that every interface is sampled the same way. No setting changes the order of the interfaces. The remaining LPIPS gap to a frozen frame is perceptual detail: a sampled future draws its own fine texture. The size-B flagship repeats these tests (`341`).
 
+**Detector quality** (job `335`, the 1,000 E1 windows; [e6_detector](docs/results/e6_detector.md)). With a quarter, half or all of the instrument detections removed at random at test time, EG-SWM's PSNR changes by −0.23 dB [−0.26, −0.20], −0.46 dB [−0.51, −0.43] and −1.07 dB [−1.17, −0.98], worse in all 19 cases each time, and replaying the inferred actions is worth 2.48, 2.15 and 1.33 dB instead of 2.78 dB. Fidelity follows the detector's recall, so a detector that finds more instruments would raise it; without any detection EG-SWM falls below the copied frame.
+
 **14 s rollouts** (job `333`, H4; 95 clips from the 19 test cases, five 2.8 s chunks, each continuing from the last 5 generated frames with the actions of its own stretch of the clip; [e1_long](docs/results/e1_long.md)):
 
 | | PSNR 0–2.8 s | 2.8–5.6 s | 5.6–8.4 s | 8.4–11.2 s | 11.2–14 s | unmounted, last chunk | missing, last chunk |

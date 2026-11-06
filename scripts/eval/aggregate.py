@@ -1019,6 +1019,13 @@ def numbers() -> None:
                       for s in ((20, 1.0), (50, 1.0), (100, 1.0), (50, 2.0))}
             if len(orders) > 1:
                 print("### the order of the interfaces depends on the sampler (text: it does not)")
+    if (res / "e6_detector.json").exists():                    # EG-SWM with instrument detections removed at test time
+        for r in json.loads((res / "e6_detector.json").read_text()):
+            if "d_psnr" in r:
+                k = f"det/{100 - 100 * r['drop']:.0f}"                # share of the detections kept
+                put(f"{k}/psnr", r["d_psnr"], 2, r["d_psnr_ci"])
+                put(f"{k}/delta_psnr", r["delta_psnr"], 2)
+                val[f"{k}/worse"], val[f"{k}/of"] = r["cases_worse"].split("/")
     if (res / "e1_scene_reveal.json").exists():                # change in the content the moving endoscope reveals
         d = json.loads((res / "e1_scene_reveal.json").read_text())
         for t in d["tests"].values():
