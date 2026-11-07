@@ -11,3 +11,4 @@
 | EG-SWM, no camera action | 20.11 | 20.42 | 21.96 |
 | EG-SWM | 22.94 | 20.83 | 22.17 |
 | EG-SWM + scene action | 24.56 | 21.27 | 22.37 |
+| EG-SWM, size B | 23.27 | 21.26 | 22.61 |

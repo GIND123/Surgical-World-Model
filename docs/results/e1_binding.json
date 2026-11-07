@@ -88,6 +88,13 @@
    "none bound": 24.557674407958984,
    "one bound": 21.27490997314453,
    "two or more bound": 22.371286392211914
+  },
+  {
+   "run": "B_arms",
+   "label": "EG-SWM, size B",
+   "none bound": 23.27495765686035,
+   "one bound": 21.25850486755371,
+   "two or more bound": 22.609817504882812
   }
  ],
  "none_undetected": 83

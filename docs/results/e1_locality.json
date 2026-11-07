@@ -195,5 +195,22 @@
   ],
   "egswm_better": 10,
   "n_cases": 19
+ },
+ {
+  "run": "B_arms",
+  "label": "EG-SWM, size B",
+  "n_rows": 630,
+  "locality": 2.4851347616158104,
+  "locality_ci": [
+   2.333818939776042,
+   2.7713778769773674
+  ],
+  "d_locality": 0.06641387483728245,
+  "d_locality_ci": [
+   -0.09277041645641539,
+   0.16904381589144393
+  ],
+  "egswm_better": 5,
+  "n_cases": 19
  }
 ]

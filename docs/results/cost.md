@@ -15,3 +15,4 @@
 | EG-SWM, wrong arm binding | S | 60000 | 5.6 | 96 | 31.4 | – | – | – |
 | EG-SWM + console readout | S | 60000 | 5.6 | 96 | 31.4 | – | – | – |
 | EG-SWM, boxes held across detector gaps | S | 60000 | 5.6 | 96 | 31.4 | – | – | – |
+| EG-SWM, size B | B | 60000 | 17.6 | 30 | 26.1 | – | – | – |
