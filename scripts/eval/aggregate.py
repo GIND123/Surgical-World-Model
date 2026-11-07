@@ -886,6 +886,9 @@ def e3() -> None:
                 r.update({f"vs_{other}_{k}": v for k, v in pr.items()})
             pr = paired_psnr(npz, ev / "reference" / data / "reference.npz", pb="copy_last")
             r.update({f"vs_copy_{k}": v for k, v in pr.items()})
+            if r["f"] != "0.1":                     # more training episodes, the same initialisation and steps
+                pr = paired_psnr(npz, ev / f"{prefix}_kin_{r['init']}_f0.1" / data / "replay.npz")
+                r.update({f"vs_tenth_{k}": v for k, v in pr.items()})
         if rows:
             ref = OUTPUTS / "eval" / "reference" / data / "reference.json"
             refs = [dict(r, data=data, share=f"{dname}, –") for r in (reference(ref) if ref.exists() else [])]
@@ -1103,7 +1106,7 @@ def numbers() -> None:
                 continue
             k = f"e3/{r['data']}/{r['init']}/{r['f']}"
             put(f"{k}/psnr", r["pred_psnr"], 2, r.get("pred_psnr_ci"))
-            for other in ("scratch", "global", "copy"):
+            for other in ("scratch", "global", "copy", "tenth"):
                 if f"vs_{other}_d_psnr" in r:
                     put(f"{k}/vs_{other}", r[f"vs_{other}_d_psnr"], 2, r[f"vs_{other}_d_psnr_ci"])
                     val[f"{k}/vs_{other}_wins"] = str(r[f"vs_{other}_wins"])

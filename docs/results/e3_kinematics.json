@@ -111,7 +111,14 @@
    1.5089298069477082
   ],
   "vs_copy_wins": 146,
-  "vs_copy_n_cases": 146
+  "vs_copy_n_cases": 146,
+  "vs_tenth_d_psnr": -0.3225059509277344,
+  "vs_tenth_d_psnr_ci": [
+   -0.35081813111901283,
+   -0.2936907671391964
+  ],
+  "vs_tenth_wins": 5,
+  "vs_tenth_n_cases": 146
  },
  {
   "run": "SB_kin_arms_f0.1",
@@ -209,7 +216,14 @@
    2.8466062605381013
   ],
   "vs_copy_wins": 146,
-  "vs_copy_n_cases": 146
+  "vs_copy_n_cases": 146,
+  "vs_tenth_d_psnr": -0.10829204320907593,
+  "vs_tenth_d_psnr_ci": [
+   -0.14735554978251458,
+   -0.07008748073130847
+  ],
+  "vs_tenth_wins": 48,
+  "vs_tenth_n_cases": 146
  },
  {
   "run": "SB_kin_global_f0.1",
@@ -293,6 +307,13 @@
    2.7704851269721984
   ],
   "vs_copy_wins": 146,
-  "vs_copy_n_cases": 146
+  "vs_copy_n_cases": 146,
+  "vs_tenth_d_psnr": -0.10039088129997253,
+  "vs_tenth_d_psnr_ci": [
+   -0.13542711697518825,
+   -0.06410724613815548
+  ],
+  "vs_tenth_wins": 49,
+  "vs_tenth_n_cases": 146
  }
 ]
