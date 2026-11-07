@@ -889,6 +889,9 @@ def e3() -> None:
             if r["f"] != "0.1":                     # more training episodes, the same initialisation and steps
                 pr = paired_psnr(npz, ev / f"{prefix}_kin_{r['init']}_f0.1" / data / "replay.npz")
                 r.update({f"vs_tenth_{k}": v for k, v in pr.items()})
+            elif r["init"] != "scratch":            # a tenth of the episodes against all of them from scratch
+                pr = paired_psnr(npz, ev / f"{prefix}_kin_scratch_f1.0" / data / "replay.npz")
+                r.update({f"vs_scratch_all_{k}": v for k, v in pr.items()})
         if rows:
             ref = OUTPUTS / "eval" / "reference" / data / "reference.json"
             refs = [dict(r, data=data, share=f"{dname}, –") for r in (reference(ref) if ref.exists() else [])]
@@ -1100,17 +1103,28 @@ def numbers() -> None:
         if rot_jaw:
             put("kin/max/rot_jaw", max(rot_jaw), 2)
     if (res / "e3_kinematics.json").exists():                  # kinematics-conditioned prediction, test episodes
-        for r in json.loads((res / "e3_kinematics.json").read_text()):
+        e3_rows = json.loads((res / "e3_kinematics.json").read_text())
+        for r in e3_rows:
             if "init" not in r:                                       # copied frame, VAE reconstruction
                 put(f"e3/{r['data']}/{r['run']}/psnr", r["pred_psnr"], 2, r.get("pred_psnr_ci"))
                 continue
             k = f"e3/{r['data']}/{r['init']}/{r['f']}"
             put(f"{k}/psnr", r["pred_psnr"], 2, r.get("pred_psnr_ci"))
-            for other in ("scratch", "global", "copy", "tenth"):
+            for other in ("scratch", "global", "copy", "tenth", "scratch_all"):
                 if f"vs_{other}_d_psnr" in r:
                     put(f"{k}/vs_{other}", r[f"vs_{other}_d_psnr"], 2, r[f"vs_{other}_d_psnr_ci"])
                     val[f"{k}/vs_{other}_wins"] = str(r[f"vs_{other}_wins"])
                     val[f"{k}/vs_{other}_of"] = str(r[f"vs_{other}_n_cases"])
+        # ranges over datasets, shares and initialisations: all episodes against a tenth, an initialised model
+        # against training from scratch, and EG-SWM against the monolithic model as the starting point
+        for name, key, nd in (("tenth", "vs_tenth_d_psnr", 2), ("init", "vs_scratch_d_psnr", 2)):
+            x = [r[key] for r in e3_rows if key in r]
+            if x:
+                put(f"e3/{name}/min", min(x), nd)
+                put(f"e3/{name}/max", max(x), nd)
+        iface = [abs(r["vs_global_d_psnr"]) for r in e3_rows if "vs_global_d_psnr" in r]
+        if iface:
+            put("e3/iface/max_abs", max(iface), 2)
     if (res / "e4_clinical.json").exists():                    # SAR-RARP50 test videos
         for r in json.loads((res / "e4_clinical.json").read_text()):
             if isinstance(r.get("pred_psnr"), float):
