@@ -315,5 +315,84 @@
   ],
   "vs_tenth_wins": 49,
   "vs_tenth_n_cases": 146
+ },
+ {
+  "run": "copy_last",
+  "label": "Copy last context frame",
+  "pred_psnr": 17.974760055541992,
+  "pred_ssim": 0.6730483770370483,
+  "pred_lpips": 0.2031247317790985,
+  "pred_fvd": 546.8183216677921,
+  "pred_psnr_ci": [
+   17.87234263420105,
+   18.080411767959596
+  ],
+  "pred_ssim_ci": [
+   0.6682795688509942,
+   0.6779208138585091
+  ],
+  "pred_lpips_ci": [
+   0.20005368404090404,
+   0.20615210086107255
+  ],
+  "data": "srth",
+  "share": "SRT-H, \u2013"
+ },
+ {
+  "run": "recon",
+  "label": "VAE reconstruction (ceiling)",
+  "pred_psnr": 35.4604606628418,
+  "pred_ssim": 0.9650817513465881,
+  "pred_lpips": 0.015224594622850418,
+  "pred_fvd": 11.28856157653387,
+  "pred_psnr_ci": [
+   35.414091968536376,
+   35.50707368850708
+  ],
+  "pred_ssim_ci": [
+   0.9648060753941536,
+   0.9653378874063492
+  ],
+  "pred_lpips_ci": [
+   0.015081239584833383,
+   0.015376657480373979
+  ],
+  "data": "srth",
+  "share": "SRT-H, \u2013"
+ },
+ {
+  "run": "SRTH_kin_scratch_f0.1",
+  "data": "srth",
+  "init": "scratch",
+  "f": "0.1",
+  "label": "None (from scratch)",
+  "fraction": 0.1,
+  "share": "SRT-H, 10%",
+  "pred_psnr": 19.7896785736084,
+  "pred_ssim": 0.6920928359031677,
+  "pred_lpips": 0.20418354868888855,
+  "pred_fvd": 621.297501811711,
+  "delta_psnr": 1.4220428466796875,
+  "step": 8000,
+  "weights": "raw",
+  "pred_psnr_ci": [
+   19.70869975090027,
+   19.87126522064209
+  ],
+  "pred_ssim_ci": [
+   0.6886815562844276,
+   0.6954194322228432
+  ],
+  "pred_lpips_ci": [
+   0.2012869782745838,
+   0.2072488073259592
+  ],
+  "vs_copy_d_psnr": 1.8149217367172241,
+  "vs_copy_d_psnr_ci": [
+   1.7600175946950913,
+   1.8717548340559005
+  ],
+  "vs_copy_wins": 937,
+  "vs_copy_n_cases": 951
  }
 ]
