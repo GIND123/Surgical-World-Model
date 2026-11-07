@@ -13,3 +13,5 @@
 | EG-SWM, arm actions not grounded | zero-shot | 0.12 | 0.02 | 0.02 | 0.01 | 0.00 | -0.00 | 0.04 | -0.00 | 0.00 |
 | EG-SWM, wrong arm binding | zero-shot | 0.02 | -0.01 | 0.01 | 0.00 | 0.00 | -0.00 | -0.01 | -0.00 | 0.00 |
 | EG-SWM, size B | zero-shot | 0.28 | 0.00 | 0.02 | 0.01 | 0.00 | -0.01 | 0.05 | 0.00 | 0.00 |
+| EG-SWM, every arm's action | zero-shot | 0.31 | 0.01 | 0.03 | 0.01 | 0.00 | -0.00 | 0.04 | -0.00 | 0.00 |
+| EG-SWM, size B, every arm's action | zero-shot | 0.30 | 0.01 | 0.02 | 0.01 | 0.00 | -0.00 | 0.04 | -0.00 | 0.00 |
