@@ -553,7 +553,8 @@ def control_intervals() -> None:
             row.update(gain=float(g[0]), gain_ci=ci(g))
             if run != "S_arms":
                 row.update(d_gain=float(b_gain[0] - g[0]), d_gain_ci=ci(b_gain - g),
-                           egswm_higher=int((b_gain_case > g_case).sum()))
+                           egswm_higher=int((b_gain_case > g_case).sum()),
+                           egswm_lower=int((b_gain_case < g_case).sum()))
         if ecs:
             rate, hal_case = rates(ecs)
             for k, x in rate.items():
@@ -561,7 +562,8 @@ def control_intervals() -> None:
             if run != "S_arms":
                 d, ok = b_rate["halluc"] - rate["halluc"], np.isfinite(b_hal_case) & np.isfinite(hal_case)
                 row.update(d_halluc=float(d[0]), d_halluc_ci=ci(d), n_halluc=int(ok.sum()),
-                           egswm_fewer=int((b_hal_case[ok] < hal_case[ok]).sum()))
+                           egswm_fewer=int((b_hal_case[ok] < hal_case[ok]).sum()),
+                           egswm_more=int((b_hal_case[ok] > hal_case[ok]).sum()))
         summary = load(run)                               # the same windows and noise: the summaries must reproduce
         for k, s, scale in (("gain", "cam_gain_mean", 1), ("halluc", "ecs_hallucination_rate", 100)):
             if k in row and s in summary and abs(row[k] - scale * summary[s]) > 1e-6 * scale:
@@ -990,11 +992,12 @@ def numbers() -> None:
             for k, nd in (("ecs_p", 2), ("ecs_r", 2), ("halluc", 1), ("real_halluc", 1)):
                 if k in r:
                     put(f"ctl/{run}/{k}", r[k], nd, r[f"{k}_ci"])
-            for k, n, of, nd in (("gain", "egswm_higher", "n_cases", 2), ("halluc", "egswm_fewer", "n_halluc", 1)):
+            for k, n, m, of, nd in (("gain", "egswm_higher", "egswm_lower", "n_cases", 2),
+                                    ("halluc", "egswm_fewer", "egswm_more", "n_halluc", 1)):
                 if f"d_{k}" in r:
                     key = f"diff/S_arms-{run}/{k}"
                     put(key, r[f"d_{k}"], nd, r[f"d_{k}_ci"])
-                    val[f"{key}_wins"], val[f"{key}_of"] = str(r[n]), str(r[of])
+                    val[f"{key}_wins"], val[f"{key}_losses"], val[f"{key}_of"] = str(r[n]), str(r[m]), str(r[of])
     if (res / "e1_sampler.json").exists():                     # Euler steps and guidance on 200 test windows
         at = {(r["run"], r["steps"], r["guidance"]): r for r in json.loads((res / "e1_sampler.json").read_text())}
         runs = sorted({run for run, *_ in at})
