@@ -76,5 +76,39 @@
   ],
   "vs_copy_wins": 146,
   "vs_copy_n_cases": 146
+ },
+ {
+  "run": "SB_kin_scratch_f1.0",
+  "data": "suturebot",
+  "init": "scratch",
+  "f": "1.0",
+  "label": "None (from scratch)",
+  "fraction": 1.0,
+  "share": "SutureBot, 100%",
+  "pred_psnr": 21.234130859375,
+  "pred_ssim": 0.7491584420204163,
+  "pred_lpips": 0.24240639805793762,
+  "pred_fvd": 1072.1770860269528,
+  "delta_psnr": 1.2435855865478516,
+  "step": 8000,
+  "pred_psnr_ci": [
+   21.07455620765686,
+   21.4019983291626
+  ],
+  "pred_ssim_ci": [
+   0.7452288836240768,
+   0.7529945582151413
+  ],
+  "pred_lpips_ci": [
+   0.2386206690222025,
+   0.24622968770563602
+  ],
+  "vs_copy_d_psnr": 0.5713907480239868,
+  "vs_copy_d_psnr_ci": [
+   0.5115601927042007,
+   0.630617681145668
+  ],
+  "vs_copy_wins": 138,
+  "vs_copy_n_cases": 146
  }
 ]
