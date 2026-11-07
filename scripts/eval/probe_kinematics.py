@@ -30,12 +30,14 @@ GROUPS = {"pos": slice(0, 3), "rot": slice(3, 6), "jaw": slice(6, 7)}
 
 @torch.no_grad()
 def model_features(run: str, ds: ExternalWindows, bs: int = 32) -> dict[str, np.ndarray]:
-    """{arm: (N, 8, F)} posterior-mean action features for latent steps 1..8."""
+    """{arm: (N, 8, F)} posterior-mean action features for latent steps 1..8. For "<run>:all" each arm's probe gets
+    every arm's action, as it gets the whole action of a frame-wide interface."""
     import sys
     from pathlib import Path
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from eval_wm import load_model
 
+    run, _, mode = run.partition(":")
     model, _ = load_model(run, None)
     feats = {arm: [] for arm in SLOTS}
     for b in DataLoader(ds, batch_size=bs, shuffle=False, num_workers=4):
@@ -45,7 +47,7 @@ def model_features(run: str, ds: ExternalWindows, bs: int = 32) -> dict[str, np.
             acts = model.infer_actions(b["z"], b, stochastic=False)
         for arm, slot in SLOTS.items():
             if "u_arms" in acts:
-                f = acts["u_arms"][:, 1:, slot]
+                f = acts["u_arms"][:, 1:].flatten(2) if mode == "all" else acts["u_arms"][:, 1:, slot]
             else:
                 f = acts["u_extra"][:, 1:].flatten(2)            # monolithic or all slots, same for both arms
             feats[arm].append(f.float().cpu().numpy())
@@ -103,10 +105,11 @@ def main() -> None:
             ftr, fte = model_features(name, tr), model_features(name, te)
         else:
             ftr, fte = baseline_features(tr, name), baseline_features(te, name)
-        results["probes"][name] = {
+        key = name.replace(":", "_")                                      # S_arms:all -> S_arms_all
+        results["probes"][key] = {
             arm: probe(ftr[arm].reshape(-1, ftr[arm].shape[-1]), targets["train"][arm],
                        fte[arm].reshape(-1, fte[arm].shape[-1]), targets["test"][arm]) for arm in SLOTS}
-        print(name, json.dumps(results["probes"][name]), flush=True)
+        print(key, json.dumps(results["probes"][key]), flush=True)
     out = OUTPUTS / "eval" / "probes"
     out.mkdir(parents=True, exist_ok=True)
     (out / f"{args.data}.json").write_text(json.dumps(results, indent=1))

@@ -714,6 +714,8 @@
  "kin/jigsaws/dz_region/jaw": "0.00",
  "kin/jigsaws/dz_region/pos": "0.05",
  "kin/jigsaws/dz_region/rot": "-0.00",
+ "kin/max/crcd_jigsaws_pos": "0.15",
+ "kin/max/rot_jaw": "0.08",
  "kin/mean/B_arms/jaw": "0.00",
  "kin/mean/B_arms/pos": "0.11",
  "kin/mean/B_arms/rot": "0.00",

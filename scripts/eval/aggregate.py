@@ -9,8 +9,8 @@ embodiment consistency theirs from <run>/{control,camera_ecs}_rows.json (e1_cont
 other models the same way (CONTRASTS), and numbers() writes every number the manuscript's text quotes as a \\val{key}
 macro (paper/tmrb/tables/numbers.tex, docs/results/numbers.json). Seeds: mean and
 standard deviation over the runs trained with seeds 0-2. Sensitivity: sampler, context length and endoscope-command
-scale on 200 (100) of the test windows. E2 reads the kinematic probes outputs/eval/probes/<data>_{zeroshot,adapted}
-.json; E3 and E4 read outputs/eval/<run>/<data>/replay.json, with intervals over test episodes. Each table is
+scale on 200 (100) of the test windows. E2 reads the kinematic probes outputs/eval/probes/<data>_{zeroshot,allarms,
+adapted}.json; E3 and E4 read outputs/eval/<run>/<data>/replay.json, with intervals over test episodes. Each table is
 written to docs/results/<name>.{md,json} and paper/tmrb/tables/<name>.tex; missing runs are skipped and a table
 without any result is not written.
 """
@@ -84,6 +84,8 @@ E2_ROWS = [  # probe name ({d}: dataset), probe file, label, setting
     ("dz_frame", "zeroshot", "Latent change over the frame", "model-free"),
     ("camera", "zeroshot", "Endoscope action", "model-free"),
     *((run, "zeroshot", label, "zero-shot") for run, label, *_ in ROWS + ABLATIONS + SCALE),
+    ("S_arms_all", "allarms", "EG-SWM, every arm's action", "zero-shot"),  # as many features as a frame-wide action
+    ("B_arms_all", "allarms", "EG-SWM, size B, every arm's action", "zero-shot"),
     *((f"{{d}}_adapt_{a}", "adapted", LABEL[f"S_{a}"], "adapted") for a in ("global", "global_vq", "slots", "arms")),
 ]
 TARGETS = ("pos", "rot", "jaw")                     # end-effector translation, rotation, jaw of the same arm
@@ -788,7 +790,7 @@ def e2() -> None:
     (per arm in the JSON), for model-free features, frozen SurgVU models and models adapted without kinematics."""
     probes = {}
     for d, _ in E2_DATA:
-        for src in ("zeroshot", "adapted"):
+        for src in ("zeroshot", "allarms", "adapted"):
             p = OUTPUTS / "eval" / "probes" / f"{d}_{src}.json"
             if p.exists():
                 probes[d, src] = json.loads(p.read_text())
@@ -821,6 +823,14 @@ def e2() -> None:
     data = {"datasets": {f"{d}_{s}": {k: v for k, v in p.items() if k != "probes"} for (d, s), p in probes.items()},
             "rows": table}
     write("e2_probes", data, lines, tabular("ll" + "c" * len(keys), head, rows_tex))
+    pos, rows_pos, last = [f"{d}_pos" for d, _ in E2_DATA], [], None    # the main paper's table: translation only
+    for row, f in zip(table, flat, strict=True):
+        if last not in (None, row["setting"]):
+            rows_pos.append(r"\midrule")
+        last = row["setting"]
+        rows_pos.append(f"{row['label']} & " + " & ".join(cell(f, k, "{:.2f}", tex=True) for k in pos) + r" \\")
+    (ROOT / "paper" / "tmrb" / "tables" / "e2_probes_pos.tex").write_text(
+        tabular("l" + "c" * len(pos), ["Features & " + " & ".join(n for _, n in E2_DATA) + r" \\"], rows_pos))
 
 
 def external(run: str, data: str) -> dict:
@@ -1067,7 +1077,8 @@ def numbers() -> None:
             if len({tuple(sorted(inter, key=lambda r, n=n: -ctx[r][f"ctx{n}"])) for n in (1, 2, 3)}) > 1:
                 print("### the order of the interfaces depends on the context length (text: it does not)")
     if (res / "e2_probes.json").exists():                      # R^2 of the linear probes, mean over the two arms
-        for r in json.loads((res / "e2_probes.json").read_text())["rows"]:
+        rows = json.loads((res / "e2_probes.json").read_text())["rows"]
+        for r in rows:
             name = r["probe"].replace("<data>_", "")                  # a run, a model-free feature or adapt_<action>
             got = {d: r[d]["mean"] for d, _ in E2_DATA if d in r}
             for d, m in got.items():
@@ -1076,6 +1087,13 @@ def numbers() -> None:
             if len(got) == len(E2_DATA):
                 for t in TARGETS:
                     put(f"kin/mean/{name}/{t}", float(np.mean([m[t] for m in got.values()])), 2)
+        # how far any feature gets where the probes find little: translation on CRCD and JIGSAWS, rotation and jaw
+        pos = [r[d]["mean"]["pos"] for r in rows for d in ("crcd", "jigsaws") if d in r]
+        rot_jaw = [r[d]["mean"][t] for r in rows for d, _ in E2_DATA if d in r for t in ("rot", "jaw")]
+        if pos:
+            put("kin/max/crcd_jigsaws_pos", max(pos), 2)
+        if rot_jaw:
+            put("kin/max/rot_jaw", max(rot_jaw), 2)
     if (res / "e3_kinematics.json").exists():                  # kinematics-conditioned prediction, test episodes
         for r in json.loads((res / "e3_kinematics.json").read_text()):
             if "init" not in r:                                       # copied frame, VAE reconstruction
