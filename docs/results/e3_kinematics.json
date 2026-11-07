@@ -436,5 +436,47 @@
   ],
   "vs_tenth_wins": 358,
   "vs_tenth_n_cases": 951
+ },
+ {
+  "run": "SRTH_kin_arms_f0.1",
+  "data": "srth",
+  "init": "arms",
+  "f": "0.1",
+  "label": "EG-SWM",
+  "fraction": 0.1,
+  "share": "SRT-H, 10%",
+  "pred_psnr": 20.81639862060547,
+  "pred_ssim": 0.7310827374458313,
+  "pred_lpips": 0.15406252443790436,
+  "pred_fvd": 226.96345335152225,
+  "delta_psnr": 2.6110706329345703,
+  "step": 8000,
+  "weights": "raw",
+  "pred_psnr_ci": [
+   20.726432466506957,
+   20.90178256034851
+  ],
+  "pred_ssim_ci": [
+   0.7277991220355033,
+   0.7342968747019768
+  ],
+  "pred_lpips_ci": [
+   0.1516954254359007,
+   0.15660871043801308
+  ],
+  "vs_scratch_d_psnr": 1.0267198085784912,
+  "vs_scratch_d_psnr_ci": [
+   0.9909134164452553,
+   1.059944424033165
+  ],
+  "vs_scratch_wins": 920,
+  "vs_scratch_n_cases": 951,
+  "vs_copy_d_psnr": 2.841641902923584,
+  "vs_copy_d_psnr_ci": [
+   2.7718536019325257,
+   2.908623343706131
+  ],
+  "vs_copy_wins": 948,
+  "vs_copy_n_cases": 951
  }
 ]
