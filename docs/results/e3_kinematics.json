@@ -1,0 +1,80 @@
+[
+ {
+  "run": "copy_last",
+  "label": "Copy last context frame",
+  "pred_psnr": 20.662738800048828,
+  "pred_ssim": 0.7702512145042419,
+  "pred_lpips": 0.21591976284980774,
+  "pred_fvd": 702.1505999694978,
+  "pred_psnr_ci": [
+   20.488881254196166,
+   20.84762797355652
+  ],
+  "pred_ssim_ci": [
+   0.7666296631097793,
+   0.7740483030676841
+  ],
+  "pred_lpips_ci": [
+   0.2114542093127966,
+   0.22007110007107258
+  ],
+  "data": "suturebot",
+  "share": "SutureBot, \u2013"
+ },
+ {
+  "run": "recon",
+  "label": "VAE reconstruction (ceiling)",
+  "pred_psnr": 37.57793426513672,
+  "pred_ssim": 0.9754090905189514,
+  "pred_lpips": 0.009371927008032799,
+  "pred_fvd": 5.4383035106207664,
+  "pred_psnr_ci": [
+   37.46484775543213,
+   37.69956102371216
+  ],
+  "pred_ssim_ci": [
+   0.9750934049487114,
+   0.9757246047258377
+  ],
+  "pred_lpips_ci": [
+   0.009235752071253956,
+   0.00950375769753009
+  ],
+  "data": "suturebot",
+  "share": "SutureBot, \u2013"
+ },
+ {
+  "run": "SB_kin_scratch_f0.1",
+  "data": "suturebot",
+  "init": "scratch",
+  "f": "0.1",
+  "label": "None (from scratch)",
+  "fraction": 0.1,
+  "share": "SutureBot, 10%",
+  "pred_psnr": 21.96402931213379,
+  "pred_ssim": 0.7765979766845703,
+  "pred_lpips": 0.2079615592956543,
+  "pred_fvd": 848.4782766378407,
+  "delta_psnr": 1.5508861541748047,
+  "step": 8000,
+  "pred_psnr_ci": [
+   21.80022883415222,
+   22.13686990737915
+  ],
+  "pred_ssim_ci": [
+   0.7729751110076905,
+   0.7802509918808938
+  ],
+  "pred_lpips_ci": [
+   0.2041381098330021,
+   0.21176092252135276
+  ],
+  "vs_copy_d_psnr": 1.3012902736663818,
+  "vs_copy_d_psnr_ci": [
+   1.2374241203069687,
+   1.364084842801094
+  ],
+  "vs_copy_wins": 146,
+  "vs_copy_n_cases": 146
+ }
+]
