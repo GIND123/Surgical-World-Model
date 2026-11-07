@@ -154,5 +154,47 @@
   ],
   "vs_copy_wins": 146,
   "vs_copy_n_cases": 146
+ },
+ {
+  "run": "SB_kin_arms_f1.0",
+  "data": "suturebot",
+  "init": "arms",
+  "f": "1.0",
+  "label": "EG-SWM",
+  "fraction": 1.0,
+  "share": "SutureBot, 100%",
+  "pred_psnr": 23.440919876098633,
+  "pred_ssim": 0.8216957449913025,
+  "pred_lpips": 0.1436823308467865,
+  "pred_fvd": 117.35866073454034,
+  "delta_psnr": 3.156827926635742,
+  "step": 8000,
+  "weights": "raw",
+  "pred_psnr_ci": [
+   23.250075387954713,
+   23.646490383148194
+  ],
+  "pred_ssim_ci": [
+   0.8180662423372269,
+   0.8253002405166626
+  ],
+  "pred_lpips_ci": [
+   0.14004574716091156,
+   0.14722038432955742
+  ],
+  "vs_scratch_d_psnr": 1.3269933462142944,
+  "vs_scratch_d_psnr_ci": [
+   1.2852967083454132,
+   1.3715301543474196
+  ],
+  "vs_scratch_wins": 146,
+  "vs_scratch_n_cases": 146,
+  "vs_copy_d_psnr": 2.7781801223754883,
+  "vs_copy_d_psnr_ci": [
+   2.713276183605194,
+   2.8466062605381013
+  ],
+  "vs_copy_wins": 146,
+  "vs_copy_n_cases": 146
  }
 ]
