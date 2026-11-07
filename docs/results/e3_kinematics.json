@@ -147,6 +147,13 @@
   ],
   "vs_scratch_wins": 146,
   "vs_scratch_n_cases": 146,
+  "vs_global_d_psnr": 0.07592393457889557,
+  "vs_global_d_psnr_ci": [
+   0.04464614950120449,
+   0.10814475771039724
+  ],
+  "vs_global_wins": 90,
+  "vs_global_n_cases": 146,
   "vs_copy_d_psnr": 2.88647198677063,
   "vs_copy_d_psnr_ci": [
    2.811545896530151,
@@ -193,6 +200,48 @@
   "vs_copy_d_psnr_ci": [
    2.713276183605194,
    2.8466062605381013
+  ],
+  "vs_copy_wins": 146,
+  "vs_copy_n_cases": 146
+ },
+ {
+  "run": "SB_kin_global_f0.1",
+  "data": "suturebot",
+  "init": "global",
+  "f": "0.1",
+  "label": "Monolithic latent + camera",
+  "fraction": 0.1,
+  "share": "SutureBot, 10%",
+  "pred_psnr": 23.47328758239746,
+  "pred_ssim": 0.822869598865509,
+  "pred_lpips": 0.14217746257781982,
+  "pred_fvd": 101.08603892921616,
+  "delta_psnr": 3.016447067260742,
+  "step": 8000,
+  "weights": "raw",
+  "pred_psnr_ci": [
+   23.292838191986085,
+   23.661728191375733
+  ],
+  "pred_ssim_ci": [
+   0.8194434151053429,
+   0.8262535989284515
+  ],
+  "pred_lpips_ci": [
+   0.13874972574412822,
+   0.14564836211502552
+  ],
+  "vs_scratch_d_psnr": 1.0368554592132568,
+  "vs_scratch_d_psnr_ci": [
+   0.9902623131871223,
+   1.084872442483902
+  ],
+  "vs_scratch_wins": 146,
+  "vs_scratch_n_cases": 146,
+  "vs_copy_d_psnr": 2.8105483055114746,
+  "vs_copy_d_psnr_ci": [
+   2.742351847887039,
+   2.8770785093307496
   ],
   "vs_copy_wins": 146,
   "vs_copy_n_cases": 146
