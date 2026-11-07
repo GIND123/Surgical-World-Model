@@ -105,7 +105,7 @@ TEX = {"Δ": r"$\Delta$", "−": r"$-$", "β": r"$\beta$", "10⁻³": r"$10^{-3}
 def tex(s: str) -> str:
     for k, v in TEX.items():
         s = s.replace(k, v)
-    return s
+    return re.sub(r"(?<!\\)%", r"\\%", s)                         # "10%" too, not only "10 %"
 
 
 PER_WINDOW = ("psnr", "ssim", "lpips")
@@ -839,7 +839,7 @@ def external(run: str, data: str) -> dict:
     if not p.exists():
         return {}
     d = json.loads(p.read_text())
-    return dict({k: d[k] for k, *_ in COLS[:5] if k in d}, step=d.get("step"),
+    return dict({k: d[k] for k, *_ in COLS[:5] if k in d}, step=d.get("step"), weights=d.get("weights", "ema"),
                 **by_case(p.with_suffix(".npz"), "pred"))
 
 
@@ -875,6 +875,8 @@ def e3() -> None:
                 if d:
                     rows.append(dict(run=f"{prefix}_kin_{init}_f{f}", data=data, init=init, f=f, label=label,
                                      fraction=float(f), share=f"{dname}, {float(f):.0%}", **d))
+        if len({r["weights"] for r in rows}) > 1:   # E3 is scored on the final weights (8k steps: the average lags)
+            print(f"### E3 on {dname} mixes weight-average and final-weight results")
         ev = OUTPUTS / "eval"                       # paired on the same test windows, over test episodes
         for r in rows:
             npz = ev / r["run"] / data / "replay.npz"

@@ -47,15 +47,17 @@ def spread(n_total: int, limit: int | None) -> np.ndarray:
     return np.arange(n) * n_total // n
 
 
-def load_model(run: str, ckpt: str | None) -> tuple[WorldModel, dict]:
+def load_model(run: str, ckpt: str | None, weights: str = "ema") -> tuple[WorldModel, dict]:
+    """The weight average by default; "raw" keeps the final weights (short runs, whose average still lags)."""
     path = OUTPUTS / "runs" / run / (ckpt or "ckpt_last.pt")
     st = torch.load(path, map_location="cuda", weights_only=False)
     cfg = WMConfig.from_dict(st["config"])
     model = WorldModel(cfg).cuda().eval()
     model.load_state_dict(st["model"])
-    for p, e in zip(model.parameters(), st["ema"], strict=True):
-        p.data.copy_(e)
-    return model, {"step": st["step"], "ckpt": str(path)}
+    if weights == "ema":
+        for p, e in zip(model.parameters(), st["ema"], strict=True):
+            p.data.copy_(e)
+    return model, {"step": st["step"], "ckpt": str(path), "weights": weights}
 
 
 def main() -> None:
@@ -72,6 +74,8 @@ def main() -> None:
     ap.add_argument("--limit", type=int)
     ap.add_argument("--fvd", action="store_true")
     ap.add_argument("--tag", default="replay")
+    ap.add_argument("--weights", choices=("ema", "raw"), default="ema",
+                    help="raw: the final weights, for runs too short for the weight average (E3: 8k steps)")
     ap.add_argument("--drop-detections", type=float, default=0.0,
                     help="a weaker detector at test time: this share of the instrument detections (window, step, arm) "
                          "is removed, drawn per window so that a lower share removes a subset of a higher one")
@@ -90,7 +94,7 @@ def main() -> None:
     mean, std = (torch.from_numpy(a).cuda()[None, None, :, None, None] for a in latent_stats())
     lp = LPIPS()
     i3d = I3DFeatures() if args.fvd else None
-    model, meta = (None, {}) if args.reference else load_model(args.run, args.ckpt)
+    model, meta = (None, {}) if args.reference else load_model(args.run, args.ckpt, args.weights)
     first = 4 * (args.n_ctx - 1) + 1                         # first predicted frame index
     names = ["recon", "copy_last"] if args.reference else ["pred", "pred_shuffled"]
     per = {k: {m: [] for m in ("psnr", "ssim", "lpips")} for k in names}
