@@ -48,5 +48,30 @@
   "ecs_recall_sd": 0.0033223024914795707,
   "ecs_hallucination_rate": 0.07522047384062866,
   "ecs_hallucination_rate_sd": 0.0014929640025147456
+ },
+ {
+  "run": "S_slots",
+  "label": "Slots + camera (FLAM-style)",
+  "n_seeds": 2,
+  "pred_psnr": 22.76693344116211,
+  "pred_psnr_sd": 0.0017964672709283472,
+  "pred_ssim": 0.7131055891513824,
+  "pred_ssim_sd": 0.0006658780596236148,
+  "pred_lpips": 0.14880628883838654,
+  "pred_lpips_sd": 7.339873668172196e-05,
+  "pred_fvd": 169.6932669958407,
+  "pred_fvd_sd": 0.8557382907201907,
+  "delta_psnr": 3.544032096862793,
+  "delta_psnr_sd": 0.004020472173151203,
+  "cam_gain_mean": 0.03974154640901551,
+  "cam_gain_mean_sd": 0.015906523559881914,
+  "locality_ratio_median": 1.4471034328738404,
+  "locality_ratio_median_sd": 0.005084421543877333,
+  "ecs_precision": 0.939204536673208,
+  "ecs_precision_sd": 0.0007625135173999247,
+  "ecs_recall": 0.8188962924995729,
+  "ecs_recall_sd": 0.0025370309934935,
+  "ecs_hallucination_rate": 0.075885669107845,
+  "ecs_hallucination_rate_sd": 0.0023211743660488007
  }
 ]
