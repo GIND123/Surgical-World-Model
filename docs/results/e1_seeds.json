@@ -23,5 +23,30 @@
   "ecs_recall_sd": 0.0024162199938033598,
   "ecs_hallucination_rate": 0.07412948027588469,
   "ecs_hallucination_rate_sd": 0.003095929115141821
+ },
+ {
+  "run": "S_global",
+  "label": "Monolithic latent + camera",
+  "n_seeds": 2,
+  "pred_psnr": 22.464791297912598,
+  "pred_psnr_sd": 0.005973388545751989,
+  "pred_ssim": 0.7027240693569183,
+  "pred_ssim_sd": 0.00030628114812866693,
+  "pred_lpips": 0.154634527862072,
+  "pred_lpips_sd": 0.00019879614771375944,
+  "pred_fvd": 178.55752044052954,
+  "pred_fvd_sd": 2.206841097939976,
+  "delta_psnr": 3.1612987518310547,
+  "delta_psnr_sd": 0.010991898091641163,
+  "cam_gain_mean": 0.15511035968565964,
+  "cam_gain_mean_sd": 0.004082783509102669,
+  "locality_ratio_median": 1.4372967886674863,
+  "locality_ratio_median_sd": 0.026782871058193904,
+  "ecs_precision": 0.9355976935560247,
+  "ecs_precision_sd": 0.005037014140185276,
+  "ecs_recall": 0.8165470698786947,
+  "ecs_recall_sd": 0.0033223024914795707,
+  "ecs_hallucination_rate": 0.07522047384062866,
+  "ecs_hallucination_rate_sd": 0.0014929640025147456
  }
 ]
