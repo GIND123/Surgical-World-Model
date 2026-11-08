@@ -1,0 +1,303 @@
+[
+ {
+  "run": "copy_last",
+  "label": "Copy last context frame",
+  "pred_psnr": 17.38068962097168,
+  "pred_ssim": 0.5821773409843445,
+  "pred_lpips": 0.2719894051551819,
+  "pred_fvd": 738.6265823351464,
+  "pred_psnr_ci": [
+   16.53352780342102,
+   18.261173248291016
+  ],
+  "pred_ssim_ci": [
+   0.5416768893599511,
+   0.623087652027607
+  ],
+  "pred_lpips_ci": [
+   0.25877543464303016,
+   0.2862456642091274
+  ],
+  "setting": "\u2013"
+ },
+ {
+  "run": "recon",
+  "label": "VAE reconstruction (ceiling)",
+  "pred_psnr": 30.784839630126953,
+  "pred_ssim": 0.9031013250350952,
+  "pred_lpips": 0.03585342317819595,
+  "pred_fvd": 21.908904208334523,
+  "pred_psnr_ci": [
+   29.992305707931518,
+   31.95517530441284
+  ],
+  "pred_ssim_ci": [
+   0.8930466815829277,
+   0.9144962549209594
+  ],
+  "pred_lpips_ci": [
+   0.032763823959976436,
+   0.038258923869580026
+  ],
+  "setting": "\u2013"
+ },
+ {
+  "run": "S_none",
+  "label": "None (unconditional)",
+  "setting": "zero-shot",
+  "pred_psnr": 15.941706657409668,
+  "pred_ssim": 0.4794975817203522,
+  "pred_lpips": 0.36494922637939453,
+  "pred_fvd": 606.6907605397223,
+  "delta_psnr": -0.043193817138671875,
+  "step": 60000,
+  "weights": "ema",
+  "pred_psnr_ci": [
+   15.295200681686401,
+   16.57913522720337
+  ],
+  "pred_ssim_ci": [
+   0.44349599108099935,
+   0.5186706081032753
+  ],
+  "pred_lpips_ci": [
+   0.35137764886021616,
+   0.3799936756491661
+  ],
+  "vs_copy_d_psnr": -1.4389842748641968,
+  "vs_copy_d_psnr_ci": [
+   -1.7578261584043502,
+   -1.1520516723394394
+  ],
+  "vs_copy_wins": 0,
+  "vs_copy_n_cases": 10,
+  "vs_arms_d_psnr": -0.8960045576095581,
+  "vs_arms_d_psnr_ci": [
+   -1.043378758430481,
+   -0.7593280047178269
+  ],
+  "vs_arms_wins": 0,
+  "vs_arms_n_cases": 10
+ },
+ {
+  "run": "S_global",
+  "label": "Monolithic latent + camera",
+  "setting": "zero-shot",
+  "pred_psnr": 17.404521942138672,
+  "pred_ssim": 0.5413099527359009,
+  "pred_lpips": 0.3103386461734772,
+  "pred_fvd": 574.7239426007334,
+  "delta_psnr": 1.2112541198730469,
+  "step": 60000,
+  "weights": "ema",
+  "pred_psnr_ci": [
+   16.766473388671876,
+   18.019817781448364
+  ],
+  "pred_ssim_ci": [
+   0.5084000185132027,
+   0.5774951249361038
+  ],
+  "pred_lpips_ci": [
+   0.29503518640995025,
+   0.32334920689463614
+  ],
+  "vs_copy_d_psnr": 0.023829570040106773,
+  "vs_copy_d_psnr_ci": [
+   -0.2910358689725399,
+   0.30816511884331693
+  ],
+  "vs_copy_wins": 5,
+  "vs_copy_n_cases": 10,
+  "vs_arms_d_psnr": 0.5668091177940369,
+  "vs_arms_d_psnr_ci": [
+   0.40027148425579073,
+   0.7348215818405152
+  ],
+  "vs_arms_wins": 10,
+  "vs_arms_n_cases": 10
+ },
+ {
+  "run": "S_global_vq",
+  "label": "Monolithic VQ + camera (SurgWM-style)",
+  "setting": "zero-shot",
+  "pred_psnr": 16.55255699157715,
+  "pred_ssim": 0.521586537361145,
+  "pred_lpips": 0.3345039486885071,
+  "pred_fvd": 561.663008009798,
+  "delta_psnr": 0.6111183166503906,
+  "step": 60000,
+  "weights": "ema",
+  "pred_psnr_ci": [
+   15.905045819282531,
+   17.170830249786377
+  ],
+  "pred_ssim_ci": [
+   0.48911670669913293,
+   0.556068605184555
+  ],
+  "pred_lpips_ci": [
+   0.3185798317193985,
+   0.34919698163866997
+  ],
+  "vs_copy_d_psnr": -0.8281337022781372,
+  "vs_copy_d_psnr_ci": [
+   -1.1621746927499772,
+   -0.554568986594677
+  ],
+  "vs_copy_wins": 0,
+  "vs_copy_n_cases": 10,
+  "vs_arms_d_psnr": -0.2851541340351105,
+  "vs_arms_d_psnr_ci": [
+   -0.4377617657184601,
+   -0.1588360927999021
+  ],
+  "vs_arms_wins": 0,
+  "vs_arms_n_cases": 10
+ },
+ {
+  "run": "S_slots",
+  "label": "Slots + camera (FLAM-style)",
+  "setting": "zero-shot",
+  "pred_psnr": 17.928987503051758,
+  "pred_ssim": 0.5586339831352234,
+  "pred_lpips": 0.30078592896461487,
+  "pred_fvd": 523.4763954942242,
+  "delta_psnr": 1.4737472534179688,
+  "step": 60000,
+  "weights": "ema",
+  "pred_psnr_ci": [
+   17.215016984939574,
+   18.66917586326599
+  ],
+  "pred_ssim_ci": [
+   0.5239113137125969,
+   0.5970105469226836
+  ],
+  "pred_lpips_ci": [
+   0.2856511324644089,
+   0.31414256915450095
+  ],
+  "vs_copy_d_psnr": 0.5482953786849976,
+  "vs_copy_d_psnr_ci": [
+   0.3510106988251209,
+   0.7572675585746765
+  ],
+  "vs_copy_wins": 10,
+  "vs_copy_n_cases": 10,
+  "vs_arms_d_psnr": 1.0912748575210571,
+  "vs_arms_d_psnr_ci": [
+   0.9760089635848999,
+   1.1990144789218902
+  ],
+  "vs_arms_wins": 10,
+  "vs_arms_n_cases": 10
+ },
+ {
+  "run": "S_arms",
+  "label": "EG-SWM",
+  "setting": "zero-shot",
+  "pred_psnr": 16.837711334228516,
+  "pred_ssim": 0.5324730277061462,
+  "pred_lpips": 0.3311368525028229,
+  "pred_fvd": 495.5986891724074,
+  "delta_psnr": 0.5947914123535156,
+  "step": 60000,
+  "weights": "ema",
+  "pred_psnr_ci": [
+   16.100197124481202,
+   17.57138595581055
+  ],
+  "pred_ssim_ci": [
+   0.498361611366272,
+   0.5701971918344497
+  ],
+  "pred_lpips_ci": [
+   0.3150347419083118,
+   0.34776568487286563
+  ],
+  "vs_copy_d_psnr": -0.5429795980453491,
+  "vs_copy_d_psnr_ci": [
+   -0.7565843150019645,
+   -0.32546059116721165
+  ],
+  "vs_copy_wins": 1,
+  "vs_copy_n_cases": 10
+ },
+ {
+  "run": "S_arms_scene",
+  "label": "EG-SWM + scene action",
+  "setting": "zero-shot",
+  "pred_psnr": 17.03139305114746,
+  "pred_ssim": 0.5359683036804199,
+  "pred_lpips": 0.3233298659324646,
+  "pred_fvd": 539.7363767084935,
+  "delta_psnr": 0.8695106506347656,
+  "step": 60000,
+  "weights": "ema",
+  "pred_psnr_ci": [
+   16.317412042617796,
+   17.7502694606781
+  ],
+  "pred_ssim_ci": [
+   0.5016687005758286,
+   0.5738324508070946
+  ],
+  "pred_lpips_ci": [
+   0.3066586941480637,
+   0.3385597124695778
+  ],
+  "vs_copy_d_psnr": -0.34929758310317993,
+  "vs_copy_d_psnr_ci": [
+   -0.5862264305353164,
+   -0.10963612981140627
+  ],
+  "vs_copy_wins": 2,
+  "vs_copy_n_cases": 10,
+  "vs_arms_d_psnr": 0.1936819851398468,
+  "vs_arms_d_psnr_ci": [
+   0.10131349917501212,
+   0.28396186903119086
+  ],
+  "vs_arms_wins": 9,
+  "vs_arms_n_cases": 10
+ },
+ {
+  "run": "B_arms",
+  "label": "EG-SWM, size B",
+  "setting": "zero-shot",
+  "pred_psnr": 16.75282859802246,
+  "pred_ssim": 0.5348166823387146,
+  "pred_lpips": 0.33168312907218933,
+  "pred_fvd": 388.7323484892462,
+  "delta_psnr": 0.6827716827392578,
+  "step": 60000,
+  "weights": "ema",
+  "pred_psnr_ci": [
+   16.03230199813843,
+   17.47383131980896
+  ],
+  "pred_ssim_ci": [
+   0.5012175664305687,
+   0.5712913706898689
+  ],
+  "pred_lpips_ci": [
+   0.31413905918598173,
+   0.3481441706418991
+  ],
+  "vs_copy_d_psnr": -0.627862274646759,
+  "vs_copy_d_psnr_ci": [
+   -0.8604295417666435,
+   -0.394940282404423
+  ],
+  "vs_copy_wins": 1,
+  "vs_copy_n_cases": 10,
+  "vs_arms_d_psnr": -0.08488268405199051,
+  "vs_arms_d_psnr_ci": [
+   -0.12727188281714916,
+   -0.04095290005207063
+  ],
+  "vs_arms_wins": 2,
+  "vs_arms_n_cases": 10
+ }
+]

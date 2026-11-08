@@ -1,0 +1,16 @@
+\begin{tabular}{llccccc}
+\toprule
+Setting & Model & PSNR$\uparrow$ & SSIM$\uparrow$ & LPIPS$\downarrow$ & FVD$\downarrow$ & $\Delta$PSNR$\uparrow$ \\
+\midrule
+-- & Copy last context frame & 17.38\,{\scriptsize[16.53, 18.26]} & 0.582\,{\scriptsize[0.542, 0.623]} & 0.272\,{\scriptsize[0.259, 0.286]} & 739 & -- \\
+-- & VAE reconstruction (ceiling) & 30.78\,{\scriptsize[29.99, 31.96]} & 0.903\,{\scriptsize[0.893, 0.914]} & 0.036\,{\scriptsize[0.033, 0.038]} & 22 & -- \\
+\midrule
+zero-shot & None (unconditional) & 15.94\,{\scriptsize[15.30, 16.58]} & 0.479\,{\scriptsize[0.443, 0.519]} & 0.365\,{\scriptsize[0.351, 0.380]} & 607 & $-$0.04 \\
+zero-shot & Monolithic latent + camera & 17.40\,{\scriptsize[16.77, 18.02]} & 0.541\,{\scriptsize[0.508, 0.577]} & 0.310\,{\scriptsize[0.295, 0.323]} & 575 & 1.21 \\
+zero-shot & Monolithic VQ + camera (SurgWM-style) & 16.55\,{\scriptsize[15.91, 17.17]} & 0.522\,{\scriptsize[0.489, 0.556]} & 0.335\,{\scriptsize[0.319, 0.349]} & 562 & 0.61 \\
+zero-shot & Slots + camera (FLAM-style) & 17.93\,{\scriptsize[17.22, 18.67]} & 0.559\,{\scriptsize[0.524, 0.597]} & 0.301\,{\scriptsize[0.286, 0.314]} & 523 & 1.47 \\
+zero-shot & EG-SWM & 16.84\,{\scriptsize[16.10, 17.57]} & 0.532\,{\scriptsize[0.498, 0.570]} & 0.331\,{\scriptsize[0.315, 0.348]} & 496 & 0.59 \\
+zero-shot & EG-SWM + scene action & 17.03\,{\scriptsize[16.32, 17.75]} & 0.536\,{\scriptsize[0.502, 0.574]} & 0.323\,{\scriptsize[0.307, 0.339]} & 540 & 0.87 \\
+zero-shot & EG-SWM, size B & 16.75\,{\scriptsize[16.03, 17.47]} & 0.535\,{\scriptsize[0.501, 0.571]} & 0.332\,{\scriptsize[0.314, 0.348]} & 389 & 0.68 \\
+\bottomrule
+\end{tabular}
