@@ -1,0 +1,27 @@
+[
+ {
+  "run": "S_arms",
+  "label": "EG-SWM",
+  "n_seeds": 2,
+  "pred_psnr": 21.99582576751709,
+  "pred_psnr_sd": 0.012900307392214445,
+  "pred_ssim": 0.6902328133583069,
+  "pred_ssim_sd": 0.0010988526343760291,
+  "pred_lpips": 0.16422516852617264,
+  "pred_lpips_sd": 0.00025348168365664443,
+  "pred_fvd": 187.00469840684053,
+  "pred_fvd_sd": 1.1805878761195214,
+  "delta_psnr": 2.771697998046875,
+  "delta_psnr_sd": 0.0048148559738845345,
+  "cam_gain_mean": 0.6797176627755558,
+  "cam_gain_mean_sd": 0.024743882047494926,
+  "locality_ratio_median": 2.4837157108434207,
+  "locality_ratio_median_sd": 0.09191656167662425,
+  "ecs_precision": 0.9377509689209661,
+  "ecs_precision_sd": 0.0022562150902263466,
+  "ecs_recall": 0.8159063728002733,
+  "ecs_recall_sd": 0.0024162199938033598,
+  "ecs_hallucination_rate": 0.07412948027588469,
+  "ecs_hallucination_rate_sd": 0.003095929115141821
+ }
+]
