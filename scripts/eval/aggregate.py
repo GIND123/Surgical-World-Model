@@ -1129,6 +1129,14 @@ def numbers() -> None:
         for r in json.loads((res / "e4_clinical.json").read_text()):
             if isinstance(r.get("pred_psnr"), float):
                 put(f"e4/{r['run']}/psnr", r["pred_psnr"], 2, r.get("pred_psnr_ci"))
+    if (res / "e1_seeds.json").exists():                       # run-to-run variation: the largest SD over interfaces
+        rows = [r for r in json.loads((res / "e1_seeds.json").read_text()) if r.get("n_seeds", 1) > 1]
+        if rows:
+            val["seed/n"] = str(min(r["n_seeds"] for r in rows))
+            val["seed/n_runs"] = str(len(rows))
+            for k, key in (("psnr", "pred_psnr_sd"), ("gain", "cam_gain_mean_sd"),
+                           ("locality", "locality_ratio_median_sd")):
+                put(f"seed/{k}_sd_max", max(r[key] for r in rows), 2)
     if (res / "e1_binding.json").exists():
         d = json.loads((res / "e1_binding.json").read_text())
         for k, v in d.get("coverage", {}).items():
