@@ -17,6 +17,7 @@ without any result is not written.
 
 from __future__ import annotations
 
+import csv
 import json
 import re
 import sys
@@ -24,7 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
-from swm.paths import OUTPUTS, ROOT
+from swm.paths import OUTPUTS, PROCESSED, ROOT
 
 ROWS = [  # E1 action interfaces: run, label, action interface, camera
     ("S_none", "None (unconditional)", "none", False),
@@ -910,6 +911,14 @@ def e4() -> None:
             groups.setdefault(setting, []).append(dict(run=run, label=label, setting=setting, **d))
     if not groups:
         return
+    ev = OUTPUTS / "eval"                           # paired on the same windows, over test videos
+    for r in (r for rows in groups.values() for r in rows):
+        npz = ev / r["run"] / "sar_rarp50" / "replay.npz"
+        pr = paired_psnr(npz, ev / "reference" / "sar_rarp50" / "reference.npz", pb="copy_last")
+        r.update({f"vs_copy_{k}": v for k, v in pr.items()})
+        if r["run"] != "S_arms":
+            pr = paired_psnr(npz, ev / "S_arms" / "sar_rarp50" / "replay.npz")
+            r.update({f"vs_arms_{k}": v for k, v in pr.items()})
     ref = OUTPUTS / "eval" / "reference" / "sar_rarp50" / "reference.json"
     refs = [dict(r, setting="–") for r in (reference(ref) if ref.exists() else [])]
     grouped("e4_clinical", ([("reference", refs)] if refs else []) + list(groups.items()), "Setting", "setting")
@@ -1129,6 +1138,21 @@ def numbers() -> None:
         for r in json.loads((res / "e4_clinical.json").read_text()):
             if isinstance(r.get("pred_psnr"), float):
                 put(f"e4/{r['run']}/psnr", r["pred_psnr"], 2, r.get("pred_psnr_ci"))
+            if isinstance(r.get("pred_fvd"), float):
+                put(f"e4/{r['run']}/fvd", r["pred_fvd"], 0)
+            for other in ("copy", "arms"):
+                if f"vs_{other}_d_psnr" in r:
+                    put(f"e4/{r['run']}/vs_{other}", r[f"vs_{other}_d_psnr"], 2, r[f"vs_{other}_d_psnr_ci"])
+                    val[f"e4/{r['run']}/vs_{other}_wins"] = str(r[f"vs_{other}_wins"])
+                    val[f"e4/{r['run']}/vs_{other}_of"] = str(r[f"vs_{other}_n_cases"])
+        p = PROCESSED / "sar_rarp50"                   # arm regions on the test windows: no logs, image-side binding
+        if (p / "conditioning.npz").exists():
+            with open(p / "windows.csv", newline="") as fh:
+                test = np.array([row["split"] == "test" for row in csv.DictReader(fh)])
+            b = np.load(p / "conditioning.npz")["boxes"][test][:, 1:]          # (N, 8 steps, 4 slots, xyxy)
+            has = (b[..., 2] > b[..., 0]) & (b[..., 3] > b[..., 1])
+            put("e4/cover/psm1", 100 * has[..., 0].mean(), 0)
+            put("e4/cover/psm2", 100 * has[..., 2].mean(), 0)
     if (res / "e1_seeds.json").exists():                       # run-to-run variation: the largest SD over interfaces
         rows = [r for r in json.loads((res / "e1_seeds.json").read_text()) if r.get("n_seeds", 1) > 1]
         if rows:
