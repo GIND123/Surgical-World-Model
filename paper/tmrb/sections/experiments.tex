@@ -11,7 +11,7 @@ All world models share the tokenizer, the dynamics transformer, the data and the
 (iii) \emph{monolithic}---one continuous latent action per transition with the same total dimension as three arm actions (24), Genie-style \cite{genie};
 (iv) \emph{monolithic-VQ}---one of twelve discrete latent actions, as in SurgWM \cite{surgwm};
 (v) \emph{slots}---four unsupervised factored latent actions obtained by slot attention \cite{slotattn,flam};
-(vi) \method{}---per-arm latent actions; each with and without the explicit endoscope action. We also re-implement SurgWM \cite{surgwm} with its own tokenizer, latent action model and MaskGIT \cite{maskgit} dynamics, following the hyper-parameters of its paper and the latent action model its authors released, and compare with Cosmos-H-Surgical-Simulator \cite{openh} on the kinematic benchmarks.
+(vi) \method{}---per-arm latent actions; each with and without the explicit endoscope action. SurgWM \cite{surgwm} enters through its action interface (iv) rather than its full pipeline (its own tokenizer at $120\times180$ pixels and 1\,fps, MaskGIT \cite{maskgit} dynamics), which would confound the action interface with every other difference; a comparison with Cosmos-H-Surgical-Simulator \cite{openh}, which conditions on kinematics and was trained on most episodes of the kinematic benchmarks, is left to future work.
 
 \subsection{Metrics}
 \textbf{Fidelity:} PSNR, SSIM \cite{ssim} and LPIPS \cite{lpips} per predicted frame against the real frames, and FVD \cite{fvd} with the I3D network of \cite{styleganv}. Copying the last context frame and the VAE reconstruction of the ground truth bound these metrics from below and above.
