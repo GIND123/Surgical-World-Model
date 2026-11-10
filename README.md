@@ -5,7 +5,15 @@
 * Weights (public, CC BY-NC-SA 4.0): <https://huggingface.co/GOVINDFROM/surgical-world-model> — one folder per finished run (EMA weights, config, evaluation summaries), published by each queue job
 * Research documents: [data audit](docs/01_data_audit.md) · [external data](docs/02_external_data.md) · [literature review](docs/03_literature_review.md) · [research plan](docs/04_research_plan.md) · [legacy](docs/legacy.md)
 
-## Status (updated 2026-11-10, 08:40 IST)
+## Status (updated 2026-11-10, 11:00 IST)
+
+**Paused on 10 Nov 2026 at 11:00 IST for a GPU handover.** All GPU analysis for the submission finished at 08:31 (about 237 GPU-hours). Our queue service is stopped and nothing of ours runs on the GPU. Every result is saved:
+
+* **Git (this repository):** code, job configs (`configs/experiments`, deferred ones in `configs/experiments/deferred`), every result table and the generated paper numbers (`docs/results`, `paper/tmrb/tables`), the manuscript and supplement (`paper/tmrb`), this README and the [research plan](docs/04_research_plan.md).
+* **Hugging Face ([GOVINDFROM/surgical-world-model](https://huggingface.co/GOVINDFROM/surgical-world-model), public):** the weights of all 34 finished runs (size S interfaces and ablations, size B, seeds 1–2, the E3 runs), each with its config and evaluation summaries; checked against the finished jobs on 10 Nov, none missing.
+* **This machine only:** the full training checkpoints (`outputs/runs`, 102 GB, including SurgWM's tokenizer and its latent action model at step 50k), the per-window evaluation arrays that `scripts/eval/aggregate.py` reads (`outputs/eval`, 54 MB) and the job logs (`outputs/queue/logs`, `outputs/queue/history.tsv`).
+
+**To resume:** check that the GPU is free (`nvidia-smi`), restart the queue (`scripts/run_services.sh queue`), and copy jobs into `outputs/queue/pending/` (they run in name order; never run GPU work beside the queue). Ready for a revision: SurgWM (`801` resumes its latent action model from step 50k, then `802` dynamics, about 42 h, and `803` evaluation) and the size-B monolithic latent (`342_B_global.sh`, about 20 h; add it to `SCALE` in `aggregate.py` first). Before submission, only the author block (affiliations, funding, acknowledgements) is open.
 
 | Stage | State |
 |---|---|
@@ -523,6 +531,7 @@ python scripts/docs/figure_horizon.py                     # PSNR over the horizo
 | 335 | detector quality: EG-SWM with 25 / 50 / 100 % of the instrument detections removed at test time |
 | 336 | endoscope and embodiment tests again for the 11 runs evaluated before per-window results were recorded (same windows and noise draws, so the summaries reproduce), for intervals over cases ([e1_control](docs/results/e1_control.md)) |
 | 340, 341 | size-B flagship: EG-SWM at 153.7 M parameters with the S recipe (60k steps, batch 32, seed 0) without the colour-bar windows, every block recomputed in the backward pass (`340` done 7 Nov 07:17, 20.4 h with its evaluation); then its 14 s rollouts and the time and memory of one prediction (B and the S models, each alone on the GPU); its sampler, context and command-size tests are deferred |
+| 342 | deferred, for a revision: the monolithic latent at size B with the recipe of `340`, so that the size-B comparison is at equal size (about 20 h) |
 | 390–392 | prepare JIGSAWS, SAR-RARP50, SRT-H (done by the `swm-external` service, next to training) |
 | 400 | E2: zero-shot kinematic probes (the interfaces, the size-B flagship and the grounding, binding, forward-decoder and endoscope ablations); the action-free adaptation runs and their probes (`410`–`450`) are deferred |
 | 401 | E2 control for the number of features: EG-SWM (S and B) probed with every arm's action at once (32 features, like the slots) instead of its own arm's 8 |
