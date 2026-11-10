@@ -25,6 +25,7 @@ POINTS = [  # run, label, colour, marker, filled; colours as in e1_horizon
     ("B_arms", "EG-SWM (B)", BLUE, "D", True),
     ("S_arms_scene", "EG-SWM + scene", BLUE, "o", False),
     ("S_global", "Monolithic", "#6250d6", "s", True),
+    ("B_global", "Monolithic (B)", "#6250d6", "D", True),
     ("S_slots", "Slots", "#1baf7a", "^", True),
     ("S_global_vq", "VQ", "#eb6834", "v", True),
     ("surgwm", "SurgWM", "#eb6834", "v", False),

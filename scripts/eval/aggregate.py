@@ -51,8 +51,9 @@ ABLATIONS = [  # E6: EG-SWM (S, 60k steps) with one part changed
     ("S_arms_data0.1", "EG-SWM, 10 % of the training cases", "arms", True),
     ("S_arms_data0.3", "EG-SWM, 30 % of the training cases", "arms", True),
 ]
-SCALE = [  # E6: EG-SWM at a larger size, the recipe of size S without the colour-bar windows
+SCALE = [  # E6: EG-SWM and the monolithic latent at size B, the recipe of size S without the colour-bar windows
     ("B_arms", "EG-SWM, size B", "arms", True),
+    ("B_global", "Monolithic latent + camera, size B", "global", True),
 ]
 SEEDS = ("S_arms", "S_global", "S_slots", "S_global_vq")    # also trained with seeds 1 and 2 (<run>_seed<n>)
 SENS_RUNS = ("S_arms", "S_global", "S_slots", "S_global_vq", "S_arms_scene", "B_arms")
@@ -70,6 +71,7 @@ CONTRASTS = [  # (a, b): a minus b, paired over the test cases on the E1 windows
     *((run, "S_arms") for run, *_ in ABLATIONS + SCALE),
     ("B_arms", "copy_last"), ("S_global", "B_arms"), ("S_slots", "B_arms"), ("B_arms", "S_global_vq"),
     ("B_arms", "surgwm"),
+    ("B_global", "B_arms"), ("B_global", "S_global"), ("B_global", "copy_last"),   # the interfaces at equal size B
 ]
 COLS = [  # key, header, format, higher-is-better
     ("pred_psnr", "PSNR", "{:.2f}", True), ("pred_ssim", "SSIM", "{:.3f}", True),
