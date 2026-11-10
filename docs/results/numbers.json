@@ -1312,7 +1312,7 @@
  "scale/S_state/zoom_range": "46--69",
  "seed/gain_sd_max": "0.02",
  "seed/locality_sd_max": "0.07",
- "seed/n": "2",
+ "seed/n": "3",
  "seed/n_runs": "3",
  "seed/psnr_sd_max": "0.03",
  "sens/S_arms/delta_g1": "2.94",
