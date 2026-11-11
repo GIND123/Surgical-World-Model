@@ -55,6 +55,7 @@ SCALE = [  # E6: EG-SWM and the monolithic latent at size B, the recipe of size 
     ("B_arms", "EG-SWM, size B", "arms", True),
     ("B_global", "Monolithic latent + camera, size B", "global", True),
 ]
+EQUAL_SIZE = {"B_global": "B_arms"}  # control and locality also paired with EG-SWM of the same size (vs_<run>)
 SEEDS = ("S_arms", "S_global", "S_slots", "S_global_vq")    # also trained with seeds 1 and 2 (<run>_seed<n>)
 SENS_RUNS = ("S_arms", "S_global", "S_slots", "S_global_vq", "S_arms_scene", "B_arms")
 SAMPLER = (("1.0", "20"), ("1.0", "50"), ("1.0", "100"), ("2.0", "50"))   # guidance scale, Euler steps
@@ -476,9 +477,16 @@ def locality() -> None:
     def boot(per: list[np.ndarray]) -> np.ndarray:
         return np.array([np.median(np.concatenate([per[j] for j in p])) for p in pick])
 
+    def paired(per: list[np.ndarray], boots: np.ndarray, b_per: list[np.ndarray], b_boot: np.ndarray) -> dict:
+        """The run minus EG-SWM's run b over the same resampled cases, and the cases in which b is the more local."""
+        both = [(np.median(x), np.median(y)) for x, y in zip(per, b_per, strict=True) if len(x) and len(y)]
+        return dict(d_locality=float(np.median(np.concatenate(per)) - np.median(np.concatenate(b_per))),
+                    d_locality_ci=np.quantile(boots - b_boot, [0.025, 0.975]).tolist(),
+                    egswm_better=int(sum(m < e for m, e in both)), n_cases=len(both))
+
     b_per = per_case(base)
-    b_med, b_boot = float(np.median(np.concatenate(b_per))), boot(b_per)
-    table = []
+    b_boot = boot(b_per)
+    table, per_run = [], {}
     for run, label, *_ in ROWS + ABLATIONS + SCALE:
         rows = locality_rows(run)
         if rows is None:
@@ -488,11 +496,13 @@ def locality() -> None:
         row = dict(run=run, label=label, n_rows=len(rows), locality=float(np.median(np.concatenate(per))),
                    locality_ci=np.quantile(boots, [0.025, 0.975]).tolist())
         if run != "S_arms":
-            both = [(np.median(x), np.median(y)) for x, y in zip(per, b_per, strict=True) if len(x) and len(y)]
-            row.update(d_locality=row["locality"] - b_med,
-                       d_locality_ci=np.quantile(boots - b_boot, [0.025, 0.975]).tolist(),
-                       egswm_better=int(sum(m < e for m, e in both)), n_cases=len(both))
+            row.update(paired(per, boots, b_per, b_boot))
+        per_run[run] = per, boots
         table.append(row)
+    for run, ref in EQUAL_SIZE.items():
+        row = next((r for r in table if r["run"] == run), None)
+        if row is not None and ref in per_run:
+            row[f"vs_{ref}"] = paired(*per_run[run], *per_run[ref])
 
     def better(r: dict) -> str:
         return f"{r['egswm_better']}/{r['n_cases']}" if "egswm_better" in r else "–"
@@ -545,35 +555,46 @@ def control_intervals() -> None:
             return (dict(ecs_p=tp / gen, ecs_r=tp / real, halluc=100 * hal / gen, real_halluc=100 * real_hal / real),
                     100 * n[:, 3] / n[:, 1])
 
-    b_gain, b_gain_case = gains(base_cam)
-    b_rate, b_hal_case = rates(base_ecs)
-    table = []
+    def paired(b: dict, x: dict) -> dict:
+        """EG-SWM's run b minus the run x over the same draws of cases, and the cases in which b is better or worse."""
+        out = {}
+        if "gain" in b and "gain" in x:
+            (b_gain, b_case), (g, case) = b["gain"], x["gain"]
+            out.update(d_gain=float(b_gain[0] - g[0]), d_gain_ci=ci(b_gain - g), n_cases=len(cases),
+                       egswm_higher=int((b_case > case).sum()), egswm_lower=int((b_case < case).sum()))
+        if "rate" in b and "rate" in x:
+            (b_rate, b_hal), (rate, hal) = b["rate"], x["rate"]
+            d, ok = b_rate["halluc"] - rate["halluc"], np.isfinite(b_hal) & np.isfinite(hal)
+            out.update(d_halluc=float(d[0]), d_halluc_ci=ci(d), n_halluc=int(ok.sum()),
+                       egswm_fewer=int((b_hal[ok] < hal[ok]).sum()), egswm_more=int((b_hal[ok] > hal[ok]).sum()))
+        return out
+
+    base = dict(gain=gains(base_cam), rate=rates(base_ecs))
+    table, per_run = [], {}
     for run, label, *_ in ROWS + ABLATIONS + SCALE:
         cam, ecs = test_rows(run, "camera"), test_rows(run, "ecs")
         if cam is None and ecs is None:
             continue
-        row = dict(run=run, label=label, n_cases=len(cases))
+        row, own = dict(run=run, label=label, n_cases=len(cases)), {}
         if cam:
-            g, g_case = gains(cam)
-            row.update(gain=float(g[0]), gain_ci=ci(g))
-            if run != "S_arms":
-                row.update(d_gain=float(b_gain[0] - g[0]), d_gain_ci=ci(b_gain - g),
-                           egswm_higher=int((b_gain_case > g_case).sum()),
-                           egswm_lower=int((b_gain_case < g_case).sum()))
+            own["gain"] = gains(cam)
+            row.update(gain=float(own["gain"][0][0]), gain_ci=ci(own["gain"][0]))
         if ecs:
-            rate, hal_case = rates(ecs)
-            for k, x in rate.items():
+            own["rate"] = rates(ecs)
+            for k, x in own["rate"][0].items():
                 row.update({k: float(x[0]), f"{k}_ci": ci(x)})
-            if run != "S_arms":
-                d, ok = b_rate["halluc"] - rate["halluc"], np.isfinite(b_hal_case) & np.isfinite(hal_case)
-                row.update(d_halluc=float(d[0]), d_halluc_ci=ci(d), n_halluc=int(ok.sum()),
-                           egswm_fewer=int((b_hal_case[ok] < hal_case[ok]).sum()),
-                           egswm_more=int((b_hal_case[ok] > hal_case[ok]).sum()))
+        if run != "S_arms":
+            row.update(paired(base, own))
+        per_run[run] = own
         summary = load(run)                               # the same windows and noise: the summaries must reproduce
         for k, s, scale in (("gain", "cam_gain_mean", 1), ("halluc", "ecs_hallucination_rate", 100)):
             if k in row and s in summary and abs(row[k] - scale * summary[s]) > 1e-6 * scale:
                 print(f"### {run}: {k} {row[k]:.4f} from the rows, {scale * summary[s]:.4f} in the summary")
         table.append(row)
+    for run, ref in EQUAL_SIZE.items():
+        row = next((r for r in table if r["run"] == run), None)
+        if row is not None and ref in per_run:
+            row[f"vs_{ref}"] = paired(per_run[ref], per_run[run])
 
     def vs(r: dict, k: str, n: str, of: str, tex_: bool = False) -> str:
         if n not in r:
@@ -933,7 +954,8 @@ def numbers() -> None:
     when the learned action (swap), the endoscope action (cam_swap) or both are replaced, inside and outside the arm
     regions, and at noise level 0.9), diff/S_arms-<run>/locality[_ci, _wins, _losses] (e1_locality),
     ctl/<run>/{gain,ecs_p,ecs_r,halluc,real_halluc}_ci and diff/S_arms-<run>/{gain,halluc}[_ci, _wins, _of]
-    (e1_control), bind/... (e1_binding), cost/<size>/... and horizon/... (EG-SWM minus the copied frame)."""
+    (e1_control), the same with EG-SWM of the run's own size for EQUAL_SIZE (diff/B_arms-B_global/...), bind/...
+    (e1_binding), cost/<size>/... and horizon/... (EG-SWM minus the copied frame)."""
     res, val = ROOT / "docs" / "results", {}
 
     def f(x: float, nd: int) -> str:
@@ -1008,10 +1030,11 @@ def numbers() -> None:
     if (res / "e1_locality.json").exists():                    # interval of each median; EG-SWM minus each run, paired
         for r in json.loads((res / "e1_locality.json").read_text()):
             put(f"ctl/{r['run']}/locality", r["locality"], 2, r["locality_ci"])
-            if "d_locality" in r:
-                k = f"diff/S_arms-{r['run']}/locality"
-                put(k, -r["d_locality"], 2, [-x for x in r["d_locality_ci"][::-1]])
-                val[f"{k}_wins"], val[f"{k}_losses"] = str(r["egswm_better"]), str(r["n_cases"] - r["egswm_better"])
+            for ref, d in [("S_arms", r)] + [(k[3:], v) for k, v in r.items() if k.startswith("vs_")]:
+                if "d_locality" in d:
+                    k = f"diff/{ref}-{r['run']}/locality"
+                    put(k, -d["d_locality"], 2, [-x for x in d["d_locality_ci"][::-1]])
+                    val[f"{k}_wins"], val[f"{k}_losses"] = str(d["egswm_better"]), str(d["n_cases"] - d["egswm_better"])
     if (res / "e1_control.json").exists():                     # intervals of gain and ECS; EG-SWM minus each run
         for r in json.loads((res / "e1_control.json").read_text())["rows"]:
             run = r["run"]
@@ -1021,12 +1044,13 @@ def numbers() -> None:
             for k, nd in (("ecs_p", 2), ("ecs_r", 2), ("halluc", 1), ("real_halluc", 1)):
                 if k in r:
                     put(f"ctl/{run}/{k}", r[k], nd, r[f"{k}_ci"])
-            for k, n, m, of, nd in (("gain", "egswm_higher", "egswm_lower", "n_cases", 2),
-                                    ("halluc", "egswm_fewer", "egswm_more", "n_halluc", 1)):
-                if f"d_{k}" in r:
-                    key = f"diff/S_arms-{run}/{k}"
-                    put(key, r[f"d_{k}"], nd, r[f"d_{k}_ci"])
-                    val[f"{key}_wins"], val[f"{key}_losses"], val[f"{key}_of"] = str(r[n]), str(r[m]), str(r[of])
+            for ref, d in [("S_arms", r)] + [(k[3:], v) for k, v in r.items() if k.startswith("vs_")]:
+                for k, n, m, of, nd in (("gain", "egswm_higher", "egswm_lower", "n_cases", 2),
+                                        ("halluc", "egswm_fewer", "egswm_more", "n_halluc", 1)):
+                    if f"d_{k}" in d:
+                        key = f"diff/{ref}-{run}/{k}"
+                        put(key, d[f"d_{k}"], nd, d[f"d_{k}_ci"])
+                        val[f"{key}_wins"], val[f"{key}_losses"], val[f"{key}_of"] = str(d[n]), str(d[m]), str(d[of])
     if (res / "e1_sampler.json").exists():                     # Euler steps and guidance on 200 test windows
         at = {(r["run"], r["steps"], r["guidance"]): r for r in json.loads((res / "e1_sampler.json").read_text())}
         runs = sorted({run for run, *_ in at})

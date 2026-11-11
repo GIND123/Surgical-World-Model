@@ -32,12 +32,12 @@ POINTS = [  # run, label, colour, marker, filled; colours as in e1_horizon
     ("S_state", "Robot state", "#eda100", "P", True),
 ]
 LABEL_AT = {  # panel, run -> label offset in points and alignment
-    ("gain", "S_arms"): (-4, 5, "right"), ("gain", "B_arms"): (5, 3, "left"),
-    ("gain", "S_arms_scene"): (5, -2, "left"), ("gain", "S_global"): (5, 2, "left"),
+    ("gain", "S_arms"): (-4, 5, "right"), ("gain", "B_arms"): (0, 7, "center"),
+    ("gain", "S_arms_scene"): (5, -2, "left"), ("gain", "S_global"): (5, 5, "left"),
     ("gain", "S_slots"): (5, -1, "left"), ("gain", "S_global_vq"): (-5, -3, "right"),
     ("gain", "S_state"): (-5, -3, "right"),
-    ("loc", "S_arms"): (0, -10, "center"), ("loc", "B_arms"): (5, 3, "left"),
-    ("loc", "S_arms_scene"): (0, -9, "center"), ("loc", "S_global"): (5, -1, "left"),
+    ("loc", "S_arms"): (0, -10, "center"), ("loc", "B_arms"): (0, 7, "center"),
+    ("loc", "S_arms_scene"): (0, -9, "center"), ("loc", "S_global"): (0, -9, "center"),
     ("loc", "S_slots"): (5, -1, "left"), ("loc", "S_global_vq"): (5, -3, "left"),
     ("loc", "surgwm"): (5, -3, "left"),
 }

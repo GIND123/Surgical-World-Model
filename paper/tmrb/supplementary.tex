@@ -123,14 +123,14 @@ The tables below are generated with those of the main paper and appear as their 
 \IfFileExists{tables/e1_locality.tex}{%
 \begin{table}[h]
 \centering
-\caption{Locality of the learned actions with 95\,\% intervals over test cases, and paired against \method{} (cases in which \method{}'s arm actions are the more local).}
+\caption{Locality of the learned actions with 95\,\% intervals over test cases, and paired against \method{} of size S (cases in which \method{}'s arm actions are the more local).}
 \resizebox{\columnwidth}{!}{\input{tables/e1_locality}}
 \end{table}}{}
 
 \IfFileExists{tables/e1_control.tex}{%
 \begin{table*}[t]
 \centering
-\caption{Endoscope gain and embodiment consistency with 95\,\% intervals over test cases; $\Delta$: \method{} minus the model, paired over the same windows (cases in which \method{} is better).}
+\caption{Endoscope gain and embodiment consistency with 95\,\% intervals over test cases; $\Delta$: \method{} of size S minus the model, paired over the same windows (cases in which \method{} is better).}
 \resizebox{\textwidth}{!}{\input{tables/e1_control}}
 \end{table*}}{}
 
