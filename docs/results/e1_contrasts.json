@@ -504,6 +504,30 @@
   "a_better_lpips": 19
  },
  {
+  "a": "B_global",
+  "b": "S_arms",
+  "label": "Monolithic latent + camera, size B \u2212 EG-SWM",
+  "n_cases": 19,
+  "d_psnr": 1.0595344305038452,
+  "d_psnr_ci": [
+   0.9373322054743767,
+   1.1908518582582475
+  ],
+  "a_better_psnr": 19,
+  "d_ssim": 0.03303174301981926,
+  "d_ssim_ci": [
+   0.030035131238400938,
+   0.03598441518843174
+  ],
+  "a_better_ssim": 19,
+  "d_lpips": -0.025397470220923424,
+  "d_lpips_ci": [
+   -0.028416903922334313,
+   -0.02234946610406041
+  ],
+  "a_better_lpips": 19
+ },
+ {
   "a": "B_arms",
   "b": "copy_last",
   "label": "EG-SWM, size B \u2212 Copy last context frame",
@@ -596,6 +620,78 @@
   "d_lpips_ci": [
    -0.03321548979729414,
    -0.028751813899725677
+  ],
+  "a_better_lpips": 19
+ },
+ {
+  "a": "B_global",
+  "b": "B_arms",
+  "label": "Monolithic latent + camera, size B \u2212 EG-SWM, size B",
+  "n_cases": 19,
+  "d_psnr": 0.6335475444793701,
+  "d_psnr_ci": [
+   0.5089599147439003,
+   0.7622118130326271
+  ],
+  "a_better_psnr": 19,
+  "d_ssim": 0.016902754083275795,
+  "d_ssim_ci": [
+   0.014159095077775418,
+   0.019512866996228694
+  ],
+  "a_better_ssim": 19,
+  "d_lpips": -0.01334923505783081,
+  "d_lpips_ci": [
+   -0.01593475784175098,
+   -0.010698352567851545
+  ],
+  "a_better_lpips": 19
+ },
+ {
+  "a": "B_global",
+  "b": "S_global",
+  "label": "Monolithic latent + camera, size B \u2212 Monolithic latent + camera",
+  "n_cases": 19,
+  "d_psnr": 0.5954686403274536,
+  "d_psnr_ci": [
+   0.5574411273002624,
+   0.630926251411438
+  ],
+  "a_better_psnr": 19,
+  "d_ssim": 0.02110094204545021,
+  "d_ssim_ci": [
+   0.019983526365831495,
+   0.022164339665323496
+  ],
+  "a_better_ssim": 19,
+  "d_lpips": -0.01584550179541111,
+  "d_lpips_ci": [
+   -0.016864073136821388,
+   -0.014834354887716472
+  ],
+  "a_better_lpips": 19
+ },
+ {
+  "a": "B_global",
+  "b": "copy_last",
+  "label": "Monolithic latent + camera, size B \u2212 Copy last context frame",
+  "n_cases": 19,
+  "d_psnr": 1.4677727222442627,
+  "d_psnr_ci": [
+   1.292911210656166,
+   1.685851269960403
+  ],
+  "a_better_psnr": 19,
+  "d_ssim": 0.04313259571790695,
+  "d_ssim_ci": [
+   0.037977933138608935,
+   0.04859313517808914
+  ],
+  "a_better_ssim": 19,
+  "d_lpips": -0.017225947231054306,
+  "d_lpips_ci": [
+   -0.020088000036776067,
+   -0.014639149419963362
   ],
   "a_better_lpips": 19
  }

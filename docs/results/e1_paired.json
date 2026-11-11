@@ -366,5 +366,28 @@
   ],
   "egswm_better_lpips": 0,
   "n_cases": 19
+ },
+ {
+  "run": "B_global",
+  "label": "Monolithic latent + camera, size B",
+  "d_psnr": 1.0595344305038452,
+  "d_psnr_ci": [
+   0.9373322054743767,
+   1.1908518582582475
+  ],
+  "egswm_better_psnr": 0,
+  "d_ssim": 0.03303174301981926,
+  "d_ssim_ci": [
+   0.030035131238400938,
+   0.03598441518843174
+  ],
+  "egswm_better_ssim": 0,
+  "d_lpips": -0.025397470220923424,
+  "d_lpips_ci": [
+   -0.028416903922334313,
+   -0.02234946610406041
+  ],
+  "egswm_better_lpips": 0,
+  "n_cases": 19
  }
 ]

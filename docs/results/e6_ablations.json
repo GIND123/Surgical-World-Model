@@ -201,5 +201,34 @@
    0.16247093863785267
   ],
   "cam_gain_mean": 0.7787169534968629
+ },
+ {
+  "run": "B_global",
+  "label": "Monolithic latent + camera, size B",
+  "action": "global",
+  "camera": true,
+  "step": 60000,
+  "pred_psnr": 23.064481735229492,
+  "pred_ssim": 0.7240415215492249,
+  "pred_lpips": 0.13864846527576447,
+  "pred_fvd": 99.98108852931557,
+  "delta_psnr": 3.7983474731445312,
+  "locality_ratio_median": 1.4722604337451908,
+  "ecs_precision": 0.9512832477834811,
+  "ecs_recall": 0.8707500427131386,
+  "ecs_hallucination_rate": 0.06131591227251516,
+  "pred_psnr_ci": [
+   22.5241810798645,
+   23.60595545768738
+  ],
+  "pred_ssim_ci": [
+   0.7095726683735848,
+   0.7385292038321495
+  ],
+  "pred_lpips_ci": [
+   0.12981175296008587,
+   0.1476394824683666
+  ],
+  "cam_gain_mean": 0.17705894986735995
  }
 ]

@@ -212,5 +212,22 @@
   ],
   "egswm_better": 5,
   "n_cases": 19
+ },
+ {
+  "run": "B_global",
+  "label": "Monolithic latent + camera, size B",
+  "n_rows": 630,
+  "locality": 1.4722604337451908,
+  "locality_ci": [
+   1.417276307029298,
+   1.5799558853770475
+  ],
+  "d_locality": -0.9464604530333371,
+  "d_locality_ci": [
+   -1.1956883452984728,
+   -0.8251633596670128
+  ],
+  "egswm_better": 19,
+  "n_cases": 19
  }
 ]

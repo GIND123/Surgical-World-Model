@@ -154,5 +154,14 @@
   "gen_s": 0.641923189163208,
   "decode_s": 0.35849857330322266,
   "infer_mem_gb": 2.96
+ },
+ {
+  "run": "B_global",
+  "label": "Monolithic latent + camera, size B",
+  "size": "B",
+  "steps": 60000,
+  "train_h": 17.608563899993815,
+  "win_per_s": 30.288292467367008,
+  "train_mem_gb": 26.149535744
  }
 ]

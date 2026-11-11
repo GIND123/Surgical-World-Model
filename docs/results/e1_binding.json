@@ -95,6 +95,13 @@
    "none bound": 23.27495765686035,
    "one bound": 21.25850486755371,
    "two or more bound": 22.609817504882812
+  },
+  {
+   "run": "B_global",
+   "label": "Monolithic latent + camera, size B",
+   "none bound": 25.864646911621094,
+   "one bound": 22.165666580200195,
+   "two or more bound": 22.92582893371582
   }
  ],
  "none_undetected": 83
