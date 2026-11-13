@@ -164,11 +164,13 @@ def test_rows(run: str, test: str) -> list | dict | None:
     """Per-window results of one test of eval_control.py (camera: per command; locality: per window and arm; ecs: per
     window and frame) with the test case: from the control evaluation, else from the re-evaluations of the runs
     evaluated before eval_control.py recorded them (job 306: locality; job 336: camera and ecs, whose noise draws
-    are those of the full evaluation)."""
+    are those of the full evaluation); None if no evaluation recorded the test (SurgWM has no endoscope action)."""
     for tag in ("control", "locality", "camera_ecs"):
         p = OUTPUTS / "eval" / run / f"{tag}_rows.json"
         if p.exists():
-            rows = json.loads(p.read_text())[test]
+            rows = json.loads(p.read_text()).get(test)
+            if not rows:
+                continue
             first = next(iter(rows.values())) if isinstance(rows, dict) else rows
             if first and "case" in first[0]:
                 return rows
@@ -954,7 +956,8 @@ def numbers() -> None:
     when the learned action (swap), the endoscope action (cam_swap) or both are replaced, inside and outside the arm
     regions, and at noise level 0.9), diff/S_arms-<run>/locality[_ci, _wins, _losses] (e1_locality),
     ctl/<run>/{gain,ecs_p,ecs_r,halluc,real_halluc}_ci and diff/S_arms-<run>/{gain,halluc}[_ci, _wins, _of]
-    (e1_control), the same with EG-SWM of the run's own size for EQUAL_SIZE (diff/B_arms-B_global/...), bind/...
+    (e1_control), the same with EG-SWM of the run's own size for EQUAL_SIZE (diff/B_arms-B_global/...),
+    main/surgwm/recon_* (the ceiling of SurgWM's own tokenizer) and use/surgwm/... (diagnose_surgwm.py), bind/...
     (e1_binding), cost/<size>/... and horizon/... (EG-SWM minus the copied frame)."""
     res, val = ROOT / "docs" / "results", {}
 
@@ -1014,6 +1017,26 @@ def numbers() -> None:
         if u.get("posterior", {}).get("kl_per_arm") is not None:
             put(f"use/{run}/kl", u["posterior"]["kl_per_arm"], 1)
             val[f"use/{run}/active"] = str(u["posterior"]["active_units"])      # of the 8 dimensions of an arm action
+    d, p = load("surgwm"), OUTPUTS / "eval" / "surgwm" / "diagnose.json"
+    for k, nd in (("recon_psnr", 2), ("recon_ssim", 3), ("recon_lpips", 3), ("recon_fvd", 0)):
+        if k in d:                                             # SurgWM's own tokenizer at 120x180: its ceiling
+            put(f"main/surgwm/{k}", d[k], nd)
+    if p.exists():                                             # diagnose_surgwm.py
+        u = json.loads(p.read_text())
+        n = u["action_counts"]
+        put("use/surgwm/perplexity", u["action_perplexity"], 1)
+        put("use/surgwm/distinct", u["distinct_actions_per_clip"], 1)
+        val["use/surgwm/top_share"] = pct(100 * max(n) / sum(n))
+        val["use/surgwm/n_actions"] = str(len(n))
+        val["use/surgwm/unused"] = str(sum(x == 0 for x in n))
+        val["use/surgwm/lam_below_copy"] = pct(u["lam_own_below_copy_pct"])
+        val["use/surgwm/same_tokens"] = pct(100 * u["tokens_same_as_previous"])
+        val["use/surgwm/n_windows"], val["use/surgwm/dyn_windows"] = f"{u['n_windows']:,}", str(u["dyn_windows"])
+        for k, key in (("dyn_ce_swap_rise_pct", "ce_swap"), ("code_spread_max_pct", "code_spread"),
+                       ("tokenizer_code_spread_median_pct", "tok_spread"), ("lam_code_change_max_pct", "code_change"),
+                       ("lam_zero_change_mean_pct", "zero_change")):
+            if k in u:                                         # percentages, some far below 1: two significant digits
+                val[f"use/surgwm/{key}"] = f"{u[k]:.2g}" if abs(u[k]) < 10 else f"{u[k]:.0f}"
     for run in ("S_arms",):
         for name in ("replay", "control"):
             p = OUTPUTS / "eval" / run / f"{name}.json"

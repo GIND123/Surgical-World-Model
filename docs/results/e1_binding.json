@@ -55,6 +55,13 @@
    "two or more bound": 22.348512649536133
   },
   {
+   "run": "surgwm",
+   "label": "SurgWM (re-implementation)",
+   "none bound": 22.464969635009766,
+   "one bound": 20.251514434814453,
+   "two or more bound": 20.787933349609375
+  },
+  {
    "run": "S_global_vq",
    "label": "Monolithic VQ + camera (SurgWM-style)",
    "none bound": 23.726438522338867,

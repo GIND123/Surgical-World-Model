@@ -6,6 +6,7 @@
 | Robot state + camera | 22.36 | 19.53 | 20.42 |
 | Monolithic latent (Genie) | 24.97 | 21.59 | 22.39 |
 | Monolithic latent + camera | 25.10 | 21.58 | 22.35 |
+| SurgWM (re-implementation) | 22.46 | 20.25 | 20.79 |
 | Monolithic VQ + camera (SurgWM-style) | 23.73 | 20.36 | 21.23 |
 | Slots + camera (FLAM-style) | 25.32 | 21.85 | 22.67 |
 | EG-SWM, no camera action | 20.11 | 20.42 | 21.96 |
