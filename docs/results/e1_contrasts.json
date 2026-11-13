@@ -360,6 +360,54 @@
   "a_better_lpips": 14
  },
  {
+  "a": "S_arms",
+  "b": "surgwm",
+  "label": "EG-SWM \u2212 SurgWM (re-implementation)",
+  "n_cases": 19,
+  "d_psnr": 1.1561335325241089,
+  "d_psnr_ci": [
+   0.9940068632364273,
+   1.32455275952816
+  ],
+  "a_better_psnr": 19,
+  "d_ssim": 0.04314171522855759,
+  "d_ssim_ci": [
+   0.03727711997926235,
+   0.04887540619820356
+  ],
+  "a_better_ssim": 19,
+  "d_lpips": -0.19925688207149506,
+  "d_lpips_ci": [
+   -0.20726019144058228,
+   -0.19117214754223824
+  ],
+  "a_better_lpips": 19
+ },
+ {
+  "a": "surgwm",
+  "b": "copy_last",
+  "label": "SurgWM (re-implementation) \u2212 Copy last context frame",
+  "n_cases": 19,
+  "d_psnr": -0.7478951811790466,
+  "d_psnr_ci": [
+   -0.9892030522227288,
+   -0.5192193672060966
+  ],
+  "a_better_psnr": 0,
+  "d_ssim": -0.033040862530469894,
+  "d_ssim_ci": [
+   -0.04075628276914358,
+   -0.024691604636609556
+  ],
+  "a_better_ssim": 2,
+  "d_lpips": 0.20742841064929962,
+  "d_lpips_ci": [
+   0.20005450621247292,
+   0.21487036533653736
+  ],
+  "a_better_lpips": 0
+ },
+ {
   "a": "S_arms_nofwd",
   "b": "S_arms",
   "label": "EG-SWM, diffusion loss only \u2212 EG-SWM",
@@ -620,6 +668,30 @@
   "d_lpips_ci": [
    -0.03321548979729414,
    -0.028751813899725677
+  ],
+  "a_better_lpips": 19
+ },
+ {
+  "a": "B_arms",
+  "b": "surgwm",
+  "label": "EG-SWM, size B \u2212 SurgWM (re-implementation)",
+  "n_cases": 19,
+  "d_psnr": 1.582120418548584,
+  "d_psnr_ci": [
+   1.409854879975319,
+   1.761694011092186
+  ],
+  "a_better_psnr": 19,
+  "d_ssim": 0.0592707023024559,
+  "d_ssim_ci": [
+   0.053430621046572924,
+   0.06469744313508272
+  ],
+  "a_better_ssim": 19,
+  "d_lpips": -0.21130511164665222,
+  "d_lpips_ci": [
+   -0.21896398440003395,
+   -0.20359304547309878
   ],
   "a_better_lpips": 19
  },

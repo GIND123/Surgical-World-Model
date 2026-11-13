@@ -190,6 +190,38 @@
   "cam_gain_mean": 0.15799732359106275
  },
  {
+  "run": "surgwm",
+  "label": "SurgWM (re-implementation)",
+  "action": "surgwm",
+  "camera": false,
+  "step": {
+   "tokenizer": 60000,
+   "lam": 60000,
+   "dynamics": 60000
+  },
+  "pred_psnr": 20.848814010620117,
+  "pred_ssim": 0.6478679776191711,
+  "pred_lpips": 0.3633028268814087,
+  "pred_fvd": 1076.8448939758878,
+  "delta_psnr": 0.009662628173828125,
+  "locality_ratio_median": 1.1512584098472631,
+  "ecs_precision": 0.8839147885149737,
+  "ecs_recall": 0.7337262942080984,
+  "ecs_hallucination_rate": 0.09539981475764124,
+  "pred_psnr_ci": [
+   20.396608543395995,
+   21.309424686431885
+  ],
+  "pred_ssim_ci": [
+   0.6357259795069694,
+   0.6601453974843025
+  ],
+  "pred_lpips_ci": [
+   0.3558817520737648,
+   0.37142091765999796
+  ]
+ },
+ {
   "run": "S_global_vq",
   "label": "Monolithic VQ + camera (SurgWM-style)",
   "action": "global_vq",

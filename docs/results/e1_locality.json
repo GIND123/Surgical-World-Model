@@ -34,6 +34,23 @@
   "n_cases": 19
  },
  {
+  "run": "surgwm",
+  "label": "SurgWM (re-implementation)",
+  "n_rows": 630,
+  "locality": 1.1512584098472631,
+  "locality_ci": [
+   1.0951009736156858,
+   1.2249593560804939
+  ],
+  "d_locality": -1.2674624769312648,
+  "d_locality_ci": [
+   -1.5584915669675798,
+   -1.1008957333686435
+  ],
+  "egswm_better": 19,
+  "n_cases": 19
+ },
+ {
   "run": "S_global_vq",
   "label": "Monolithic VQ + camera (SurgWM-style)",
   "n_rows": 630,

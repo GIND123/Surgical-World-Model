@@ -17,6 +17,8 @@ EG-SWM, no camera action $-$ Robot state & 2.22\,{\scriptsize[2.01, 2.44]} & 19 
 Robot state $-$ None (unconditional) & 0.33\,{\scriptsize[0.27, 0.39]} & 19 & 0.011\,{\scriptsize[0.009, 0.013]} & 19 & $-$0.012\,{\scriptsize[$-$0.015, $-$0.010]} & 19 \\
 Robot state + camera $-$ Robot state & 1.15\,{\scriptsize[1.03, 1.26]} & 19 & 0.058\,{\scriptsize[0.054, 0.061]} & 19 & $-$0.031\,{\scriptsize[$-$0.034, $-$0.029]} & 19 \\
 Monolithic latent (Genie) $-$ Monolithic latent + camera & 0.02\,{\scriptsize[$-$0.00, 0.05]} & 11 & 0.001\,{\scriptsize[0.000, 0.002]} & 16 & $-$0.001\,{\scriptsize[$-$0.001, $-$0.000]} & 14 \\
+EG-SWM $-$ SurgWM (re-implementation) & 1.16\,{\scriptsize[0.99, 1.32]} & 19 & 0.043\,{\scriptsize[0.037, 0.049]} & 19 & $-$0.199\,{\scriptsize[$-$0.207, $-$0.191]} & 19 \\
+SurgWM (re-implementation) $-$ Copy last context frame & $-$0.75\,{\scriptsize[$-$0.99, $-$0.52]} & 0 & $-$0.033\,{\scriptsize[$-$0.041, $-$0.025]} & 2 & 0.207\,{\scriptsize[0.200, 0.215]} & 0 \\
 EG-SWM, diffusion loss only $-$ EG-SWM & $-$0.36\,{\scriptsize[$-$0.39, $-$0.32]} & 0 & $-$0.011\,{\scriptsize[$-$0.012, $-$0.010]} & 0 & 0.008\,{\scriptsize[0.007, 0.009]} & 0 \\
 EG-SWM, arm actions not grounded $-$ EG-SWM & 0.06\,{\scriptsize[0.03, 0.09]} & 14 & 0.001\,{\scriptsize[0.000, 0.002]} & 10 & $-$0.001\,{\scriptsize[$-$0.002, 0.000]} & 10 \\
 EG-SWM, wrong arm binding $-$ EG-SWM & $-$0.02\,{\scriptsize[$-$0.04, $-$0.00]} & 7 & $-$0.001\,{\scriptsize[$-$0.001, 0.000]} & 5 & 0.001\,{\scriptsize[0.000, 0.002]} & 2 \\
@@ -28,6 +30,7 @@ EG-SWM, size B $-$ Copy last context frame & 0.83\,{\scriptsize[0.66, 1.00]} & 1
 Monolithic latent + camera $-$ EG-SWM, size B & 0.04\,{\scriptsize[$-$0.07, 0.15]} & 9 & $-$0.004\,{\scriptsize[$-$0.006, $-$0.002]} & 4 & 0.002\,{\scriptsize[0.000, 0.005]} & 5 \\
 Slots + camera (FLAM-style) $-$ EG-SWM, size B & 0.34\,{\scriptsize[0.23, 0.45]} & 17 & 0.005\,{\scriptsize[0.003, 0.008]} & 16 & $-$0.003\,{\scriptsize[$-$0.005, $-$0.001]} & 14 \\
 EG-SWM, size B $-$ Monolithic VQ + camera (SurgWM-style) & 1.13\,{\scriptsize[1.02, 1.23]} & 19 & 0.036\,{\scriptsize[0.034, 0.038]} & 19 & $-$0.031\,{\scriptsize[$-$0.033, $-$0.029]} & 19 \\
+EG-SWM, size B $-$ SurgWM (re-implementation) & 1.58\,{\scriptsize[1.41, 1.76]} & 19 & 0.059\,{\scriptsize[0.053, 0.065]} & 19 & $-$0.211\,{\scriptsize[$-$0.219, $-$0.204]} & 19 \\
 Monolithic latent + camera, size B $-$ EG-SWM, size B & 0.63\,{\scriptsize[0.51, 0.76]} & 19 & 0.017\,{\scriptsize[0.014, 0.020]} & 19 & $-$0.013\,{\scriptsize[$-$0.016, $-$0.011]} & 19 \\
 Monolithic latent + camera, size B $-$ Monolithic latent + camera & 0.60\,{\scriptsize[0.56, 0.63]} & 19 & 0.021\,{\scriptsize[0.020, 0.022]} & 19 & $-$0.016\,{\scriptsize[$-$0.017, $-$0.015]} & 19 \\
 Monolithic latent + camera, size B $-$ Copy last context frame & 1.47\,{\scriptsize[1.29, 1.69]} & 19 & 0.043\,{\scriptsize[0.038, 0.049]} & 19 & $-$0.017\,{\scriptsize[$-$0.020, $-$0.015]} & 19 \\

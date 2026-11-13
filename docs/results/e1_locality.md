@@ -2,6 +2,7 @@
 |---|---|---|---|
 | Monolithic latent (Genie) | 1.43 [1.32, 1.51] | -0.99 [-1.25, -0.88] | 19/19 |
 | Monolithic latent + camera | 1.46 [1.31, 1.56] | -0.96 [-1.22, -0.83] | 19/19 |
+| SurgWM (re-implementation) | 1.15 [1.10, 1.22] | -1.27 [-1.56, -1.10] | 19/19 |
 | Monolithic VQ + camera (SurgWM-style) | 1.53 [1.41, 1.62] | -0.89 [-1.15, -0.77] | 19/19 |
 | Slots + camera (FLAM-style) | 1.44 [1.37, 1.51] | -0.98 [-1.23, -0.86] | 19/19 |
 | EG-SWM, no camera action | 2.02 [1.82, 2.17] | -0.40 [-0.62, -0.31] | 17/19 |

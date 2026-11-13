@@ -138,6 +138,29 @@
   "n_cases": 19
  },
  {
+  "run": "surgwm",
+  "label": "SurgWM (re-implementation)",
+  "d_psnr": -1.1561335325241089,
+  "d_psnr_ci": [
+   -1.32455275952816,
+   -0.9940068632364273
+  ],
+  "egswm_better_psnr": 19,
+  "d_ssim": -0.04314171522855759,
+  "d_ssim_ci": [
+   -0.04887540619820356,
+   -0.03727711997926235
+  ],
+  "egswm_better_ssim": 19,
+  "d_lpips": 0.19925688207149506,
+  "d_lpips_ci": [
+   0.19117214754223824,
+   0.20726019144058228
+  ],
+  "egswm_better_lpips": 19,
+  "n_cases": 19
+ },
+ {
   "run": "S_global_vq",
   "label": "Monolithic VQ + camera (SurgWM-style)",
   "d_psnr": -0.7001183032989502,
