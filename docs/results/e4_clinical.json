@@ -451,5 +451,43 @@
   ],
   "vs_arms_wins": 8,
   "vs_arms_n_cases": 10
+ },
+ {
+  "run": "SAR_scratch_arms",
+  "label": "EG-SWM",
+  "setting": "from scratch",
+  "pred_psnr": 15.7652006149292,
+  "pred_ssim": 0.4733659327030182,
+  "pred_lpips": 0.3686026334762573,
+  "pred_fvd": 911.7826013999327,
+  "delta_psnr": 0.3129920959472656,
+  "step": 5000,
+  "weights": "raw",
+  "pred_psnr_ci": [
+   15.299599075317383,
+   16.185537099838257
+  ],
+  "pred_ssim_ci": [
+   0.44304731488227844,
+   0.5062419638037681
+  ],
+  "pred_lpips_ci": [
+   0.3572560422122478,
+   0.37990628108382224
+  ],
+  "vs_copy_d_psnr": -1.6154905557632446,
+  "vs_copy_d_psnr_ci": [
+   -2.182516688108444,
+   -1.191364786028862
+  ],
+  "vs_copy_wins": 0,
+  "vs_copy_n_cases": 10,
+  "vs_arms_d_psnr": -1.0725109577178955,
+  "vs_arms_d_psnr_ci": [
+   -1.4600592881441117,
+   -0.7661920487880709
+  ],
+  "vs_arms_wins": 0,
+  "vs_arms_n_cases": 10
  }
 ]
