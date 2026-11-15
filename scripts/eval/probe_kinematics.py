@@ -29,7 +29,7 @@ GROUPS = {"pos": slice(0, 3), "rot": slice(3, 6), "jaw": slice(6, 7)}
 
 
 @torch.no_grad()
-def model_features(run: str, ds: ExternalWindows, bs: int = 32) -> dict[str, np.ndarray]:
+def model_features(run: str, ds: ExternalWindows, bs: int = 32, weights: str = "ema") -> dict[str, np.ndarray]:
     """{arm: (N, 8, F)} posterior-mean action features for latent steps 1..8. For "<run>:all" each arm's probe gets
     every arm's action, as it gets the whole action of a frame-wide interface."""
     import sys
@@ -38,7 +38,7 @@ def model_features(run: str, ds: ExternalWindows, bs: int = 32) -> dict[str, np.
     from eval_wm import load_model
 
     run, _, mode = run.partition(":")
-    model, _ = load_model(run, None)
+    model, _ = load_model(run, None, weights)
     feats = {arm: [] for arm in SLOTS}
     for b in DataLoader(ds, batch_size=bs, shuffle=False, num_workers=4):
         b = {k: v.cuda() for k, v in b.items()}
@@ -92,17 +92,20 @@ def main() -> None:
     ap.add_argument("--data", required=True)
     ap.add_argument("--runs", nargs="*", default=[])
     ap.add_argument("--baselines", action="store_true")
+    ap.add_argument("--weights", choices=("ema", "raw"), default="ema",
+                    help="raw: the final weights, for runs too short for the weight average (5k-step adaptation)")
     args = ap.parse_args()
     tr, te = (ExternalWindows(args.data, s, synced_only=True) for s in ("train", "test"))
     targets = {s: {arm: d.kin_net[d.index][:, 1:, slot].reshape(-1, 7) for arm, slot in SLOTS.items()}
                for s, d in (("train", tr), ("test", te))}
     sources = {r: (lambda r=r, d=None: None) for r in args.runs}
     results = {"data": args.data, "n_train_steps": int(len(targets["train"]["psm1"])),
-               "n_test_steps": int(len(targets["test"]["psm1"])), "sides_swapped": tr.swapped, "probes": {}}
+               "n_test_steps": int(len(targets["test"]["psm1"])), "sides_swapped": tr.swapped, "weights": args.weights,
+               "probes": {}}
     names = list(args.runs) + (["dz_region", "dz_frame", "camera"] if args.baselines else [])
     for name in names:
         if name in sources:
-            ftr, fte = model_features(name, tr), model_features(name, te)
+            ftr, fte = model_features(name, tr, weights=args.weights), model_features(name, te, weights=args.weights)
         else:
             ftr, fte = baseline_features(tr, name), baseline_features(te, name)
         key = name.replace(":", "_")                                      # S_arms:all -> S_arms_all

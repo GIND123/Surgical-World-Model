@@ -12,7 +12,8 @@ standard deviation over the runs trained with seeds 0-2. Sensitivity: sampler, c
 scale on 200 (100) of the test windows. E2 reads the kinematic probes outputs/eval/probes/<data>_{zeroshot,allarms,
 adapted}.json; E3 and E4 read outputs/eval/<run>/<data>/replay.json, with intervals over test episodes. Each table is
 written to docs/results/<name>.{md,json} and paper/tmrb/tables/<name>.tex; missing runs are skipped and a table
-without any result is not written.
+without any result is not written. The main paper's tables keep a fixed set of rows (MAIN_ONLY): runs beyond it
+appear in docs/results and in paper/tmrb/tables/<name>_all.tex, for the supplementary material.
 """
 
 from __future__ import annotations
@@ -46,6 +47,8 @@ ABLATIONS = [  # E6: EG-SWM (S, 60k steps) with one part changed
     ("S_arms_shuffled", "EG-SWM, wrong arm binding", "arms", True),
     ("S_arms_ui", "EG-SWM + console readout", "arms", True),
     ("S_arms_hold", "EG-SWM, boxes held across detector gaps", "arms", True),
+]
+HYPER = [  # E6: EG-SWM's KL weight and the amount of training video (supplementary material)
     ("S_arms_kl1e-3", "EG-SWM, KL weight 10⁻³", "arms", True),
     ("S_arms_kl1e-5", "EG-SWM, KL weight 10⁻⁵", "arms", True),
     ("S_arms_data0.1", "EG-SWM, 10 % of the training cases", "arms", True),
@@ -69,7 +72,7 @@ CONTRASTS = [  # (a, b): a minus b, paired over the test cases on the E1 windows
     ("S_arms_nocam", "S_state_nocam"), ("S_state_nocam", "S_none"), ("S_state", "S_state_nocam"),
     ("S_global_nocam", "S_global"),
     ("S_arms", "surgwm"), ("surgwm", "copy_last"),
-    *((run, "S_arms") for run, *_ in ABLATIONS + SCALE),
+    *((run, "S_arms") for run, *_ in ABLATIONS + HYPER + SCALE),
     ("B_arms", "copy_last"), ("S_global", "B_arms"), ("S_slots", "B_arms"), ("B_arms", "S_global_vq"),
     ("B_arms", "surgwm"),
     ("B_global", "B_arms"), ("B_global", "S_global"), ("B_global", "copy_last"),   # the interfaces at equal size B
@@ -81,13 +84,13 @@ COLS = [  # key, header, format, higher-is-better
     ("locality_ratio_median", "Locality", "{:.2f}", True), ("ecs_precision", "ECS-P", "{:.3f}", True),
     ("ecs_recall", "ECS-R", "{:.3f}", True), ("ecs_hallucination_rate", "Halluc.", "{:.3f}", False),
 ]
-LABEL = {run: label for run, label, *_ in ROWS + ABLATIONS + SCALE}
+LABEL = {run: label for run, label, *_ in ROWS + ABLATIONS + HYPER + SCALE}
 E2_DATA = [("suturebot", "SutureBot"), ("crcd", "CRCD"), ("jigsaws", "JIGSAWS")]
 E2_ROWS = [  # probe name ({d}: dataset), probe file, label, setting
     ("dz_region", "zeroshot", "Latent change in the arm region", "model-free"),
     ("dz_frame", "zeroshot", "Latent change over the frame", "model-free"),
     ("camera", "zeroshot", "Endoscope action", "model-free"),
-    *((run, "zeroshot", label, "zero-shot") for run, label, *_ in ROWS + ABLATIONS + SCALE),
+    *((run, "zeroshot", label, "zero-shot") for run, label, *_ in ROWS + ABLATIONS + HYPER + SCALE),
     ("S_arms_all", "allarms", "EG-SWM, every arm's action", "zero-shot"),  # as many features as a frame-wide action
     ("B_arms_all", "allarms", "EG-SWM, size B, every arm's action", "zero-shot"),
     *((f"{{d}}_adapt_{a}", "adapted", LABEL[f"S_{a}"], "adapted") for a in ("global", "global_vq", "slots", "arms")),
@@ -102,6 +105,11 @@ E4_ROWS = [  # SAR-RARP50: run, label, setting
     *((f"SAR_adapt_{a}", LABEL[f"S_{a}"], "adapted") for a in ("global", "global_vq", "slots", "arms")),
     ("SAR_scratch_arms", LABEL["S_arms"], "from scratch"),
 ]
+MAIN_ONLY = {  # rows of the main paper's tables (12 pages); the others go to <name>_all.tex, supplementary material
+    "e2": ("model-free", "zero-shot"),               # probe settings (not "adapted")
+    "e3": (None, "0.1", "1.0"),                      # shares of the training episodes (None: reference rows)
+    "e4": ("–", "zero-shot"),                        # settings (not "adapted", "from scratch")
+}
 TEX = {"Δ": r"$\Delta$", "−": r"$-$", "β": r"$\beta$", "10⁻³": r"$10^{-3}$", "10⁻⁵": r"$10^{-5}$", " %": r"\,\%",
        "±": r"$\pm$"}
 
@@ -209,13 +217,19 @@ def reference(ref: Path) -> list[dict]:
     return rows
 
 
-def write(name: str, data: list | dict, md: list[str], tex: str) -> None:
-    """docs/results/<name>.{json,md} and paper/tmrb/tables/<name>.tex."""
+def write(name: str, data: list | dict, md: list[str], tex: str, main: str | None = None) -> None:
+    """docs/results/<name>.{json,md} and paper/tmrb/tables/<name>.tex; with `main` (the main paper's rows),
+    <name>.tex is `main` and <name>_all.tex has every row, written only if it has more."""
     for d in (ROOT / "docs" / "results", ROOT / "paper" / "tmrb" / "tables"):
         d.mkdir(parents=True, exist_ok=True)
     (ROOT / "docs" / "results" / f"{name}.json").write_text(json.dumps(data, indent=1))
     (ROOT / "docs" / "results" / f"{name}.md").write_text("\n".join(md) + "\n")
-    (ROOT / "paper" / "tmrb" / "tables" / f"{name}.tex").write_text(tex)
+    tables = ROOT / "paper" / "tmrb" / "tables"
+    (tables / f"{name}.tex").write_text(tex if main is None else main)
+    if main is not None and main != tex:
+        (tables / f"{name}_all.tex").write_text(tex)
+    else:
+        (tables / f"{name}_all.tex").unlink(missing_ok=True)
     print("\n".join(md) + "\n")
 
 
@@ -224,8 +238,9 @@ def tabular(cols: str, head: list[str], rows: list[str]) -> str:
             + "\n\\bottomrule\n\\end{tabular}\n")
 
 
-def interface_table(name: str, runs: list[tuple], table: list[dict]) -> None:
-    """E1/E6 table: `table` (reference rows) followed by every run of `runs` that has results."""
+def interface_table(name: str, runs: list[tuple], table: list[dict], main: set[str] | None = None) -> None:
+    """E1/E6 table: `table` (reference rows) followed by every run of `runs` that has results; with `main`, the main
+    paper's version keeps only those runs."""
     for run, label, action, cam in runs:
         d = load(run)
         if d:
@@ -239,12 +254,16 @@ def interface_table(name: str, runs: list[tuple], table: list[dict]) -> None:
         cells = [cell(row, k, fmt) for k, _, fmt, _ in COLS]
         lines.append(f"| {row['label']} | " + " | ".join(cells) + " |")
     keep = COLS[:7] + COLS[9:]                  # the paper keeps the hallucination rate, which has a real-frame floor
-    rows_tex = []
+    rows_tex, rows_main = [], []
     for row in table:
         cells = [cell(row, k, fmt, tex=True) for k, _, fmt, _ in keep]
         rows_tex.append(tex(row["label"]) + " & " + " & ".join(cells) + r" \\")
-    head = " & ".join(tex(h) + (r"$\uparrow$" if hi else r"$\downarrow$") for _, h, _, hi in keep)
-    write(name, table, lines, tabular("l" + "c" * len(keep), ["Model & " + head + r" \\"], rows_tex))
+        if main is None or row["run"] in main:
+            rows_main.append(rows_tex[-1])
+    head = ["Model & " + " & ".join(tex(h) + (r"$\uparrow$" if hi else r"$\downarrow$") for _, h, _, hi in keep)
+            + r" \\"]
+    cols = "l" + "c" * len(keep)
+    write(name, table, lines, tabular(cols, head, rows_tex), None if main is None else tabular(cols, head, rows_main))
 
 
 def e1() -> None:
@@ -263,8 +282,9 @@ def e1() -> None:
 
 def e6() -> None:
     """Ablations: EG-SWM with one part changed, next to EG-SWM itself."""
-    if any(load(run) for run, *_ in ABLATIONS + SCALE):
-        interface_table("e6_ablations", [r for r in ROWS if r[0] == "S_arms"] + ABLATIONS + SCALE, [])
+    if any(load(run) for run, *_ in ABLATIONS + HYPER + SCALE):
+        runs = [r for r in ROWS if r[0] == "S_arms"] + ABLATIONS + HYPER + SCALE
+        interface_table("e6_ablations", runs, [], main={r for r, *_ in runs if r not in {h for h, *_ in HYPER}})
 
 
 def seeds() -> None:
@@ -385,8 +405,8 @@ def paired() -> None:
         return np.array([x[d["case"] == c].mean() for c in cases])
 
     srcs = [("copy_last", "Copy last context frame", OUTPUTS / "eval" / "reference" / "reference.npz", "copy_last")]
-    srcs += [(run, label, OUTPUTS / "eval" / run / "replay.npz", "pred") for run, label, *_ in ROWS + ABLATIONS + SCALE
-             if run != "S_arms"]
+    srcs += [(run, label, OUTPUTS / "eval" / run / "replay.npz", "pred")
+             for run, label, *_ in ROWS + ABLATIONS + HYPER + SCALE if run != "S_arms"]
     table = []
     for run, label, npz, prefix in srcs:
         if not npz.exists():
@@ -489,7 +509,7 @@ def locality() -> None:
     b_per = per_case(base)
     b_boot = boot(b_per)
     table, per_run = [], {}
-    for run, label, *_ in ROWS + ABLATIONS + SCALE:
+    for run, label, *_ in ROWS + ABLATIONS + HYPER + SCALE:
         rows = locality_rows(run)
         if rows is None:
             continue
@@ -573,7 +593,7 @@ def control_intervals() -> None:
 
     base = dict(gain=gains(base_cam), rate=rates(base_ecs))
     table, per_run = [], {}
-    for run, label, *_ in ROWS + ABLATIONS + SCALE:
+    for run, label, *_ in ROWS + ABLATIONS + HYPER + SCALE:
         cam, ecs = test_rows(run, "camera"), test_rows(run, "ecs")
         if cam is None and ecs is None:
             continue
@@ -717,7 +737,7 @@ def cost() -> None:
     timing = OUTPUTS / "eval" / "timing.json"
     timing = json.loads(timing.read_text()) if timing.exists() else {}
     table = []
-    for run, label, *_ in ROWS + ABLATIONS + SCALE:
+    for run, label, *_ in ROWS + ABLATIONS + HYPER + SCALE:
         log, cfg = OUTPUTS / "runs" / run / "log.jsonl", OUTPUTS / "runs" / run / "config.json"
         if not (log.exists() and cfg.exists() and (OUTPUTS / "eval" / run / "replay.json").exists()):
             continue
@@ -849,8 +869,10 @@ def e2() -> None:
     data = {"datasets": {f"{d}_{s}": {k: v for k, v in p.items() if k != "probes"} for (d, s), p in probes.items()},
             "rows": table}
     write("e2_probes", data, lines, tabular("ll" + "c" * len(keys), head, rows_tex))
-    pos, rows_pos, last = [f"{d}_pos" for d, _ in E2_DATA], [], None    # the main paper's table: translation only
-    for row, f in zip(table, flat, strict=True):
+    pos, rows_pos, last = [f"{d}_pos" for d, _ in E2_DATA], [], None    # the main paper's table: translation only,
+    for row, f in zip(table, flat, strict=True):                        # without the adapted models (MAIN_ONLY)
+        if row["setting"] not in MAIN_ONLY["e2"]:
+            continue
         if last not in (None, row["setting"]):
             rows_pos.append(r"\midrule")
         last = row["setting"]
@@ -869,24 +891,26 @@ def external(run: str, data: str) -> dict:
                 **by_case(p.with_suffix(".npz"), "pred"))
 
 
-def grouped(name: str, groups: list[tuple[str, list[dict]]], first: str, extra: str) -> None:
+def grouped(name: str, groups: list[tuple[str, list[dict]]], first: str, extra: str, main=None) -> None:
     """A table of reference and model rows in groups (datasets or settings) separated by rules in LaTeX; `extra`
-    is a per-row column (key of the row) named `first`."""
+    is a per-row column (key of the row) named `first`. With `main` (row -> bool), the main paper's version keeps
+    only the rows it accepts."""
     cols = COLS[:5]                                                     # PSNR, SSIM, LPIPS, FVD, ΔPSNR
     lines = [f"| {first} | Model | " + " | ".join(h + (" ↑" if hi else " ↓") for _, h, _, hi in cols) + " |",
              "|" + "---|" * (len(cols) + 2)]
-    rows_tex = []
+    rows_tex, rows_main = [], []
     for g, rows in groups:
-        if rows_tex:
-            rows_tex.append(r"\midrule")
-        for row in rows:
-            lines.append(f"| {row.get(extra, g)} | {row['label']} | "
-                         + " | ".join(cell(row, k, fmt) for k, _, fmt, _ in cols) + " |")
-            rows_tex.append(tex(f"{row.get(extra, g)} & {row['label']} & ").replace("–", "--")
-                            + " & ".join(cell(row, k, fmt, tex=True) for k, _, fmt, _ in cols) + r" \\")
-    head = " & ".join(tex(h) + (r"$\uparrow$" if hi else r"$\downarrow$") for _, h, _, hi in cols)
-    write(name, [r for _, rows in groups for r in rows], lines,
-          tabular("ll" + "c" * len(cols), [f"{first} & Model & " + head + r" \\"], rows_tex))
+        for out, keep in ((rows_tex, rows), (rows_main, [r for r in rows if main is None or main(r)])):
+            if out and keep:
+                out.append(r"\midrule")
+            out += [tex(f"{row.get(extra, g)} & {row['label']} & ").replace("–", "--")
+                    + " & ".join(cell(row, k, fmt, tex=True) for k, _, fmt, _ in cols) + r" \\" for row in keep]
+        lines += [f"| {row.get(extra, g)} | {row['label']} | "
+                  + " | ".join(cell(row, k, fmt) for k, _, fmt, _ in cols) + " |" for row in rows]
+    head = [f"{first} & Model & " + " & ".join(tex(h) + (r"$\uparrow$" if hi else r"$\downarrow$")
+                                               for _, h, _, hi in cols) + r" \\"]
+    write(name, [r for _, rows in groups for r in rows], lines, tabular("ll" + "c" * len(cols), head, rows_tex),
+          None if main is None else tabular("ll" + "c" * len(cols), head, rows_main))
 
 
 def e3() -> None:
@@ -923,7 +947,8 @@ def e3() -> None:
             refs = [dict(r, data=data, share=f"{dname}, –") for r in (reference(ref) if ref.exists() else [])]
             groups.append((dname, refs + rows))
     if groups:
-        grouped("e3_kinematics", groups, "Data, training episodes", "share")
+        grouped("e3_kinematics", groups, "Data, training episodes", "share",
+                main=lambda r: r.get("f") in MAIN_ONLY["e3"])
 
 
 def e4() -> None:
@@ -946,7 +971,8 @@ def e4() -> None:
             r.update({f"vs_arms_{k}": v for k, v in pr.items()})
     ref = OUTPUTS / "eval" / "reference" / "sar_rarp50" / "reference.json"
     refs = [dict(r, setting="–") for r in (reference(ref) if ref.exists() else [])]
-    grouped("e4_clinical", ([("reference", refs)] if refs else []) + list(groups.items()), "Setting", "setting")
+    grouped("e4_clinical", ([("reference", refs)] if refs else []) + list(groups.items()), "Setting", "setting",
+            main=lambda r: r["setting"] in MAIN_ONLY["e4"])
 
 
 def numbers() -> None:
@@ -978,7 +1004,7 @@ def numbers() -> None:
         for k, nd in (("pred_psnr", 2), ("pred_ssim", 3), ("pred_lpips", 3), ("pred_fvd", 0), ("delta_psnr", 2)):
             if isinstance(r.get(k), (int, float)):
                 put(f"main/{r['run']}/{k.removeprefix('pred_')}", r[k], nd, r.get(f"{k}_ci"))
-    for run in sorted({r for r, *_ in ROWS + ABLATIONS + SCALE} | {"reference"}):
+    for run in sorted({r for r, *_ in ROWS + ABLATIONS + HYPER + SCALE} | {"reference"}):
         d = load(run)
         gains = [v for k, v in d.items() if k.startswith("cam_") and k.endswith("_gain")]
         if gains:
@@ -1173,13 +1199,14 @@ def numbers() -> None:
                     put(f"{k}/vs_{other}", r[f"vs_{other}_d_psnr"], 2, r[f"vs_{other}_d_psnr_ci"])
                     val[f"{k}/vs_{other}_wins"] = str(r[f"vs_{other}_wins"])
                     val[f"{k}/vs_{other}_of"] = str(r[f"vs_{other}_n_cases"])
-        # ranges over datasets, shares and initialisations: all episodes against a tenth, an initialised model
-        # against training from scratch, and EG-SWM against the monolithic model as the starting point
-        for name, key, nd in (("tenth", "vs_tenth_d_psnr", 2), ("init", "vs_scratch_d_psnr", 2)):
-            x = [r[key] for r in e3_rows if key in r]
+        # ranges over datasets, shares and initialisations: all episodes (a quarter) against a tenth, an initialised
+        # model against training from scratch, and EG-SWM against the monolithic model as the starting point
+        for name, key, shares in (("tenth", "vs_tenth_d_psnr", ("1.0",)), ("quarter", "vs_tenth_d_psnr", ("0.25",)),
+                                  ("init", "vs_scratch_d_psnr", E3_FRACTIONS)):
+            x = [r[key] for r in e3_rows if key in r and r["f"] in shares]
             if x:
-                put(f"e3/{name}/min", min(x), nd)
-                put(f"e3/{name}/max", max(x), nd)
+                put(f"e3/{name}/min", min(x), 2)
+                put(f"e3/{name}/max", max(x), 2)
         iface = [abs(r["vs_global_d_psnr"]) for r in e3_rows if "vs_global_d_psnr" in r]
         if iface:
             put("e3/iface/max_abs", max(iface), 2)

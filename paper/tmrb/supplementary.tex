@@ -182,6 +182,30 @@ The tables below are generated with those of the main paper and appear as their 
 \resizebox{\textwidth}{!}{\input{tables/cost}}
 \end{table*}}{}
 
+\IfFileExists{tables/e6_ablations_all.tex}{%
+\begin{table*}[t]
+\centering
+\caption{\method{} with one part changed, with the weight $\beta$ of the KL penalty changed, and trained on 10 or 30\,\% of the training cases (60k steps, size S unless stated; protocol and columns of Table~I of the main paper).}
+\label{tab:hyper}
+\resizebox{\textwidth}{!}{\input{tables/e6_ablations_all}}
+\end{table*}}{}
+
+\IfFileExists{tables/e3_kinematics_all.tex}{%
+\begin{table}[h]
+\centering
+\caption{Kinematics-conditioned prediction on the SutureBot and SRT-H test episodes with 10, 25 and 100\,\% of the training episodes (8k steps, final weights; means over test episodes with 95\,\% intervals).}
+\label{tab:kincond-all}
+\resizebox{\columnwidth}{!}{\input{tables/e3_kinematics_all}}
+\end{table}}{}
+
+\IfFileExists{tables/e4_clinical_all.tex}{%
+\begin{table}[h]
+\centering
+\caption{Clinical transfer on the SAR-RARP50 test videos: SurgVU models without adaptation, after action-free adaptation to the SAR-RARP50 training videos (5k steps, no kinematics, final weights), and \method{} trained on those videos alone with the same budget (means over test videos with 95\,\% intervals).}
+\label{tab:clinical-all}
+\resizebox{\columnwidth}{!}{\input{tables/e4_clinical_all}}
+\end{table}}{}
+
 \section{Rollouts}\label{sec:rollouts}
 Figs.~\ref{fig:rollouts-compare}--\ref{fig:rollouts-failures} show predictions of the size-S models on test windows under the protocol of the main paper (two context latents, 50 Euler steps): the last context frame and the frames 0.8, 1.6 and 2.8\,s after it. \emph{Supplementary Movie S1} (file movie\_s1.mp4, H.264, $976\times540$ pixels, 57\,s) plays the same windows as clips at half speed, each frame marked as context or prediction, and adds all six endoscope commands (pan, tilt and zoom, both ways) for \method{} and the monolithic latent action, with the learned actions zeroed.
 
