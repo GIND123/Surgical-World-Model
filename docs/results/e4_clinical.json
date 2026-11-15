@@ -301,6 +301,44 @@
   "vs_arms_n_cases": 10
  },
  {
+  "run": "SAR_adapt_global",
+  "label": "Monolithic latent + camera",
+  "setting": "adapted",
+  "pred_psnr": 18.139455795288086,
+  "pred_ssim": 0.5725167989730835,
+  "pred_lpips": 0.27518022060394287,
+  "pred_fvd": 222.24080042261414,
+  "delta_psnr": 1.7174110412597656,
+  "step": 5000,
+  "weights": "raw",
+  "pred_psnr_ci": [
+   17.459149503707884,
+   18.876198625564577
+  ],
+  "pred_ssim_ci": [
+   0.5378635644912719,
+   0.6101111918687819
+  ],
+  "pred_lpips_ci": [
+   0.2620271183550358,
+   0.2876263134181499
+  ],
+  "vs_copy_d_psnr": 0.7587655186653137,
+  "vs_copy_d_psnr_ci": [
+   0.564205814898014,
+   0.9557493284344672
+  ],
+  "vs_copy_wins": 10,
+  "vs_copy_n_cases": 10,
+  "vs_arms_d_psnr": 1.301745057106018,
+  "vs_arms_d_psnr_ci": [
+   1.147815716266632,
+   1.4510767787694931
+  ],
+  "vs_arms_wins": 10,
+  "vs_arms_n_cases": 10
+ },
+ {
   "run": "SAR_adapt_arms",
   "label": "EG-SWM",
   "setting": "adapted",
