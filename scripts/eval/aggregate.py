@@ -969,6 +969,12 @@ def e4() -> None:
         if r["run"] != "S_arms":
             pr = paired_psnr(npz, ev / "S_arms" / "sar_rarp50" / "replay.npz")
             r.update({f"vs_arms_{k}": v for k, v in pr.items()})
+        if r["run"].startswith("SAR_adapt_"):       # the gain from adaptation: against the same model zero-shot
+            pr = paired_psnr(npz, ev / r["run"].replace("SAR_adapt_", "S_") / "sar_rarp50" / "replay.npz")
+            r.update({f"vs_zero_{k}": v for k, v in pr.items()})
+        if r["run"] == "SAR_adapt_arms":            # the gain from porcine pretraining, with the same adaptation budget
+            pr = paired_psnr(npz, ev / "SAR_scratch_arms" / "sar_rarp50" / "replay.npz")
+            r.update({f"vs_scratch_{k}": v for k, v in pr.items()})
     ref = OUTPUTS / "eval" / "reference" / "sar_rarp50" / "reference.json"
     refs = [dict(r, setting="–") for r in (reference(ref) if ref.exists() else [])]
     grouped("e4_clinical", ([("reference", refs)] if refs else []) + list(groups.items()), "Setting", "setting",
@@ -1216,7 +1222,7 @@ def numbers() -> None:
                 put(f"e4/{r['run']}/psnr", r["pred_psnr"], 2, r.get("pred_psnr_ci"))
             if isinstance(r.get("pred_fvd"), float):
                 put(f"e4/{r['run']}/fvd", r["pred_fvd"], 0)
-            for other in ("copy", "arms"):
+            for other in ("copy", "arms", "zero", "scratch"):
                 if f"vs_{other}_d_psnr" in r:
                     put(f"e4/{r['run']}/vs_{other}", r[f"vs_{other}_d_psnr"], 2, r[f"vs_{other}_d_psnr_ci"])
                     val[f"e4/{r['run']}/vs_{other}_wins"] = str(r[f"vs_{other}_wins"])

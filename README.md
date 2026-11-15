@@ -5,7 +5,7 @@
 * Weights (public, CC BY-NC-SA 4.0): <https://huggingface.co/GOVINDFROM/surgical-world-model> — one folder per finished run (EMA weights, config, evaluation summaries), published by each queue job
 * Research documents: [data audit](docs/01_data_audit.md) · [external data](docs/02_external_data.md) · [literature review](docs/03_literature_review.md) · [research plan](docs/04_research_plan.md) · [legacy](docs/legacy.md)
 
-## Status (updated 2026-11-15, 10:05 IST)
+## Status (updated 2026-11-15, 13:35 IST)
 
 **Submission to IEEE T-MRB, prepared on 15 Nov.** T-MRB reviews double-anonymously, and the RAS rules allow a desk rejection when names, acknowledgements or identifying links (GitHub is named) appear in the manuscript or supplement. The manuscript therefore builds as an anonymous review copy by default (`paper/tmrb/review.tex`; `\reviewfalse` gives the camera-ready version with the author block, the public links and the acknowledgement). Both PDFs were scanned (text, metadata, every decompressed stream): no name, account or local path. Also new:
 * an ethics statement, which T-MRB requires in the manuscript;
@@ -25,9 +25,9 @@
 
 That is 31 jobs and about 60 GPU-hours.
 
-**Progress (15 Nov 10:05 IST): 3 of 33 jobs done** (the 31 above, plus `0741a` and `0741b`).
+**Progress (15 Nov 13:35 IST): 7 of 33 jobs done, about 5 of 60 GPU-hours (8 %).** The clinical group (`741`–`745`, Movie S1) is complete; the KL weight `750` runs now, then `751`, `760`, `761` (to about 16:00 on 16 Nov), the VQ seeds (to about 05:00 on 17 Nov) and the kinematics jobs (to about 19:00 on 17 Nov). The pending copies carry a tier prefix (`0`, `1`, `2`) so that they run in this order; their numbers are unchanged. Each job adds its tables, weights and numbers when it ends, and nothing outside the original plan is added. Other users' jobs share the GPU.
 * **Supplementary Movie S1 (`0741a`):** 57 s, H.264, 976×540, 8.1 MB, written to `outputs/videos/movie_s1.mp4` (SurgVU frames, so not in Git). Checked frame by frame against its description in the supplement.
-* **EG-SWM adapted to SAR-RARP50 (`0741`, scored with final weights by `0741b`):** 0.37 dB [0.12, 0.61] above EG-SWM without adaptation, in 8 of 10 test videos. It ties the copied frame (−0.17 dB [−0.55, 0.12]) and has the lowest FVD of any model (263; 496 without adaptation). The other interfaces follow (`0742`–`0745`). The pending copies carry a tier prefix (`0`, `1`, `2`) so that they run in this order; their numbers are unchanged. Each job adds its tables, weights and numbers when it ends, and nothing outside the original plan is added. Other users' jobs share the GPU.
+* **Action-free adaptation to SAR-RARP50 (`741`–`745`, 13:28):** 5k steps on the training videos, scored with final weights. Adaptation helps every interface (+0.28 to +0.73 dB over its zero-shot version, in 8–10 of 10 test videos) but keeps the zero-shot ranking: the slots beat the copied frame by 1.04 dB [0.85, 1.24] and the monolithic latent by 0.76 [0.56, 0.96] (10/10 each), while EG-SWM ties it (−0.17 [−0.55, 0.12], 5/10). Porcine pretraining is worth 1.44 dB [1.24, 1.66] to EG-SWM over training on the clinical videos alone with the same budget (10/10). The 10:05 note that adapted EG-SWM had the lowest FVD held only until the other interfaces were adapted (slots 206, monolithic 222, EG-SWM 263). The paper reports this in one sentence (results, *Transfer to clinical surgery*), the introduction, discussion and conclusion; every row is in the supplement's table. See E4 below.
 
 **13 Nov: the revision's GPU work was complete (12:26 IST): 100 %, about 68 GPU-hours since resuming on 10 Nov at 16:16.** Two results came in:
 
@@ -410,7 +410,7 @@ The copied frame scores 20.66 dB on SutureBot and 17.97 dB on SRT-H (FVD 702 and
 * **More episodes did not help within 8k steps.** All of them against a tenth, PSNR changes by −0.32 / −0.11 / −0.10 dB on SutureBot (from scratch / EG-SWM / monolithic, each significant) and −0.07 / −0.14 / −0.01 [−0.03, 0.01] on SRT-H. With a fixed budget the runs on a tenth pass over each window about ten times as often, and the tenth is one random draw of episodes; we report it as found.
 * Scoring: the weight average (0.9995) still lags after 8k steps and starts from random weights in a run from scratch, so it penalised those runs most (window-mean PSNR from scratch +0.47 / +0.91 dB with the final weights, initialised from EG-SWM +0.19 dB); every E3 run is scored with its final weights (`503b`).
 
-### E4 — transfer to clinical surgery (SAR-RARP50, zero-shot; done 9 Nov)
+### E4 — transfer to clinical surgery (SAR-RARP50; zero-shot done 9 Nov, adaptation 15 Nov)
 
 Job `740`, [e4_clinical](docs/results/e4_clinical.md). SurgVU models (porcine training-laboratory video) predict human robot-assisted prostatectomy without any adaptation: 980 windows of the 10 test videos, 50 Euler steps, real frames; intervals and paired differences over the test videos. SAR-RARP50 has no system logs, so EG-SWM's arms are bound by image side (right-most box = first arm).
 
@@ -426,7 +426,20 @@ Job `740`, [e4_clinical](docs/results/e4_clinical.md). SurgVU models (porcine tr
 | EG-SWM, size B | 16.75 [16.03, 17.47] | −0.63 [−0.86, −0.39] (1/10) | **389** | 0.68 |
 
 * **Without system logs, frame-wide actions transfer better.** The slots beat the copied frame in all 10 videos and the monolithic latent ties it, while EG-SWM falls below it (1 of 10 videos better) and below the monolithic latent by 0.57 dB [0.40, 0.73] in all 10; size B does not help (−0.08 dB [−0.13, −0.04] against size S). EG-SWM still leads SurgWM-style VQ (0.29 dB in all 10) and has the lowest FVD (496; size B 389).
-* **The arm binding is the likely weak point**: the detector, trained on porcine video, gives the first arm a region in 73 % of the test steps and the second in only 25 % (SurgVU: 73 % of a mounted instrument's steps), and an arm without a region has no action. The scene action, which covers the rest of the frame, adds 0.19 dB [0.10, 0.28]. A detector for clinical instruments and action-free adaptation on clinical video (`741`–`745`, deferred) are the next steps.
+* **The arm binding is the likely weak point**: the detector, trained on porcine video, gives the first arm a region in 73 % of the test steps and the second in only 25 % (SurgVU: 73 % of a mounted instrument's steps), and an arm without a region has no action. The scene action, which covers the rest of the frame, adds 0.19 dB [0.10, 0.28]. A detector for clinical instruments is the next step.
+
+**Action-free adaptation (`741`–`745`, done 15 Nov 13:28).** Each SurgVU model is trained for 5k steps on the SAR-RARP50 training videos without kinematics (batch 32, warm-up 500) and scored with its final weights: the weight average (0.9995) would still hold 8 % of the starting weights after 5k steps, and random weights in the run from scratch. EG-SWM from scratch gets the same budget. Paired over the 10 test videos:
+
+| Model, adapted | PSNR | vs copied frame (videos better) | vs its zero-shot version | FVD |
+|---|---|---|---|---|
+| monolithic latent + endoscope | 18.14 [17.46, 18.88] | +0.76 [0.56, 0.96] (10/10) | +0.73 [0.62, 0.89] (10/10) | 222 |
+| SurgWM-style VQ + endoscope | 16.83 [16.19, 17.47] | −0.55 [−0.84, −0.29] (1/10) | +0.28 [0.21, 0.35] (10/10) | 246 |
+| slots + endoscope | **18.42** [17.71, 19.23] | **+1.04** [0.85, 1.24] (10/10) | +0.49 [0.40, 0.59] (10/10) | **206** |
+| **EG-SWM** | 17.21 [16.58, 17.77] | −0.17 [−0.55, 0.12] (5/10) | +0.37 [0.12, 0.61] (8/10) | 263 |
+| EG-SWM from scratch (same budget) | 15.77 [15.30, 16.19] | −1.62 [−2.18, −1.19] (0/10) | – | 912 |
+
+* **Adaptation helps every interface but keeps the ranking.** Without logs, the arm actions still lack regions (second arm 25 % of the steps), so adaptation alone cannot close the gap to the frame-wide actions; the binding, not the training video, limits EG-SWM here.
+* **Porcine pretraining transfers to human surgery:** adapted EG-SWM beats EG-SWM trained on the clinical videos alone by 1.44 dB [1.24, 1.66] in all 10 videos, and the run from scratch falls 1.62 dB below the copied frame.
 
 ### Data facts that shape the method ([full audit](docs/01_data_audit.md))
 
