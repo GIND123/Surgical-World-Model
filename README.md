@@ -5,7 +5,7 @@
 * Weights (public, CC BY-NC-SA 4.0): <https://huggingface.co/GOVINDFROM/surgical-world-model> — one folder per finished run (EMA weights, config, evaluation summaries), published by each queue job
 * Research documents: [data audit](docs/01_data_audit.md) · [external data](docs/02_external_data.md) · [literature review](docs/03_literature_review.md) · [research plan](docs/04_research_plan.md) · [legacy](docs/legacy.md)
 
-## Status (updated 2026-11-15, 10:00 IST)
+## Status (updated 2026-11-15, 10:05 IST)
 
 **Submission to IEEE T-MRB, prepared on 15 Nov.** T-MRB reviews double-anonymously, and the RAS rules allow a desk rejection when names, acknowledgements or identifying links (GitHub is named) appear in the manuscript or supplement. The manuscript therefore builds as an anonymous review copy by default (`paper/tmrb/review.tex`; `\reviewfalse` gives the camera-ready version with the author block, the public links and the acknowledgement). Both PDFs were scanned (text, metadata, every decompressed stream): no name, account or local path. Also new:
 * an ethics statement, which T-MRB requires in the manuscript;
@@ -23,7 +23,11 @@
 * kinematics-conditioned prediction with 25 % of the episodes (`501`–`618`);
 * action-free adaptation and probes on the kinematic datasets (`410`–`450`).
 
-That is 31 jobs and about 60 GPU-hours. The pending copies carry a tier prefix (`0`, `1`, `2`) so that they run in this order; their numbers are unchanged. Each job adds its tables, weights and numbers when it ends, and nothing outside the original plan is added. Other users' jobs share the GPU.
+That is 31 jobs and about 60 GPU-hours.
+
+**Progress (15 Nov 10:05 IST): 3 of 33 jobs done** (the 31 above, plus `0741a` and `0741b`).
+* **Supplementary Movie S1 (`0741a`):** 57 s, H.264, 976×540, 8.1 MB, written to `outputs/videos/movie_s1.mp4` (SurgVU frames, so not in Git). Checked frame by frame against its description in the supplement.
+* **EG-SWM adapted to SAR-RARP50 (`0741`, scored with final weights by `0741b`):** 0.37 dB [0.12, 0.61] above EG-SWM without adaptation, in 8 of 10 test videos. It ties the copied frame (−0.17 dB [−0.55, 0.12]) and has the lowest FVD of any model (263; 496 without adaptation). The other interfaces follow (`0742`–`0745`). The pending copies carry a tier prefix (`0`, `1`, `2`) so that they run in this order; their numbers are unchanged. Each job adds its tables, weights and numbers when it ends, and nothing outside the original plan is added. Other users' jobs share the GPU.
 
 **13 Nov: the revision's GPU work was complete (12:26 IST): 100 %, about 68 GPU-hours since resuming on 10 Nov at 16:16.** Two results came in:
 
