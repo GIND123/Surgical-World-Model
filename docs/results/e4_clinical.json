@@ -299,5 +299,43 @@
   ],
   "vs_arms_wins": 2,
   "vs_arms_n_cases": 10
+ },
+ {
+  "run": "SAR_adapt_arms",
+  "label": "EG-SWM",
+  "setting": "adapted",
+  "pred_psnr": 17.144182205200195,
+  "pred_ssim": 0.5465449094772339,
+  "pred_lpips": 0.3057919144630432,
+  "pred_fvd": 266.3648267953635,
+  "delta_psnr": 0.94189453125,
+  "step": 5000,
+  "weights": "ema",
+  "pred_psnr_ci": [
+   16.4836585521698,
+   17.76099910736084
+  ],
+  "pred_ssim_ci": [
+   0.5133837699890137,
+   0.582574039697647
+  ],
+  "pred_lpips_ci": [
+   0.290953079611063,
+   0.3180914156138897
+  ],
+  "vs_copy_d_psnr": -0.23650987446308136,
+  "vs_copy_d_psnr_ci": [
+   -0.5440778613090516,
+   0.026469940925016897
+  ],
+  "vs_copy_wins": 5,
+  "vs_copy_n_cases": 10,
+  "vs_arms_d_psnr": 0.3064696490764618,
+  "vs_arms_d_psnr_ci": [
+   0.1151379406452179,
+   0.49437386766076086
+  ],
+  "vs_arms_wins": 8,
+  "vs_arms_n_cases": 10
  }
 ]
