@@ -624,6 +624,54 @@
   "a_better_lpips": 19
  },
  {
+  "a": "S_arms_kl1e-3",
+  "b": "copy_last",
+  "label": "EG-SWM, KL weight 10\u207b\u00b3 \u2212 Copy last context frame",
+  "n_cases": 19,
+  "d_psnr": 0.16332314908504486,
+  "d_psnr_ci": [
+   -0.012260461924597621,
+   0.3266840271651743
+  ],
+  "a_better_psnr": 14,
+  "d_ssim": 0.0031410485971719027,
+  "d_ssim_ci": [
+   -0.0024727779324166476,
+   0.0083942242199555
+  ],
+  "a_better_ssim": 13,
+  "d_lpips": 0.013319325633347034,
+  "d_lpips_ci": [
+   0.011171268112957478,
+   0.015245951665565369
+  ],
+  "a_better_lpips": 0
+ },
+ {
+  "a": "S_arms_kl1e-5",
+  "b": "copy_last",
+  "label": "EG-SWM, KL weight 10\u207b\u2075 \u2212 Copy last context frame",
+  "n_cases": 19,
+  "d_psnr": 0.43618062138557434,
+  "d_psnr_ci": [
+   0.2720685452222824,
+   0.5891938120126724
+  ],
+  "a_better_psnr": 17,
+  "d_ssim": 0.010868627578020096,
+  "d_ssim_ci": [
+   0.005639628507196903,
+   0.015916025731712573
+  ],
+  "a_better_ssim": 15,
+  "d_lpips": 0.00775402644649148,
+  "d_lpips_ci": [
+   0.005491962749511003,
+   0.009807870606891811
+  ],
+  "a_better_lpips": 2
+ },
+ {
   "a": "B_arms",
   "b": "copy_last",
   "label": "EG-SWM, size B \u2212 Copy last context frame",

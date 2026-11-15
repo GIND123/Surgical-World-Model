@@ -73,6 +73,7 @@ CONTRASTS = [  # (a, b): a minus b, paired over the test cases on the E1 windows
     ("S_global_nocam", "S_global"),
     ("S_arms", "surgwm"), ("surgwm", "copy_last"),
     *((run, "S_arms") for run, *_ in ABLATIONS + HYPER + SCALE),
+    *((run, "copy_last") for run, *_ in HYPER),     # still above the copied frame at another beta or data size?
     ("B_arms", "copy_last"), ("S_global", "B_arms"), ("S_slots", "B_arms"), ("B_arms", "S_global_vq"),
     ("B_arms", "surgwm"),
     ("B_global", "B_arms"), ("B_global", "S_global"), ("B_global", "copy_last"),   # the interfaces at equal size B
