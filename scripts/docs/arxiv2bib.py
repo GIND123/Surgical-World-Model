@@ -2,7 +2,8 @@
 """Generate BibTeX entries for arXiv papers from the arXiv API (so titles/authors/years are never typed by hand).
 
     python scripts/docs/arxiv2bib.py key1=2402.15391 key2=2503.02904 ... > paper/tmrb/arxiv.bib
-A trailing "|Venue" sets the journal/booktitle note, e.g. surgwm=2503.02904|MICCAI Workshop DEMI 2025.
+A trailing "|Venue Year" marks a peer-reviewed paper, e.g. genie=2402.15391|ICML 2024: it is cited as published there
+(IEEE style, "in Proc. Int. Conf. Mach. Learn. (ICML), 2024"), not as an arXiv preprint.
 """
 
 from __future__ import annotations
@@ -47,6 +48,30 @@ def author(name: str) -> str:
     return f"{{{name}}}" if set(name.split()) & {"Consortium", "Collaboration", "Team"} else name
 
 
+PROCEEDINGS = [                                           # venue prefix -> IEEE-abbreviated proceedings name
+    ("MICCAI Workshop on Data Engineering in Medical Imaging (DEMI)", "MICCAI Workshop Data Eng. Med. Imaging (DEMI)"),
+    ("MICCAI Workshop EARTH", "MICCAI Workshop Embodied AI Robot. Healthcare (EARTH)"),
+    ("MICCAI", "Int. Conf. Med. Image Comput. Comput. Assist. Interv. (MICCAI)"),
+    ("IEEE International Symposium on Medical Robotics (ISMR)", "IEEE Int. Symp. Med. Robot. (ISMR)"),
+    ("IEEE/CVF ICCV", "IEEE/CVF Int. Conf. Comput. Vis. (ICCV)"),
+    ("ICCV", "IEEE/CVF Int. Conf. Comput. Vis. (ICCV)"),
+    ("CVPR", "IEEE/CVF Conf. Comput. Vis. Pattern Recognit. (CVPR)"),
+    ("ICML", "Int. Conf. Mach. Learn. (ICML)"),
+    ("ICLR", "Int. Conf. Learn. Represent. (ICLR)"),
+    ("NeurIPS", "Adv. Neural Inf. Process. Syst. (NeurIPS)"),
+    ("AAAI", "AAAI Conf. Artif. Intell. (AAAI)"),
+]
+
+
+def proceedings(venue: str) -> tuple[str, str]:
+    """("Proc. <abbreviated venue>", year) for a venue such as "ICML 2024" or "MICCAI Workshop EARTH 2024"."""
+    year = venue.rstrip(" .")[-4:]
+    for prefix, name in PROCEEDINGS:
+        if venue.startswith(prefix):
+            return f"Proc. {name}", year
+    raise ValueError(f"unknown venue {venue!r}: add it to PROCEEDINGS")
+
+
 def main() -> None:
     specs = []
     for arg in sys.argv[1:]:
@@ -62,10 +87,13 @@ def main() -> None:
         title = tex_escape(e.find("a:title", NS).text)
         authors = " and ".join(author(a.find("a:name", NS).text) for a in e.findall("a:author", NS)
                                if any(c.isalpha() for c in a.find("a:name", NS).text))   # not a ":" separator
-        year = e.find("a:published", NS).text[:4]
-        note = f",\n  note = {{{{{tex_escape(venue)}}}}}" if venue else ""   # braced, or IEEEtran lowercases it
-        print(f"@article{{{key},\n  title = {{{{{title}}}}},\n  author = {{{tex_escape(authors)}}},\n"
-              f"  journal = {{arXiv preprint arXiv:{aid}}},\n  year = {{{year}}}{note}\n}}\n")
+        head = f"  title = {{{{{title}}}}},\n  author = {{{tex_escape(authors)}}},\n"
+        if venue:
+            book, year = proceedings(venue)
+            print(f"@inproceedings{{{key},\n{head}  booktitle = {{{book}}},\n  year = {{{year}}}\n}}\n")
+        else:
+            year = e.find("a:published", NS).text[:4]
+            print(f"@article{{{key},\n{head}  journal = {{arXiv preprint arXiv:{aid}}},\n  year = {{{year}}}\n}}\n")
 
 
 if __name__ == "__main__":

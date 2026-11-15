@@ -15,6 +15,8 @@ control   docs/figures/rollouts_control.png: EG-SWM on the first of these window
           to pan right and zoom in (learned actions zeroed) for EG-SWM, the monolithic latent and EG-SWM + scene.
 failures  docs/figures/rollouts_failures.png: the four test windows (from different cases) where EG-SWM's PSNR is
           lowest, real and predicted.
+video     outputs/videos/movie_s1.mp4 (Supplementary Movie S1; dataset frames, so not in Git): the windows of the
+          three figures as clips at half speed, and all six endoscope commands for EG-SWM and the monolithic latent.
 timing    outputs/eval/timing.json: seconds and peak GPU memory for one 2.8 s prediction (batch 1, 50 Euler steps),
           the world model and the VAE decoder separately, for each of --timing-runs with only it and the VAE on the
           GPU; runs timed before are kept.
@@ -41,7 +43,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "eval"))
-from eval_control import command, decode  # noqa: E402
+from eval_control import COMMANDS, command, decode  # noqa: E402
 from eval_wm import EvalWindows, load_model, spread  # noqa: E402
 
 from swm.data.geometry import FIELD_ROWS, MODEL_H, MODEL_W  # noqa: E402
@@ -98,10 +100,54 @@ def grid(rows: list[tuple[str, list[np.ndarray]]], cols: list[str], path: Path, 
     print(f"wrote {path}", flush=True)
 
 
+VIDEO_FPS, BAR, TOP, GAP = 5, 26, 40, 8         # half speed; pixels of a panel's label, the title, between panels
+CANVAS = (TOP + 2 * (BAR + MODEL_H), 3 * MODEL_W + 2 * GAP, 3)
+
+
+def tile(title: str, panels: list, t: int) -> np.ndarray:
+    """Video frame t of a segment: up to six panels (label, clip T H W 3 in [0, 1], or a T H W change map on the
+    clip's colour scale; None leaves a gap) in two rows of three, under the title and whether t is context."""
+    img = np.full(CANVAS, 255, np.uint8)
+    when = "context" if t < 5 else f"predicted +{(t - 4) / 10:.1f} s"     # 2 context latents = frames 0-4
+    cv2.putText(img, f"{title} | {when}", (8, 27), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1, cv2.LINE_AA)
+    for i, panel in enumerate(panels):
+        if panel is None:
+            continue
+        label, clip = panel
+        f = clip[t] if clip.ndim == 4 else plt.get_cmap("magma")(clip[t] / max(float(clip.max()), 1e-6))[..., :3]
+        y, x = TOP + i // 3 * (BAR + MODEL_H), i % 3 * (MODEL_W + GAP)
+        img[y + BAR:y + BAR + MODEL_H, x:x + MODEL_W] = (np.clip(f, 0, 1) * 255).round().astype(np.uint8)
+        cv2.putText(img, label, (x + 6, y + 18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+    return img
+
+
+def segment(title: str, panels: list) -> list[np.ndarray]:
+    frames = [tile(title, panels, t) for t in range(33)]
+    return frames + [frames[-1]] * VIDEO_FPS                              # hold the last frame for 1 s
+
+
+def card(lines: list[str]) -> list[np.ndarray]:
+    img = np.full(CANVAS, 255, np.uint8)
+    for i, line in enumerate(lines):
+        cv2.putText(img, line, (40, 110 + 36 * i), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 1, cv2.LINE_AA)
+    return [img] * (4 * VIDEO_FPS)                                        # 4 s
+
+
+def write_mp4(frames: list[np.ndarray], path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with av.open(str(path), "w") as out:
+        s = out.add_stream("libx264", rate=VIDEO_FPS, options={"crf": "18"})
+        s.width, s.height, s.pix_fmt = frames[0].shape[1], frames[0].shape[0], "yuv420p"
+        for f in frames:
+            out.mux(s.encode(av.VideoFrame.from_ndarray(f, format="rgb24")))
+        out.mux(s.encode())
+    print(f"wrote {path} ({len(frames) / VIDEO_FPS:.0f} s)", flush=True)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--steps", type=int, default=50)
-    ap.add_argument("--only", default="sample,compare,control,failures,timing")
+    ap.add_argument("--only", default="sample,compare,control,failures,timing", help="parts to run, also: video")
     ap.add_argument("--timing-runs", default="S_arms,S_global", help="runs timed (added to timing.json)")
     args = ap.parse_args()
     parts = set(args.only.split(","))
@@ -162,7 +208,13 @@ def main() -> None:
             picks.append(j)
         if len(picks) == 2:
             break
-    times = ["last context frame"] + [f"+{(t - SHOW[0]) / 10:.1f} s" for t in SHOW[1:]]   # as in e1_horizon
+    worst = []                                                            # the failure cases, one per case
+    for j in np.argsort(psnr):
+        if case[j] not in {case[p] for p in worst}:
+            worst.append(j)
+        if len(worst) == 4:
+            break
+    times =["last context frame"] + [f"+{(t - SHOW[0]) / 10:.1f} s" for t in SHOW[1:]]   # as in e1_horizon
 
     if "compare" in parts:
         rows = []
@@ -205,12 +257,6 @@ def main() -> None:
         grid(rows, times, FIG / "rollouts_control.png")
 
     if "failures" in parts:
-        worst = []
-        for j in np.argsort(psnr):
-            if case[j] not in {case[p] for p in worst}:
-                worst.append(j)
-            if len(worst) == 4:
-                break
         rows = []
         for j in worst:
             pred = gen("S_arms", batch([ev[int(idx[j])]]))[0]
@@ -221,6 +267,51 @@ def main() -> None:
         (OUTPUTS / "eval" / "figure_windows.json").write_text(json.dumps(
             {"typical": [dict(case=str(case[j]), window=int(idx[j]), psnr=float(psnr[j])) for j in picks],
              "failures": [dict(case=str(case[j]), window=int(idx[j]), psnr=float(psnr[j])) for j in worst]}, indent=1))
+
+    if "video" in parts:
+        def real(j: int) -> np.ndarray:
+            return np.asarray(real_all[idx[j]], np.float32) / 255
+
+        frames = card(["Supplementary Movie S1: Embodiment-Grounded Surgical World Models", "",
+                       "Size-S models on held-out SurgVU test windows: 0.5 s of real context,",
+                       "then 2.8 s predicted (50 Euler steps), shown at half speed.",
+                       "The windows of Figs. S1-S3 of the supplementary material."])
+        for j in picks:                                                   # Fig. S1
+            b = batch([ev[int(idx[j])]])
+            frames += segment("Every interface, actions inferred from the real clip",
+                              [(f"Real ({case[j]})", real(j))] + [(label, gen(run, b)[0]) for run, label in
+                                                                  INTERFACES if run != "S_state"])
+        j = picks[0]                                                      # Fig. S2, as in "control"
+        arm = int(np.flatnonzero(np.isfinite(ev[int(idx[j])]["boxes"][-1, :, 0].numpy()))[0])
+        src = next(int(idx[(j + d) % len(idx)]) for d in range(1, len(idx))
+                   if np.isfinite(ev[int(idx[(j + d) % len(idx)])]["boxes"][-1, arm, 0].item()))
+        b = batch([ev[int(idx[j])], ev[src]])
+        b1 = {k: v[:1] for k, v in b.items()}
+        a = acts("S_arms", b)
+        a1 = {k: (v[:1] if v.ndim else v) for k, v in a.items()}
+        own = gen("S_arms", b1, actions=a1)[0]
+        u = a["u_arms"][:1].clone()
+        u[:, :, arm] = a["u_arms"][1:, :, arm]
+        swap = gen("S_arms", b1, actions=dict(a1, u_arms=u))[0]
+        zero = {k: (torch.zeros_like(v) if k.startswith("u_") else v) for k, v in a1.items()}
+        frames += segment("EG-SWM: one arm's action replaced",
+                          [(f"Real ({case[j]})", real(j)), ("EG-SWM, own actions", own),
+                           (f"arm {arm + 1}: another window's action", swap),
+                           ("change caused", np.abs(swap - own).mean(-1)),
+                           ("arm actions zeroed", gen("S_arms", b1, actions=zero)[0]), None])
+        mag = np.asarray(json.loads((ROOT / "configs" / "stats" / "egomotion.json").read_text())["abs_q99"], np.float32)
+        for run, label in (("S_arms", "EG-SWM"), ("S_global", "Monolithic latent")):
+            zr = {k: (torch.zeros_like(v) if k.startswith("u_") else v) for k, v in acts(run, b1).items()}
+            frames += segment(f"{label}: endoscope commanded, learned actions zeroed",
+                              [(name.replace("_", " "), gen(run, command(b1, name, mag, 2)[0], actions=zr)[0])
+                               for name in COMMANDS])
+        for pair in (worst[:2], worst[2:]):                               # Fig. S3
+            panels = []
+            for j in pair:
+                panels += [(f"Real ({case[j]})", real(j)),
+                           (f"EG-SWM, {psnr[j]:.1f} dB", gen("S_arms", batch([ev[int(idx[j])]]))[0]), None]
+            frames += segment("Failure cases: EG-SWM's lowest-PSNR test windows", panels)
+        write_mp4(frames, OUTPUTS / "videos" / "movie_s1.mp4")
 
     if "timing" in parts:
         b = batch([ev[int(idx[0])]])

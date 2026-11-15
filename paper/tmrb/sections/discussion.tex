@@ -10,5 +10,15 @@ SurgVU shows porcine training-laboratory procedures on da Vinci Xi systems; SAR-
 \section{Conclusion}
 We presented \method{}, a surgical world model whose action space mirrors the teleoperated robot: an explicit endoscope action measured from the video and one latent action per instrument arm, inferred from that arm's instrument region and bound to the arm through the robot's system logs, learned from 476\,h of in-vivo da Vinci video without kinematics. Compared with other action interfaces at equal capacity, data and budget, it is the only one that keeps the endoscope and each instrument controllable while predicting better than a copied frame; frame-wide latent actions predict better under replay but take over the endoscope. The trade-off holds at three times the size: \method{} then predicts as well as the smaller monolithic model, but the monolithic model of the same size still predicts better and still takes over the endoscope. Grounding makes the arm actions local, the binding through the robot log decides which instrument an action moves, a forward decoder keeps the actions in use, and the console overlay adds nothing beyond the log. Signals that come with every recording of a teleoperated robot thus make action-free surgical world models controllable actuator by actuator; where these signals are missing, as in clinical video without system logs, frame-wide actions transfer better.
 
-\section*{Data and Code Availability}
-Code, configurations, the case-level split and the evaluation windows: \url{https://github.com/GIND123/Surgical-World-Model}. Model weights (CC BY-NC-SA 4.0): \url{https://huggingface.co/GOVINDFROM/surgical-world-model}. SurgVU \cite{surgvu} is distributed by its organisers for non-commercial research; JIGSAWS \cite{jigsaws} requires a data-use agreement; the Open-H-Embodiment subsets \cite{openh} are released under CC BY 4.0, SAR-RARP50 \cite{sarrarp} under CC BY-NC-SA 4.0, and AutoLaparo \cite{autolaparo} on request for non-commercial use. No patient data were collected for this work.
+\section*{Data Availability and Ethics}
+\ifreview
+Code, configurations, the case-level split, the evaluation windows and the model weights (CC BY-NC-SA 4.0) are publicly available; their links are withheld for double-anonymous review\ifx\anonrepo\empty\else, and an anonymised copy of the code is at \expandafter\url\expandafter{\anonrepo}\fi.
+\else
+Code, configurations, the case-level split and the evaluation windows: \url{https://github.com/GIND123/Surgical-World-Model}. Model weights (CC BY-NC-SA 4.0): \url{https://huggingface.co/GOVINDFROM/surgical-world-model}.
+\fi
+SurgVU \cite{surgvu} is distributed by its organisers for non-commercial research; JIGSAWS \cite{jigsaws} requires a data-use agreement; the Open-H-Embodiment subsets \cite{openh} are released under CC BY 4.0, SAR-RARP50 \cite{sarrarp} under CC BY-NC-SA 4.0, and AutoLaparo \cite{autolaparo} on request for non-commercial use. This work analyses only these previously published recordings of animal and human procedures, under their licences and agreements; no new data were collected from humans or animals.
+
+\ifreview\else
+\section*{Acknowledgment}
+\todo{Funding, conflicts of interest and acknowledgements.}
+\fi

@@ -13,13 +13,14 @@
 % Result numbers come from scripts/eval/aggregate.py (tables/numbers.tex), as in the main paper; a missing key prints ??
 \newcommand{\val}[1]{\ifcsname val@#1\endcsname\csname val@#1\endcsname\else\textcolor{red}{\textbf{??}}\fi}
 \InputIfFileExists{tables/numbers}{}{}
+\input{review}
 \renewcommand{\thesection}{S\arabic{section}}
 \renewcommand{\thetable}{S\arabic{table}}
 \renewcommand{\thefigure}{S\arabic{figure}}
 
 \begin{document}
 \title{Supplementary Material for\\ Embodiment-Grounded Surgical World Models}
-\author{Ajo~Babu~George}
+\ifreview\author{Anonymous Authors}\else\author{Ajo~Babu~George}\fi
 \markboth{IEEE Transactions on Medical Robotics and Bionics, supplementary material}{}
 \maketitle
 
@@ -180,5 +181,29 @@ The tables below are generated with those of the main paper and appear as their 
 \caption{Cost: training time, throughput and memory, and the time and memory of one 2.8\,s prediction.}
 \resizebox{\textwidth}{!}{\input{tables/cost}}
 \end{table*}}{}
+
+\section{Rollouts}\label{sec:rollouts}
+Figs.~\ref{fig:rollouts-compare}--\ref{fig:rollouts-failures} show predictions of the size-S models on test windows under the protocol of the main paper (two context latents, 50 Euler steps): the last context frame and the frames 0.8, 1.6 and 2.8\,s after it. \emph{Supplementary Movie S1} (file movie\_s1.mp4, H.264, $976\times540$ pixels, 57\,s) plays the same windows as clips at half speed, each frame marked as context or prediction, and adds all six endoscope commands (pan, tilt and zoom, both ways) for \method{} and the monolithic latent action, with the learned actions zeroed.
+
+\begin{figure*}[p]
+\centering
+\includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{rollouts_compare.png}
+\caption{Every interface on two typical test windows, with the actions inferred from the real clip: of the test windows with at least two instruments bound to arms, those from different cases whose PSNR with \method{} is nearest the median of such windows. In case\_080 \method{} brings the entering instrument in at about the right place. In case\_054 a grasper enters within the first 0.8\,s; the monolithic and slot actions draw an instrument near where it enters, and \method{} draws none.}
+\label{fig:rollouts-compare}
+\end{figure*}
+
+\begin{figure*}[p]
+\centering
+\includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{rollouts_control.png}
+\caption{Control on the first window of Fig.~\ref{fig:rollouts-compare}. \method{} with its own actions; with arm 3's action taken from another window in which that arm is bound, and the per-pixel change this causes, which stays on that arm's instrument; and with the arm actions zeroed, when no instrument enters. Then the endoscope commanded to pan right or zoom in, in every predicted step at the 99th percentile of real frame-to-frame motion, with the learned actions zeroed: \method{} carries out both, drawing the tissue revealed by the pan blurred, whereas the monolithic latent action and \method{} with the scene action hardly move the view.}
+\label{fig:rollouts-control}
+\end{figure*}
+
+\begin{figure*}[p]
+\centering
+\includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{rollouts_failures.png}
+\caption{\method{}'s four test windows with the lowest PSNR, one per case (PSNR over the horizon in the row label): an instrument moving close to the endoscope beside a bleeding site (case\_135), the fluorescence imaging mode (case\_064), smoke (case\_026) and fast motion of two instruments (case\_118). In each, the prediction loses the scene within 1.6\,s.}
+\label{fig:rollouts-failures}
+\end{figure*}
 
 \end{document}

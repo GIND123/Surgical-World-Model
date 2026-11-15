@@ -16,15 +16,20 @@
 % Result numbers in the text come from scripts/eval/aggregate.py (tables/numbers.tex); a missing key prints ??
 \newcommand{\val}[1]{\ifcsname val@#1\endcsname\csname val@#1\endcsname\else\textcolor{red}{\textbf{??}}\fi}
 \InputIfFileExists{tables/numbers}{}{}
+\input{review}
 
 \begin{document}
 \bstctlcite{IEEEexample:BSTcontrol}
 \title{Embodiment-Grounded Surgical World Models:\\ Learning Arm-Factorized, Camera-Aware Actions from Unlabeled Robotic Video}
+\ifreview
+\author{Anonymous Authors}
+\markboth{IEEE Transactions on Medical Robotics and Bionics}{Embodiment-Grounded Surgical World Models}
+\else
 % TODO(authors): author list and affiliations to be provided by the corresponding author.
 \author{Ajo~Babu~George%
 \thanks{\todo{Affiliations, funding and acknowledgements.}}}
-
 \markboth{IEEE Transactions on Medical Robotics and Bionics}{George \MakeLowercase{\textit{et al.}}: Embodiment-Grounded Surgical World Models}
+\fi
 \maketitle
 
 \input{sections/abstract}
