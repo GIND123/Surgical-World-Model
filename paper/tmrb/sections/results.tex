@@ -8,6 +8,13 @@ We test whether each action controls what it should, compare fidelity and contro
 \resizebox{\textwidth}{!}{\input{tables/e1_main}}
 \end{table*}
 
+\begin{table*}[t]
+\centering
+\caption{\method{} with one part changed, and both \method{} and the monolithic latent action at size B (60k steps, size S unless stated; protocol and columns of Table~\ref{tab:main}).}
+\label{tab:ablations}
+\resizebox{\textwidth}{!}{\input{tables/e6_ablations}}
+\end{table*}
+
 \IfFileExists{tables/e2_probes_pos.tex}{%
 \begin{table}[t]
 \centering
@@ -29,13 +36,6 @@ We test whether each action controls what it should, compare fidelity and contro
 \label{tab:clinical}
 \resizebox{\columnwidth}{!}{\input{tables/e4_clinical}}
 \end{table}}{}
-
-\begin{table*}[t]
-\centering
-\caption{\method{} with one part changed, and both \method{} and the monolithic latent action at size B (60k steps, size S unless stated; protocol and columns of Table~\ref{tab:main}).}
-\label{tab:ablations}
-\resizebox{\textwidth}{!}{\input{tables/e6_ablations}}
-\end{table*}
 
 \subsection{Each action controls what it should}
 We first examine \method{} at size S (60k steps). On 512 validation windows, futures generated from the actions inferred from the real clip have a latent error of \val{use/S_arms/replay}. Replacing every arm's action with that of another window raises the error by \val{use/S_arms/swap}\,\% (\val{use/S_arms/swap_in}\,\% inside the arm regions, \val{use/S_arms/swap_out}\,\% outside); replacing the endoscope action raises it by \val{use/S_arms/cam_swap}\,\% (\val{use/S_arms/cam_swap_in}\,\% inside, \val{use/S_arms/cam_swap_out}\,\% outside). The flow-matching loss at a high noise level ($\tau=0.9$) separates the two more sharply: another window's arm actions raise it by \val{use/S_arms/swap_t9_in}\,\% inside the arm regions and \val{use/S_arms/swap_t9_out}\,\% outside, and another window's endoscope action by \val{use/S_arms/cam_swap_t9_in}\,\% inside and \val{use/S_arms/cam_swap_t9_out}\,\% outside. With the arm actions zeroed, replacing the endoscope action still raises the error by \val{use/S_arms/cam_swap_zeroed}\,\%, so the learned actions have not absorbed the endoscope motion. Of the 8 dimensions of each arm action, \val{use/S_arms/active} are active, their posterior mean varying across windows with a variance above 0.01 (KL \val{use/S_arms/kl}\,nats per arm).
