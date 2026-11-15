@@ -203,6 +203,35 @@
   "cam_gain_mean": 0.7629945116583342
  },
  {
+  "run": "S_arms_kl1e-5",
+  "label": "EG-SWM, KL weight 10\u207b\u2075",
+  "action": "arms",
+  "camera": true,
+  "step": 60000,
+  "pred_psnr": 22.03289031982422,
+  "pred_ssim": 0.6917775869369507,
+  "pred_lpips": 0.1636284440755844,
+  "pred_fvd": 185.43320666023178,
+  "delta_psnr": 2.841073989868164,
+  "locality_ratio_median": 2.5479265815351786,
+  "ecs_precision": 0.9406388206388206,
+  "ecs_recall": 0.8176148983427303,
+  "ecs_hallucination_rate": 0.0744963144963145,
+  "pred_psnr_ci": [
+   21.45877504348755,
+   22.645842885971067
+  ],
+  "pred_ssim_ci": [
+   0.6754903271794319,
+   0.7085511729121208
+  ],
+  "pred_lpips_ci": [
+   0.15264030434191228,
+   0.17473468594253064
+  ],
+  "cam_gain_mean": 0.678699096606867
+ },
+ {
   "run": "B_arms",
   "label": "EG-SWM, size B",
   "action": "arms",

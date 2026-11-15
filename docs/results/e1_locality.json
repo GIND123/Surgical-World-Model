@@ -231,6 +231,23 @@
   "n_cases": 19
  },
  {
+  "run": "S_arms_kl1e-5",
+  "label": "EG-SWM, KL weight 10\u207b\u2075",
+  "n_rows": 630,
+  "locality": 2.5479265815351786,
+  "locality_ci": [
+   2.2892870206279756,
+   2.7958411612397276
+  ],
+  "d_locality": 0.12920569475665067,
+  "d_locality_ci": [
+   -0.017215585046807667,
+   0.20040605949108792
+  ],
+  "egswm_better": 6,
+  "n_cases": 19
+ },
+ {
   "run": "B_arms",
   "label": "EG-SWM, size B",
   "n_rows": 630,
