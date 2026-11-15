@@ -1,10 +1,4 @@
 \section{Method}\label{sec:method}
-\begin{figure*}[t]
-\centering
-\includegraphics[width=\textwidth]{architecture.pdf}
-\caption{\method{}. Context frames are encoded by a frozen video VAE; a latent spatio-temporal diffusion transformer predicts future latents conditioned on an explicit endoscope ego-motion action (through AdaLN) and on one token per robot arm (through cross-attention) that carries the arm's identity, its logged instrument and a latent action inferred from that arm's instrument region. In training only, a forward decoder predicts each latent from its predecessor and the actions placed on their regions, which keeps the learned actions informative. Sample input and output from a held-out test case.}
-\label{fig:arch}
-\end{figure*}
 
 \subsection{Overview}
 Let $x_{0:32}$ be 33 consecutive endoscopic frames (3.3\,s at 10\,fps) of the endoscope field, resized to $224\times320$. A frozen causal video VAE \cite{wan} maps them to latents $z_{0:8}$, $z_t\in\mathbb{R}^{48\times14\times20}$, where $z_0$ encodes $x_0$ and $z_t$ ($t\ge1$) encodes frames $4t-3,\dots,4t$. The world model predicts $z_{n:8}$ from context $z_{0:n-1}$, the robot state $s_t$ and an action $a_t$ for every transition $z_{t-1}\to z_t$:
