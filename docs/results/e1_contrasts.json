@@ -528,6 +528,30 @@
   "a_better_lpips": 16
  },
  {
+  "a": "S_arms_kl1e-3",
+  "b": "S_arms",
+  "label": "EG-SWM, KL weight 10\u207b\u00b3 \u2212 EG-SWM",
+  "n_cases": 19,
+  "d_psnr": -0.2449152022600174,
+  "d_psnr_ci": [
+   -0.2838942162692547,
+   -0.20621161796152593
+  ],
+  "a_better_psnr": 0,
+  "d_ssim": -0.006959805265069008,
+  "d_ssim_ci": [
+   -0.007709482253994792,
+   -0.00620744755724445
+  ],
+  "a_better_ssim": 0,
+  "d_lpips": 0.005147802177816629,
+  "d_lpips_ci": [
+   0.004520791489630938,
+   0.005755373858846723
+  ],
+  "a_better_lpips": 0
+ },
+ {
   "a": "B_arms",
   "b": "S_arms",
   "label": "EG-SWM, size B \u2212 EG-SWM",
