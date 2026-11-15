@@ -339,6 +339,44 @@
   "vs_arms_n_cases": 10
  },
  {
+  "run": "SAR_adapt_global_vq",
+  "label": "Monolithic VQ + camera (SurgWM-style)",
+  "setting": "adapted",
+  "pred_psnr": 16.833789825439453,
+  "pred_ssim": 0.5379994511604309,
+  "pred_lpips": 0.311194509267807,
+  "pred_fvd": 246.390822460942,
+  "delta_psnr": 0.7280368804931641,
+  "step": 5000,
+  "weights": "raw",
+  "pred_psnr_ci": [
+   16.187077236175536,
+   17.468270444869994
+  ],
+  "pred_ssim_ci": [
+   0.504875659942627,
+   0.5740104079246521
+  ],
+  "pred_lpips_ci": [
+   0.297886897623539,
+   0.324195434898138
+  ],
+  "vs_copy_d_psnr": -0.5469006299972534,
+  "vs_copy_d_psnr_ci": [
+   -0.842006953060627,
+   -0.29050129204988484
+  ],
+  "vs_copy_wins": 1,
+  "vs_copy_n_cases": 10,
+  "vs_arms_d_psnr": -0.003921073861420155,
+  "vs_arms_d_psnr_ci": [
+   -0.1390515573322773,
+   0.12220762446522704
+  ],
+  "vs_arms_wins": 5,
+  "vs_arms_n_cases": 10
+ },
+ {
   "run": "SAR_adapt_arms",
   "label": "EG-SWM",
   "setting": "adapted",
