@@ -377,6 +377,44 @@
   "vs_arms_n_cases": 10
  },
  {
+  "run": "SAR_adapt_slots",
+  "label": "Slots + camera (FLAM-style)",
+  "setting": "adapted",
+  "pred_psnr": 18.418161392211914,
+  "pred_ssim": 0.5831666588783264,
+  "pred_lpips": 0.2680049538612366,
+  "pred_fvd": 206.1530066188249,
+  "delta_psnr": 1.9887619018554688,
+  "step": 5000,
+  "weights": "raw",
+  "pred_psnr_ci": [
+   17.712023305892945,
+   19.226554679870606
+  ],
+  "pred_ssim_ci": [
+   0.5479095220565796,
+   0.6221402287483215
+  ],
+  "pred_lpips_ci": [
+   0.2553104266524315,
+   0.2801898032426834
+  ],
+  "vs_copy_d_psnr": 1.0374706983566284,
+  "vs_copy_d_psnr_ci": [
+   0.8503808498382568,
+   1.244993808865547
+  ],
+  "vs_copy_wins": 10,
+  "vs_copy_n_cases": 10,
+  "vs_arms_d_psnr": 1.5804502964019775,
+  "vs_arms_d_psnr_ci": [
+   1.4105279594659805,
+   1.7502716541290282
+  ],
+  "vs_arms_wins": 10,
+  "vs_arms_n_cases": 10
+ },
+ {
   "run": "SAR_adapt_arms",
   "label": "EG-SWM",
   "setting": "adapted",
