@@ -73,5 +73,30 @@
   "ecs_recall_sd": 0.0026302416399010095,
   "ecs_hallucination_rate": 0.07428027685881962,
   "ecs_hallucination_rate_sd": 0.003228897340965389
+ },
+ {
+  "run": "S_global_vq",
+  "label": "Monolithic VQ + camera (SurgWM-style)",
+  "n_seeds": 2,
+  "pred_psnr": 21.225627899169922,
+  "pred_psnr_sd": 0.11200946460255198,
+  "pred_ssim": 0.6690604090690613,
+  "pred_ssim_sd": 0.0028236702628358567,
+  "pred_lpips": 0.1847825050354004,
+  "pred_lpips_sd": 0.002501710487061137,
+  "pred_fvd": 214.11962321646024,
+  "pred_fvd_sd": 11.718425681279,
+  "delta_psnr": 2.0865440368652344,
+  "delta_psnr_sd": 0.029841317444865324,
+  "cam_gain_mean": 0.8331922220561521,
+  "cam_gain_mean_sd": 0.02759621105654474,
+  "locality_ratio_median": 1.4940599741883602,
+  "locality_ratio_median_sd": 0.05495945561340201,
+  "ecs_precision": 0.9240001313857934,
+  "ecs_precision_sd": 0.0012188541390585786,
+  "ecs_recall": 0.7819494276439433,
+  "ecs_recall_sd": 0.01286637146700279,
+  "ecs_hallucination_rate": 0.08110150905939288,
+  "ecs_hallucination_rate_sd": 0.0007712916659479727
  }
 ]
