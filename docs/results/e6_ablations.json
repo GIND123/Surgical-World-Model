@@ -232,6 +232,35 @@
   "cam_gain_mean": 0.678699096606867
  },
  {
+  "run": "S_arms_data0.1",
+  "label": "EG-SWM, 10 % of the training cases",
+  "action": "arms",
+  "camera": true,
+  "step": 60000,
+  "pred_psnr": 21.908815383911133,
+  "pred_ssim": 0.6865871548652649,
+  "pred_lpips": 0.1662348508834839,
+  "pred_fvd": 202.50661103226577,
+  "delta_psnr": 2.7415943145751953,
+  "locality_ratio_median": 2.483930353365454,
+  "ecs_precision": 0.9362347188264059,
+  "ecs_recall": 0.8177857508969759,
+  "ecs_hallucination_rate": 0.0741320293398533,
+  "pred_psnr_ci": [
+   21.324710607528687,
+   22.516956996917724
+  ],
+  "pred_ssim_ci": [
+   0.6695702597498894,
+   0.704069598019123
+  ],
+  "pred_lpips_ci": [
+   0.15511184856295585,
+   0.17793865129351616
+  ],
+  "cam_gain_mean": 0.7503526973351712
+ },
+ {
   "run": "B_arms",
   "label": "EG-SWM, size B",
   "action": "arms",

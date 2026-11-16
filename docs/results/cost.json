@@ -161,6 +161,15 @@
   "train_mem_gb": 31.433165824
  },
  {
+  "run": "S_arms_data0.1",
+  "label": "EG-SWM, 10 % of the training cases",
+  "size": "S",
+  "steps": 60000,
+  "train_h": 5.567370891570854,
+  "win_per_s": 95.7962642907111,
+  "train_mem_gb": 31.433165824
+ },
+ {
   "run": "B_arms",
   "label": "EG-SWM, size B",
   "size": "B",
