@@ -265,6 +265,23 @@
   "n_cases": 19
  },
  {
+  "run": "S_arms_data0.3",
+  "label": "EG-SWM, 30 % of the training cases",
+  "n_rows": 630,
+  "locality": 2.5044184593400862,
+  "locality_ci": [
+   2.324781512932197,
+   2.814210368936274
+  ],
+  "d_locality": 0.0856975725615583,
+  "d_locality_ci": [
+   -0.09865412312541322,
+   0.26477385603400727
+  ],
+  "egswm_better": 7,
+  "n_cases": 19
+ },
+ {
   "run": "B_arms",
   "label": "EG-SWM, size B",
   "n_rows": 630,

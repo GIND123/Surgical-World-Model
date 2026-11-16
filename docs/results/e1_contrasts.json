@@ -600,6 +600,30 @@
   "a_better_lpips": 1
  },
  {
+  "a": "S_arms_data0.3",
+  "b": "S_arms",
+  "label": "EG-SWM, 30 % of the training cases \u2212 EG-SWM",
+  "n_cases": 19,
+  "d_psnr": -0.018207751214504242,
+  "d_psnr_ci": [
+   -0.10367922503501177,
+   0.03660627994686365
+  ],
+  "a_better_psnr": 12,
+  "d_ssim": -0.0010153149487450719,
+  "d_ssim_ci": [
+   -0.0017409867170499638,
+   -0.00025657500591478395
+  ],
+  "a_better_ssim": 5,
+  "d_lpips": 0.0006752939661964774,
+  "d_lpips_ci": [
+   -0.0002264853501401376,
+   0.001740642532240599
+  ],
+  "a_better_lpips": 8
+ },
+ {
   "a": "B_arms",
   "b": "S_arms",
   "label": "EG-SWM, size B \u2212 EG-SWM",
@@ -718,6 +742,30 @@
    0.012545713898725806
   ],
   "a_better_lpips": 0
+ },
+ {
+  "a": "S_arms_data0.3",
+  "b": "copy_last",
+  "label": "EG-SWM, 30 % of the training cases \u2212 Copy last context frame",
+  "n_cases": 19,
+  "d_psnr": 0.3900306224822998,
+  "d_psnr_ci": [
+   0.18585555478930474,
+   0.569127783179283
+  ],
+  "a_better_psnr": 16,
+  "d_ssim": 0.009085538797080517,
+  "d_ssim_ci": [
+   0.0037567419989500196,
+   0.014142321655526756
+  ],
+  "a_better_ssim": 15,
+  "d_lpips": 0.008846817538142204,
+  "d_lpips_ci": [
+   0.006261527515016496,
+   0.011257445742376148
+  ],
+  "a_better_lpips": 1
  },
  {
   "a": "B_arms",

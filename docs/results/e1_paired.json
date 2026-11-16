@@ -437,6 +437,29 @@
   "n_cases": 19
  },
  {
+  "run": "S_arms_data0.3",
+  "label": "EG-SWM, 30 % of the training cases",
+  "d_psnr": -0.018207751214504242,
+  "d_psnr_ci": [
+   -0.10367922503501177,
+   0.03660627994686365
+  ],
+  "egswm_better_psnr": 7,
+  "d_ssim": -0.0010153149487450719,
+  "d_ssim_ci": [
+   -0.0017409867170499638,
+   -0.00025657500591478395
+  ],
+  "egswm_better_ssim": 14,
+  "d_lpips": 0.0006752939661964774,
+  "d_lpips_ci": [
+   -0.0002264853501401376,
+   0.001740642532240599
+  ],
+  "egswm_better_lpips": 11,
+  "n_cases": 19
+ },
+ {
   "run": "B_arms",
   "label": "EG-SWM, size B",
   "d_psnr": 0.4259868562221527,
