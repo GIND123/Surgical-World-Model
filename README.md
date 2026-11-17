@@ -5,7 +5,15 @@
 * Weights (public, CC BY-NC-SA 4.0): <https://huggingface.co/GOVINDFROM/surgical-world-model> — one folder per finished run (EMA weights, config, evaluation summaries), published by each queue job
 * Research documents: [data audit](docs/01_data_audit.md) · [external data](docs/02_external_data.md) · [literature review](docs/03_literature_review.md) · [research plan](docs/04_research_plan.md) · [legacy](docs/legacy.md)
 
-## Status (updated 2026-11-17, 12:05 IST)
+## Status (updated 2026-11-17, 12:20 IST)
+
+**Paused 17 Nov 12:13 IST: the GPU is handed over to another user (rajath) and resumes when he is done.** The queue was stopped (`systemctl --user stop swm-queue`) right after `2615` finished training and saved its final checkpoint (step 8000), so only its evaluation (about 30 min) reruns; `2615` is back in `outputs/queue/pending/`, and `outputs/queue/STOP` keeps the runner from starting any job. 17 of 32 jobs are done, about 52 of 62 GPU-hours (84 %); left: `2615` (evaluation), `2618`, the E2 adaptations `410`–`421` and the probes `450`, about 10 GPU-hours. Every finished run is in Git (results) and on Hugging Face (weights); the Git-ignored outputs (evaluations, queue state and logs, run logs and configs, Movie S1; checkpoints excluded, they are on Hugging Face) are archived in `outputs/backups/pause_2026-11-17_1215.tar.gz` (62 MB, SHA-256 in the `.sha256` file next to it), and the Git tag `pause-2026-11-17` marks this state. To resume, once `nvidia-smi` shows the GPU free of the other user's jobs:
+
+```bash
+rm outputs/queue/STOP
+scripts/run_services.sh queue        # the transient unit with OOMPolicy=continue and MemoryMax=72G
+```
+
 
 **Submission to IEEE T-MRB, prepared on 15 Nov.** T-MRB reviews double-anonymously, and the RAS rules allow a desk rejection when names, acknowledgements or identifying links (GitHub is named) appear in the manuscript or supplement. The manuscript therefore builds as an anonymous review copy by default (`paper/tmrb/review.tex`; `\reviewfalse` gives the camera-ready version with the author block, the public links and the acknowledgement). Both PDFs were scanned (text, metadata, every decompressed stream): no name, account or local path. Also new:
 * an ethics statement, which T-MRB requires in the manuscript;
