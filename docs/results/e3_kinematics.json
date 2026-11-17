@@ -557,6 +557,48 @@
   "vs_copy_n_cases": 951
  },
  {
+  "run": "SRTH_kin_scratch_f0.25",
+  "data": "srth",
+  "init": "scratch",
+  "f": "0.25",
+  "label": "None (from scratch)",
+  "fraction": 0.25,
+  "share": "SRT-H, 25%",
+  "pred_psnr": 19.749256134033203,
+  "pred_ssim": 0.691746175289154,
+  "pred_lpips": 0.20237113535404205,
+  "pred_fvd": 639.9588236108201,
+  "delta_psnr": 1.4323234558105469,
+  "step": 8000,
+  "weights": "raw",
+  "pred_psnr_ci": [
+   19.66898708343506,
+   19.82908878326416
+  ],
+  "pred_ssim_ci": [
+   0.6883292153477669,
+   0.6950978904962539
+  ],
+  "pred_lpips_ci": [
+   0.1995665255934,
+   0.20533514097332956
+  ],
+  "vs_copy_d_psnr": 1.7745003700256348,
+  "vs_copy_d_psnr_ci": [
+   1.7199161976575852,
+   1.8316745996475219
+  ],
+  "vs_copy_wins": 933,
+  "vs_copy_n_cases": 951,
+  "vs_tenth_d_psnr": -0.040421683341264725,
+  "vs_tenth_d_psnr_ci": [
+   -0.056597981974482535,
+   -0.024779528938233854
+  ],
+  "vs_tenth_wins": 418,
+  "vs_tenth_n_cases": 951
+ },
+ {
   "run": "SRTH_kin_scratch_f1.0",
   "data": "srth",
   "init": "scratch",
