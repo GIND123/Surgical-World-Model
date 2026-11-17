@@ -1186,13 +1186,16 @@ def numbers() -> None:
             if len(got) == len(E2_DATA):
                 for t in TARGETS:
                     put(f"kin/mean/{name}/{t}", float(np.mean([m[t] for m in got.values()])), 2)
-        # how far any feature gets where the probes find little: translation on CRCD and JIGSAWS, rotation and jaw
-        pos = [r[d]["mean"]["pos"] for r in rows for d in ("crcd", "jigsaws") if d in r]
-        rot_jaw = [r[d]["mean"][t] for r in rows for d, _ in E2_DATA if d in r for t in ("rot", "jaw")]
-        if pos:
-            put("kin/max/crcd_jigsaws_pos", max(pos), 2)
-        if rot_jaw:
-            put("kin/max/rot_jaw", max(rot_jaw), 2)
+        # how far any feature gets where the probes find little: translation on CRCD and JIGSAWS, rotation and jaw;
+        # over the main paper's table (model-free, zero-shot), and apart over the adapted models (supplement only)
+        for suffix, keep in (("", MAIN_ONLY["e2"]), ("_adapted", ("adapted",))):
+            sel = [r for r in rows if r["setting"] in keep]
+            pos = [r[d]["mean"]["pos"] for r in sel for d in ("crcd", "jigsaws") if d in r]
+            rot_jaw = [r[d]["mean"][t] for r in sel for d, _ in E2_DATA if d in r for t in ("rot", "jaw")]
+            if pos:
+                put(f"kin/max{suffix}/crcd_jigsaws_pos", max(pos), 2)
+            if rot_jaw:
+                put(f"kin/max{suffix}/rot_jaw", max(rot_jaw), 2)
     if (res / "e3_kinematics.json").exists():                  # kinematics-conditioned prediction, test episodes
         e3_rows = json.loads((res / "e3_kinematics.json").read_text())
         for r in e3_rows:
