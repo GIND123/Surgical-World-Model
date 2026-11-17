@@ -219,6 +219,55 @@
   "vs_scratch_all_n_cases": 146
  },
  {
+  "run": "SB_kin_arms_f0.25",
+  "data": "suturebot",
+  "init": "arms",
+  "f": "0.25",
+  "label": "EG-SWM",
+  "fraction": 0.25,
+  "share": "SutureBot, 25%",
+  "pred_psnr": 23.55904769897461,
+  "pred_ssim": 0.8245493173599243,
+  "pred_lpips": 0.14027535915374756,
+  "pred_fvd": 101.48053372415576,
+  "delta_psnr": 3.1891403198242188,
+  "step": 8000,
+  "weights": "raw",
+  "pred_psnr_ci": [
+   23.37583107948303,
+   23.749635791778566
+  ],
+  "pred_ssim_ci": [
+   0.8211611792445183,
+   0.827921299636364
+  ],
+  "pred_lpips_ci": [
+   0.13697828799486161,
+   0.14354379959404467
+  ],
+  "vs_scratch_d_psnr": 1.382285237312317,
+  "vs_scratch_d_psnr_ci": [
+   1.3371513694524766,
+   1.429434460401535
+  ],
+  "vs_scratch_wins": 146,
+  "vs_scratch_n_cases": 146,
+  "vs_copy_d_psnr": 2.896307945251465,
+  "vs_copy_d_psnr_ci": [
+   2.835690999031067,
+   2.958424377441406
+  ],
+  "vs_copy_wins": 146,
+  "vs_copy_n_cases": 146,
+  "vs_tenth_d_psnr": 0.009835666976869106,
+  "vs_tenth_d_psnr_ci": [
+   -0.034937063604593276,
+   0.054166651889681776
+  ],
+  "vs_tenth_wins": 80,
+  "vs_tenth_n_cases": 146
+ },
+ {
   "run": "SB_kin_arms_f1.0",
   "data": "suturebot",
   "init": "arms",
