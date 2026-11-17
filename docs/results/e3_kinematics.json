@@ -697,6 +697,55 @@
   "vs_scratch_all_n_cases": 951
  },
  {
+  "run": "SRTH_kin_arms_f0.25",
+  "data": "srth",
+  "init": "arms",
+  "f": "0.25",
+  "label": "EG-SWM",
+  "fraction": 0.25,
+  "share": "SRT-H, 25%",
+  "pred_psnr": 20.71467399597168,
+  "pred_ssim": 0.727321207523346,
+  "pred_lpips": 0.15734606981277466,
+  "pred_fvd": 234.17553190830134,
+  "delta_psnr": 2.609455108642578,
+  "step": 8000,
+  "weights": "raw",
+  "pred_psnr_ci": [
+   20.62951741218567,
+   20.79470591545105
+  ],
+  "pred_ssim_ci": [
+   0.7240096494555474,
+   0.7305096417665482
+  ],
+  "pred_lpips_ci": [
+   0.15492637939751147,
+   0.15981064476072787
+  ],
+  "vs_scratch_d_psnr": 0.9654164910316467,
+  "vs_scratch_d_psnr_ci": [
+   0.9319099158048629,
+   0.9989410668611527
+  ],
+  "vs_scratch_wins": 923,
+  "vs_scratch_n_cases": 951,
+  "vs_copy_d_psnr": 2.7399165630340576,
+  "vs_copy_d_psnr_ci": [
+   2.6702826857566833,
+   2.8108596980571745
+  ],
+  "vs_copy_wins": 948,
+  "vs_copy_n_cases": 951,
+  "vs_tenth_d_psnr": -0.10172499716281891,
+  "vs_tenth_d_psnr_ci": [
+   -0.12291585076600313,
+   -0.08064724951982498
+  ],
+  "vs_tenth_wins": 350,
+  "vs_tenth_n_cases": 951
+ },
+ {
   "run": "SRTH_kin_arms_f1.0",
   "data": "srth",
   "init": "arms",
